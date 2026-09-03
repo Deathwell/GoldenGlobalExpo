@@ -27,10 +27,13 @@ document.addEventListener('DOMContentLoaded', async () => {
   const code = urlParams.get('code') || 'GGE-JNPT-2026';
   const docSlot = urlParams.get('docSlot') || 'inv';
 
-  const docTitleEl = document.getElementById('docTitle');
+  const docTitleEl = document.getElementById('fileName') || document.getElementById('docTitle');
+  const manifestCodeEl = document.getElementById('manifestCode');
+  const fileSizeEl = document.getElementById('fileSize');
   const docMetaEl = document.getElementById('docMeta');
-  const btnDl = document.getElementById('btnDownload');
-  const statusEl = document.getElementById('statusBadge');
+  const btnDl = document.getElementById('dlBtn') || document.getElementById('btnDownload');
+  const statusEl = document.getElementById('statusMsg') || document.getElementById('statusBadge');
+  const docTypeLabel = document.getElementById('docTypeLabel');
 
   const slotKey = `slot_${code}_${docSlot}`;
   const fileRecord = (typeof getFileFromDB === 'function') ? await getFileFromDB(slotKey) : null;
@@ -40,17 +43,28 @@ document.addEventListener('DOMContentLoaded', async () => {
     activeFileName = fileRecord.name || `${code}_${docSlot}.pdf`;
 
     if (docTitleEl) docTitleEl.textContent = activeFileName;
+    if (manifestCodeEl) manifestCodeEl.textContent = `MANIFEST: ${code}`;
+    if (fileSizeEl) fileSizeEl.textContent = fileRecord.size || 'PDF';
     if (docMetaEl) docMetaEl.textContent = `${fileRecord.size} · Certified Consignment Document · ${code}`;
     if (statusEl) {
-      statusEl.textContent = "● Vault Document Verified";
+      statusEl.textContent = "● Vault Document Verified & Ready";
       statusEl.style.color = "#4CAF50";
     }
     if (btnDl) btnDl.disabled = false;
   } else {
-    if (docTitleEl) docTitleEl.textContent = `Document: ${code} (${docSlot.toUpperCase()})`;
-    if (docMetaEl) docMetaEl.textContent = "Standard Seaway Bill / Laboratory Certificate Reference";
+    const docNames = {
+      'inv': 'Commercial Invoice & Proforma Declaration',
+      'phyto': 'Phytosanitary Inspection Certificate (NPPO)',
+      'coa': 'Certificate of Analysis (Sortex & Moisture Lab)',
+      'bl': 'Ocean Bill of Lading (JNPT to Destination Port)'
+    };
+    const prettyName = docNames[docSlot] || `${code}_${docSlot.toUpperCase()}.pdf`;
+    if (docTitleEl) docTitleEl.textContent = prettyName;
+    if (manifestCodeEl) manifestCodeEl.textContent = `MANIFEST: ${code}`;
+    if (fileSizeEl) fileSizeEl.textContent = "Certified";
+    if (docTypeLabel) docTypeLabel.textContent = `Official ${docSlot.toUpperCase()} Document Verification`;
     if (statusEl) {
-      statusEl.textContent = "● Reference Verified";
+      statusEl.textContent = "● Vault Reference Verified";
       statusEl.style.color = "#D9AC52";
     }
   }
