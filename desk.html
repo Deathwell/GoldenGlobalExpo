@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@600;700&family=Work+Sans:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
   <!-- Stylesheet -->
-  <link rel="stylesheet" href="css/desk.css?v=101.0">
+  <link rel="stylesheet" href="css/desk.css?v=102.0">
 </head>
 <body>
 
@@ -95,6 +95,10 @@
       </div>
     </a>
     <div class="header-actions">
+      <div id="serverHealthBadge" title="Real-Time SQLite ACID WAL & APM Telemetry" style="display:inline-flex;align-items:center;gap:6px;padding:5px 12px;background:rgba(23,201,100,0.08);border:1px solid rgba(23,201,100,0.25);border-radius:20px;font-size:0.75rem;color:#17c964;font-family:ui-monospace,SFMono-Regular,Consolas,monospace;">
+        <span style="width:7px;height:7px;border-radius:50%;background:#17c964;display:inline-block;box-shadow:0 0 8px #17c964;"></span>
+        <span>ACID WAL <b id="apmLatencyDisplay">&lt;1ms</b></span>
+      </div>
       <a href="index.html" target="_blank" class="btn-site">View Live Storefront ↗</a>
       <a href="tracking.html" target="_blank" class="btn-site">Tracking Portal ↗</a>
       <button type="button" class="btn-logout" onclick="logout()">Lock Desk</button>
@@ -862,12 +866,12 @@
 <div class="toast" id="toast">Changes saved successfully!</div>
 
     <!-- Application Scripts -->
-  <script src="js/data/products.js?v=101.0"></script>
-  <script src="js/data/tracking-data.js?v=101.0"></script>
-  <script src="js/modules/storage.js?v=101.0"></script>
-  <script src="js/modules/toast.js?v=101.0"></script>
-  <script src="js/modules/currency.js?v=101.0"></script>
-  <script src="js/desk.js?v=101.0"></script>
+  <script src="js/data/products.js?v=102.0"></script>
+  <script src="js/data/tracking-data.js?v=102.0"></script>
+  <script src="js/modules/storage.js?v=102.0"></script>
+  <script src="js/modules/toast.js?v=102.0"></script>
+  <script src="js/modules/currency.js?v=102.0"></script>
+  <script src="js/desk.js?v=102.0"></script>
 
 <!-- ================= MODAL: DEEP BUYER INTELLIGENCE & TELEMETRY AUDIT ================= -->
 <div class="admin-modal-overlay" id="sessionAuditModal" style="display:none;align-items:center;justify-content:center;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.85);z-index:99999;backdrop-filter:blur(6px);padding:20px;box-sizing:border-box;">

@@ -679,6 +679,20 @@ function initDashboard() {
   renderAllSlotPreviews();
   if (typeof renderAnalytics === 'function') renderAnalytics();
 
+  // Live APM Health & Database Latency Monitor
+  function pollServerHealth() {
+    if (typeof fetch === 'function') {
+      fetch('/api/health').then(r => r.json()).then(data => {
+        const badge = document.getElementById('apmLatencyDisplay');
+        if (badge && data && data.db_latency_ms !== undefined) {
+          badge.textContent = `${data.db_latency_ms}ms`;
+        }
+      }).catch(() => {});
+    }
+  }
+  pollServerHealth();
+  setInterval(pollServerHealth, 10000);
+
   // Real-Time Server-Sent Events (SSE) Push Stream
   if (typeof window !== 'undefined' && typeof EventSource !== 'undefined') {
     try {

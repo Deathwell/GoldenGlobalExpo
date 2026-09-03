@@ -38,11 +38,13 @@ from backend.db import (
     init_db, SessionLocal,
     InquiryModel, ConsignmentModel, CommodityPriceModel, AuditLogModel, AdminSessionModel
 )
+from backend.routers.health import router as health_router, set_sse_counter
 
 # Initialize database tables and migrations on startup
 init_db()
 
 tags_metadata = [
+    {"name": "APM Health & Observability", "description": "Real-time system diagnostics, database query latency, and resource metrics."},
     {"name": "Commodity Prices", "description": "ACID transactional matrix for agricultural commodities and dynamic margins."},
     {"name": "Forex Telemetry", "description": "Real-time currency exchange rates cached at 30-minute intervals."},
     {"name": "Inquiry CRM", "description": "Commercial bulk RFQs, 500g sample reservations, and buyer pipelines."},
@@ -55,13 +57,15 @@ tags_metadata = [
 app = FastAPI(
     title="Golden Global Expo — Institutional Export API",
     description="High-concurrency asynchronous ASGI API engine with ACID persistence, cryptographic audit chains, and non-blocking background workers.",
-    version="2.0.0",
+    version="2.1.0",
     openapi_tags=tags_metadata,
     contact={
         "name": "Golden Global Expo Compliance Desk",
         "email": os.environ.get("ADMIN_EMAILS", "nigadearyan@gmail.com").split(",")[0].strip(),
     }
 )
+
+app.include_router(health_router)
 
 MAX_BODY_SIZE = int(os.environ.get("MAX_BODY_SIZE", 15 * 1024 * 1024))
 raw_emails = os.environ.get("ADMIN_EMAILS", "nigadearyan@gmail.com")
@@ -72,6 +76,7 @@ SESSION_EXPIRE_SECONDS = int(os.environ.get("SESSION_EXPIRE_SECONDS", "86400"))
 ACTIVE_OTPS = {}
 PAYMENT_SESSIONS = {}
 CONNECTED_SSE_CLIENTS = set()
+set_sse_counter(lambda: len(CONNECTED_SSE_CLIENTS))
 _file_write_lock = threading.Lock()
 
 def atomic_json_write(filepath: str, data):
