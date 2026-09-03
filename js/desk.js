@@ -1640,7 +1640,7 @@ async function sendDossierDirectlyFromPortal() {
   if (!smtpPass) {
     if (btn) {
       btn.disabled = false;
-      btn.innerHTML = '🚀 AUTO-DISPATCH (Background)';
+      btn.innerHTML = 'AUTO-DISPATCH (Background)';
       btn.style.opacity = '1';
       btn.style.cursor = 'pointer';
       btn.style.pointerEvents = 'auto';
@@ -1717,7 +1717,7 @@ async function sendDossierDirectlyFromPortal() {
 
       if (btn) {
       btn.disabled = false;
-      btn.innerHTML = '🚀 AUTO-DISPATCH (Background)';
+      btn.innerHTML = 'AUTO-DISPATCH (Background)';
       btn.style.opacity = '1';
       btn.style.cursor = 'pointer';
       btn.style.pointerEvents = 'auto';
@@ -1748,7 +1748,7 @@ async function sendDossierDirectlyFromPortal() {
       localStorage.removeItem('gge_smtp_pass');
       if (btn) {
       btn.disabled = false;
-      btn.innerHTML = '🚀 AUTO-DISPATCH (Background)';
+      btn.innerHTML = 'AUTO-DISPATCH (Background)';
       btn.style.opacity = '1';
       btn.style.cursor = 'pointer';
       btn.style.pointerEvents = 'auto';
@@ -1773,7 +1773,7 @@ async function sendDossierDirectlyFromPortal() {
   } catch(err) {
     if (btn) {
       btn.disabled = false;
-      btn.innerHTML = '🚀 AUTO-DISPATCH (Background)';
+      btn.innerHTML = 'AUTO-DISPATCH (Background)';
       btn.style.opacity = '1';
       btn.style.cursor = 'pointer';
       btn.style.pointerEvents = 'auto';
@@ -1923,7 +1923,7 @@ function formatFxDeskValue(amount, symbol, isPrefix = true) {
 function updateDeskForexBadge(fx) {
   const b = document.getElementById('deskForexBadge');
   if (b && fx) {
-    b.textContent = `⚡ Live Global Forex: 1 USD = ₹${fx.INR.toFixed(2)} INR · €${fx.EUR.toFixed(3)} EUR · ${fx.AED.toFixed(2)} AED · ${fx.RUB.toFixed(2)} ₽`;
+    b.textContent = `Live Global Forex: 1 USD = ₹${fx.INR.toFixed(2)} INR · €${fx.EUR.toFixed(3)} EUR · ${fx.AED.toFixed(2)} AED · ${fx.RUB.toFixed(2)} ₽`;
   }
 }
 
@@ -1945,7 +1945,7 @@ async function refreshForexNow(btn) {
         localStorage.setItem('gge_live_forex_rates', JSON.stringify(json.rates));
         renderPriceEditor();
         if (typeof showToast === 'function') {
-          showToast(`⚡ Live Forex Synced: 1 USD = ₹${(parseFloat(json.rates.INR) || 94.89).toFixed(2)} INR`, 'success');
+          showToast(`Live Forex Synced: 1 USD = ₹${(parseFloat(json.rates.INR) || 94.89).toFixed(2)} INR`, 'success');
         }
       }
     }
@@ -2422,7 +2422,7 @@ async function saveConsignmentForm() {
       statusBox.style.background = 'rgba(217,172,82,0.15)';
       statusBox.style.border = '1.5px solid var(--gold-bright)';
       statusBox.style.color = '#FFFFFF';
-      statusBox.innerHTML = `🚀 <b>Transmitting Gold Consignment Tracking Dossier &amp; Attachments to ${buyerEmail}...</b>`;
+      statusBox.innerHTML = `<b>Transmitting Gold Consignment Tracking Dossier &amp; Attachments to ${buyerEmail}...</b>`;
     }
     if (btn) btn.disabled = true;
 
@@ -2510,7 +2510,7 @@ async function saveConsignmentForm() {
           closeModal('consignModal');
           if (btn) {
       btn.disabled = false;
-      btn.innerHTML = '🚀 AUTO-DISPATCH (Background)';
+      btn.innerHTML = 'AUTO-DISPATCH (Background)';
       btn.style.opacity = '1';
       btn.style.cursor = 'pointer';
       btn.style.pointerEvents = 'auto';
@@ -2523,7 +2523,7 @@ async function saveConsignmentForm() {
     }
     if (btn) {
       btn.disabled = false;
-      btn.innerHTML = '🚀 AUTO-DISPATCH (Background)';
+      btn.innerHTML = 'AUTO-DISPATCH (Background)';
       btn.style.opacity = '1';
       btn.style.cursor = 'pointer';
       btn.style.pointerEvents = 'auto';
@@ -2765,7 +2765,7 @@ async function dispatchSampleAwbToBuyer() {
     statusBox.style.background = 'rgba(46,125,50,0.2)';
     statusBox.style.border = '1px solid #81C784';
     statusBox.style.color = '#81C784';
-    statusBox.innerHTML = `🚀 <b>Transmitting official AWB dispatch notice to ${escapeHtml(item.email)} via Google SMTP...</b>`;
+    statusBox.innerHTML = `<b>Transmitting official AWB dispatch notice to ${escapeHtml(item.email)} via Google SMTP...</b>`;
   }
   if (btn) btn.disabled = true;
 
@@ -2820,7 +2820,7 @@ Thank you for choosing Golden Global Expo.`;
         closeModal('sampleAwbModal');
         if (btn) {
       btn.disabled = false;
-      btn.innerHTML = '🚀 AUTO-DISPATCH (Background)';
+      btn.innerHTML = 'AUTO-DISPATCH (Background)';
       btn.style.opacity = '1';
       btn.style.cursor = 'pointer';
       btn.style.pointerEvents = 'auto';
@@ -2834,7 +2834,7 @@ Thank you for choosing Golden Global Expo.`;
 
   if (btn) {
       btn.disabled = false;
-      btn.innerHTML = '🚀 AUTO-DISPATCH (Background)';
+      btn.innerHTML = 'AUTO-DISPATCH (Background)';
       btn.style.opacity = '1';
       btn.style.cursor = 'pointer';
       btn.style.pointerEvents = 'auto';
@@ -2868,7 +2868,7 @@ if (typeof window !== 'undefined' && window.addEventListener) {
 
 
 
-// ================= 10. LIVE BUYER ANALYTICS & TELEMETRY CONTROLLER =================
+// Buyer analytics & telemetry controller
 
 function getVisitorTelemetry() {
   try {
@@ -3324,7 +3324,7 @@ if (typeof setInterval === 'function') {
 }
 
 
-// ================= IMMUTABLE AUDIT TRAIL & COMPLIANCE LEDGER =================
+// Audit trail & compliance ledger
 async function fetchServerAuditLog() {
   try {
     const res = await fetch('/api/audit?_t=' + Date.now());

@@ -1,7 +1,7 @@
 """
-Golden Global Expo — Modular ASGI Master Application
-Enterprise-grade ASGI orchestrator cleanly assembling domain routers,
-OWASP security middlewares, and static asset delivery pipelines.
+Golden Global Expo — Application Server
+Core ASGI application coordinating domain routers, security middleware,
+and static asset delivery.
 """
 
 import os
@@ -23,7 +23,7 @@ from backend.core.events import broadcast_sse, CONNECTED_SSE_CLIENTS
 from backend.core.atomic_io import atomic_json_write
 from backend.db import init_db, SessionLocal, AdminSessionModel
 
-# Import Decomposed Domain Routers
+# Domain Routers
 from backend.routers.health import router as health_router, set_sse_counter
 from backend.routers.prices import router as prices_router
 from backend.routers.inquiries import router as inquiries_router
@@ -37,14 +37,14 @@ from backend.routers.stream import router as stream_router
 init_db()
 
 tags_metadata = [
-    {"name": "APM Health & Observability", "description": "Real-time system diagnostics, database query latency, and resource metrics."},
-    {"name": "Commodity Prices & Forex", "description": "ACID transactional matrix for agricultural commodities, dynamic margins, and FX rates."},
-    {"name": "Commercial Inquiries & RFQ", "description": "Commercial bulk RFQs, 500g sample reservations, and buyer pipelines."},
-    {"name": "Consignments & Maritime Tracking", "description": "6-stage customs and ocean shipment telemetry, high-security bolt seals, and digital vaults."},
-    {"name": "Compliance Audit Ledger", "description": "Tamper-evident SHA-256 cryptographic audit chain for regulatory inspection."},
-    {"name": "Executive Authentication", "description": "Cryptographically signed sessions, 2FA OTPs, and RBAC token authentication."},
-    {"name": "Commercial Sample Payments", "description": "Interactive payment gateways, Razorpay order creation, and webhooks."},
-    {"name": "Real-Time Event Streaming", "description": "Zero-lag Server-Sent Events (SSE) push streaming for live desks."}
+    {"name": "System Health", "description": "Liveness probes, database latency, and system telemetry."},
+    {"name": "Commodity Pricing", "description": "Commodity price schedules, margins, and currency rates."},
+    {"name": "Inquiries & RFQs", "description": "Commercial inquiries and buyer requests."},
+    {"name": "Consignments & Tracking", "description": "Shipment milestones, container telemetry, and documentation."},
+    {"name": "Audit Ledger", "description": "Cryptographic SHA-256 audit verification logs."},
+    {"name": "Authentication", "description": "Session authentication and verification."},
+    {"name": "Payments", "description": "Sample orders and checkout processing."},
+    {"name": "Event Stream", "description": "Server-Sent Events for real-time dashboard updates."}
 ]
 
 app = FastAPI(

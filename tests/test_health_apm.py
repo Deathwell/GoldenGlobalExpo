@@ -4,6 +4,7 @@ Unit Tests for APM Health and Observability Endpoints
 import pytest
 from starlette.testclient import TestClient
 from backend.app import app
+from backend.core.config import APP_VERSION
 
 client = TestClient(app)
 
@@ -21,7 +22,7 @@ def test_deep_apm_diagnostics():
     assert resp.status_code == 200
     data = resp.json()
     assert data['status'] == 'healthy'
-    assert data['version'] == '2.1.0'
+    assert data['version'] == APP_VERSION
     assert 'uptime' in data
     assert 'performance' in data
     assert 'resources' in data

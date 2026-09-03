@@ -35,7 +35,7 @@
       banner.style.transform = 'translateY(0)';
       banner.style.opacity = '1';
       if (typeof showToast === 'function') {
-        showToast('⚡ Offline Mode Active: Viewing cached trade catalog & specs.', 'info');
+        showToast('Offline mode active: Viewing cached catalog.', 'info');
       }
     } else {
       banner.style.opacity = '0';
@@ -48,7 +48,7 @@
   window.addEventListener('offline', updateNetworkStatus);
   window.addEventListener('online', function() {
     if (typeof showToast === 'function') {
-      showToast('🟢 Connection Restored: Live Telemetry & Dispatch Online', 'success');
+      showToast('Connection restored: Online services active.', 'success');
     }
     updateNetworkStatus();
   });
@@ -75,7 +75,6 @@
       var queue = JSON.parse(raw);
       if (!queue || !queue.length) return;
 
-      console.log('[GGE PWA] Syncing ' + queue.length + ' queued inquiries from Offline Vault...');
       var itemsToSync = queue.map(function(q) { return q.data; });
       
       fetch('/api/inquiries', {
@@ -86,11 +85,11 @@
         if (res.ok) {
           localStorage.removeItem('gge_offline_rfq_vault');
           if (typeof showToast === 'function') {
-            showToast('🚀 Dispatched ' + queue.length + ' inquiry(s) from Offline Vault to Executive Desk!', 'success');
+            showToast(queue.length + ' offline inquiry(s) synchronized successfully.', 'success');
           }
         }
       }).catch(function(err) {
-        console.warn('[GGE PWA] Offline sync delayed:', err);
+        console.warn('[PWA] Sync delayed:', err);
       });
     } catch(err) {
       console.warn('[GGE PWA] Offline sync error:', err);

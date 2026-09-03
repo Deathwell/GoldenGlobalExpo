@@ -29,7 +29,7 @@ function escapeHtml(str) {
 window.escapeHtml = escapeHtml;
 
 
-// ================= VOLUME CAPACITY VALIDATOR (3 to 22 QUINTALS / 300 to 2,200 KG) =================
+// Volume capacity validation
 function handleVolumeUnitChange() {
   const unitEl = document.getElementById('rfqVolumeUnit');
   const valInp = document.getElementById('rfqVolumeVal');
@@ -128,7 +128,7 @@ function getSampleBasePriceINR() {
 
 let activeLotId = 'p1';
 
-// ================= 1. PARTICLE CANVAS & STARDUST PHYSICS =================
+// Particle canvas simulation
 function initParticleCanvas() {
   const canvas = document.getElementById('heroCanvas');
   if (!canvas) return;
@@ -253,7 +253,7 @@ function initParticleCanvas() {
     particles.push(new Particle());
   }
 
-  // ================= GPU & BATTERY EFFICIENCY ENGINE =================
+// Power efficiency handlers
   let particleAnimFrame = null;
   let isHeroVisible = true;
   let isPageVisible = (typeof document !== 'undefined' && document.visibilityState === 'visible');
@@ -331,7 +331,7 @@ function initParticleCanvas() {
   startAnimation();
 }
 
-// ================= 2. 3D CARD TILT & SPOTLIGHT =================
+// Interactive card tilt effect
 function initCardSpotlights() {
   const cards = document.querySelectorAll('.card--product, .why-card');
   cards.forEach(card => {
@@ -357,7 +357,7 @@ function initCardSpotlights() {
   });
 }
 
-// ================= 3. ANIMATED NUMBER COUNTERS =================
+// Metric counter animations
 function initCounters() {
   const counters = document.querySelectorAll('[data-counter]');
   const observer = new IntersectionObserver((entries) => {
@@ -384,7 +384,7 @@ function initCounters() {
   counters.forEach(c => observer.observe(c));
 }
 
-// ================= 4. COMMODITY CATEGORY FILTERS =================
+// Category filters
 function initFilters() {
   const filterBtns = document.querySelectorAll('.filter-btn');
   const cards = document.querySelectorAll('.card--product');
@@ -409,7 +409,7 @@ function initFilters() {
   });
 }
 
-// ================= 5. STRATEGIC SHIPPING CORRIDORS & REAL WORLD MAP (PAN & ZOOM ENGINE) =================
+// Strategic shipping corridors and map controller
 const corridorMapping = {
   'middle-east': { 
     regionClass: 'active-me', 
@@ -887,7 +887,7 @@ window.activateRoute = activateShippingCorridor;
 window.resetMapToWorld = resetMapToWorld;
 
 
-// ================= 6. LIVE CARGO & B/L TRACKER =================
+// Cargo & B/L tracking handler
 function searchConsignment() {
   const input = document.getElementById('trackingInput');
   const query = input ? input.value.trim().toUpperCase() : '';
@@ -939,7 +939,7 @@ function loadDemoBL(code) {
   }
 }
 
-// ================= 7. SPECIFICATION DRAWER & COA PDF =================
+// Specification drawer & document generation
 function openSpecDrawer(lotId) {
   activeLotId = lotId;
   const specObj = window.specDatabase && window.specDatabase[lotId];
@@ -1325,7 +1325,7 @@ function openRfqForLot(lotId) {
       setTimeout(() => nameInp.focus(), 500);
     }
     if (typeof showToast === 'function') {
-      showToast(`⚡ Direct RFQ Active: ${commName}`);
+      showToast(`Direct RFQ Active: ${commName}`);
     }
   }
 }
@@ -1348,7 +1348,7 @@ window.requestQuoteFromDrawer = requestQuoteFromDrawer;
 
 
 
-// ================= 8. FORM CHIPS & RFQ DISPATCH =================
+// Form controls & RFQ submission
 function initContactForm() {
   const chipInputs = document.querySelectorAll('#productChips input');
   const summary = document.getElementById('selectionSummary');
@@ -1421,7 +1421,7 @@ function initContactForm() {
   }
 }
 
-// ================= 9. LUXURY REGIONAL FLYOUT SWITCHERS =================
+// Regional locale & currency switchers
 function initLuxurySwitchers() {
   const currPillBtn = document.getElementById('currPillBtn');
   const langPillBtn = document.getElementById('langPillBtn');
@@ -1565,7 +1565,7 @@ function setupMiniDropdown(btnId, dropdownId, onSelect) {
   });
 }
 
-// ================= 10. DOM INITIALIZATION =================
+// Application initialization
 function initMainApp() {
   if (window._mainAppInitialized) return;
   window._mainAppInitialized = true;
@@ -1701,7 +1701,7 @@ window.activateShippingCorridor = activateShippingCorridor;
 window.activateRoute = activateShippingCorridor;
 
 
-// ================= 8. CONTACT FORM MOTION GRAPHICS & WORLD CLOCK =================
+// Motion graphics and world clocks
 function initContactMotion() {
   
 
@@ -1883,7 +1883,7 @@ function updateSamplePriceCalc() {
   const payableEl = document.getElementById('smpPayableText');
   if (payableEl) payableEl.textContent = `₹${amountInr.toFixed(2)}`;
   const btn = document.getElementById('btnLaunchRazorpay');
-  if (btn) btn.innerHTML = `<span>⚡ PROCEED TO PAY ₹${amountInr.toFixed(2)} (FIXED PRICE) VIA UPI / GPAY ➔</span>`;
+  if (btn) btn.innerHTML = `<span>PROCEED TO PAY ₹${amountInr.toFixed(2)} (FIXED PRICE) VIA UPI / GPAY ➔</span>`;
 }
 
 async function launchRazorpayCheckout() {
@@ -1911,7 +1911,7 @@ async function launchRazorpayCheckout() {
 
   const btn = document.getElementById('btnLaunchRazorpay');
   if (btn) {
-    btn.innerHTML = '<span>⚡ GENERATING SECURE UPI & GPAY SESSION...</span>';
+    btn.innerHTML = '<span>GENERATING SECURE PAYMENT SESSION...</span>';
     btn.style.opacity = '0.8';
     btn.disabled = true;
   }
@@ -1936,7 +1936,7 @@ async function launchRazorpayCheckout() {
   }
 
   if (btn) {
-    btn.innerHTML = '⚡ PROCEED TO PAY ₹1.00 (AMAZON-STYLE AUTOMATIC GATEWAY) ➔';
+    btn.innerHTML = 'PROCEED TO PAYMENT (TEST GATEWAY) ➔';
     btn.style.opacity = '1';
     btn.disabled = false;
   }
@@ -2023,7 +2023,7 @@ async function simulateInteractiveMockPayment() {
 
   if (btnMock) {
     btnMock.disabled = false;
-    btnMock.innerHTML = '<span>🚀 Run Interactive Mock Gateway Demo (No Card Needed)</span>';
+    btnMock.innerHTML = '<span>Run Interactive Payment Gateway Demo</span>';
   }
   if (btnRzp) btnRzp.disabled = false;
 }
@@ -2164,10 +2164,10 @@ function requestCommercialSample() {
 }
 
 
-// ================= LIVE VISITOR & BUYER TELEMETRY ENGINE =================
+// Client telemetry and analytics
 
 
-// ================= ENTERPRISE LIVE BUYER TELEMETRY ENGINE =================
+// Client telemetry controller
 let telemetryHumanInteractions = 0;
 let telemetryMaxScroll = 0;
 let telemetryLastActiveSection = 'Hero Overview';

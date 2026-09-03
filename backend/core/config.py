@@ -1,6 +1,6 @@
 """
-Golden Global Expo — Core Configuration Module
-Centralizes typed environment variables, directory paths, and operational thresholds.
+Golden Global Expo — Configuration
+Environment variables, storage paths, and service configuration.
 """
 
 import os
@@ -15,12 +15,12 @@ BASE_DIR = Path(__file__).resolve().parent.parent.parent
 DATA_DIR = BASE_DIR / "data"
 DATA_DIR.mkdir(exist_ok=True)
 
-APP_TITLE = "Golden Global Expo — Institutional Export API"
+APP_TITLE = "Golden Global Expo API"
 APP_DESCRIPTION = (
-    "High-concurrency asynchronous ASGI API engine with ACID persistence, "
-    "cryptographic audit chains, real-time SSE telemetry, and APM health monitoring."
+    "Asynchronous trade and logistics API providing commodity pricing, "
+    "inquiry management, cargo tracking, and audit logging."
 )
-APP_VERSION = "2.1.0"
+APP_VERSION = "2.4.0"
 
 MAX_BODY_SIZE = int(os.environ.get("MAX_BODY_SIZE", 15 * 1024 * 1024))
 SESSION_EXPIRE_SECONDS = int(os.environ.get("SESSION_EXPIRE_SECONDS", 86400))

@@ -406,7 +406,7 @@ if (typeof document !== 'undefined' && document.addEventListener) {
 }
 
 
-// ================= OFFICIAL 1-CLICK EXPORT DOCUMENT ENGINE =================
+// Export document generation
 function showDocPendingNotice(docTitle) {
   if (typeof showToast === 'function') {
     showToast(`⏳ ${docTitle} has not been uploaded yet by the export desk.`);

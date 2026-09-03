@@ -177,7 +177,7 @@ function formatPrice(baseUsd, curr = currentCurrency, forceDecimals = false) {
   return cfg.format.replace('%v', formatCurrencyNumber(converted, curr, forceDecimals));
 }
 
-// ================= LIVE GLOBAL FOREX SYNCHRONIZATION ENGINE =================
+// Foreign exchange rates synchronization
 let liveForexLastUpdated = null;
 
 async function fetchLiveForexRates() {

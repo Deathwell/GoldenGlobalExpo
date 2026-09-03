@@ -12,7 +12,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@600;700&family=Work+Sans:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
   <!-- Stylesheet -->
-  <link rel="stylesheet" href="css/desk.css?v=112.0">
+  <link rel="stylesheet" href="css/desk.css?v=2.4.0">
 </head>
 <body>
 
@@ -419,13 +419,13 @@
       <!-- CARD 1: VOYAGE & CONTAINER / AIR COURIER IDENTIFIERS -->
       <div class="dossier-card" style="margin:0;">
         <div class="dossier-card-head">
-          <span id="mCard1Title">🚢 1. Voyage &amp; Container Identifiers</span>
+          <span id="mCard1Title">1. Voyage &amp; Container Identifiers</span>
         </div>
         <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
           <div class="form-group" style="margin:0;">
             <label style="display:flex; justify-content:space-between; align-items:center;">
               <span id="mBlLabel">Bill of Lading (B/L) Code *</span>
-              <small id="mBlLockBadge" style="color:var(--gold-bright); font-family:var(--font-mono); font-size:0.65rem;">📝 EDITABLE OR AUTO-GENERATED</small>
+              <small id="mBlLockBadge" style="color:var(--gold-bright); font-family:var(--font-mono); font-size:0.65rem;">EDITABLE OR AUTO-GENERATED</small>
             </label>
             <input type="text" id="mBlCode" class="dossier-input" placeholder="e.g. MEDUIN194820 or GGE-EXP-8K2N-4W9X" required style="text-transform:uppercase; font-weight:700; color:var(--gold-bright); background:rgba(0,0,0,0.4); border:1px solid rgba(217,172,82,0.3); font-family:var(--font-mono);">
           </div>
@@ -447,7 +447,7 @@
       <!-- CARD 2: BUYER & CARGO DETAILS -->
       <div class="dossier-card" style="margin:0;">
         <div class="dossier-card-head">
-          <span>👤 2. Buyer, Cargo &amp; Milestones</span>
+          <span>2. Buyer, Cargo &amp; Milestones</span>
         </div>
         <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
           <div class="form-group" style="margin:0;">
@@ -486,7 +486,7 @@
       <!-- CARD 3: LEGAL EXPORT DOCUMENT SUITE (4 SLOTS) -->
       <div class="dossier-card" style="margin:0;">
         <div class="dossier-card-head">
-          <span>📁 3. Legal Export Document Suite</span>
+          <span>3. Legal Export Document Suite</span>
           <small style="color:var(--muted); font-size:0.68rem; font-weight:normal;">(Directly Downloadable by Buyer in Tracking Portal)</small>
         </div>
 
@@ -501,7 +501,7 @@
               <input type="file" id="mDoc_inv_file" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png" style="display:none;" onchange="handleSlotFile('inv', event)">
               <div id="mDoc_inv_preview">
                 <button type="button" class="doc-slot-btn" onclick="triggerSlotUpload('inv')">
-                  📎 Upload Invoice (PDF)
+                  Upload Invoice (PDF)
                 </button>
               </div>
             </div>
@@ -517,7 +517,7 @@
               <input type="file" id="mDoc_phyto_file" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png" style="display:none;" onchange="handleSlotFile('phyto', event)">
               <div id="mDoc_phyto_preview">
                 <button type="button" class="doc-slot-btn" onclick="triggerSlotUpload('phyto')">
-                  📎 Upload Phyto Cert
+                  Upload Phyto Cert
                 </button>
               </div>
             </div>
@@ -533,7 +533,7 @@
               <input type="file" id="mDoc_coa_file" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png" style="display:none;" onchange="handleSlotFile('coa', event)">
               <div id="mDoc_coa_preview">
                 <button type="button" class="doc-slot-btn" onclick="triggerSlotUpload('coa')">
-                  📎 Upload Lab COA
+                  Upload Lab COA
                 </button>
               </div>
             </div>
@@ -549,7 +549,7 @@
               <input type="file" id="mDoc_bl_file" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png" style="display:none;" onchange="handleSlotFile('bl', event)">
               <div id="mDoc_bl_preview">
                 <button type="button" class="doc-slot-btn" onclick="triggerSlotUpload('bl')">
-                  📎 Upload B/L Copy
+                  Upload B/L Copy
                 </button>
               </div>
             </div>
@@ -560,7 +560,7 @@
       <div style="background:rgba(217,172,82,0.1); border:1px solid rgba(217,172,82,0.3); border-radius:6px; padding:12px 16px; margin:4px 0; display:flex; align-items:center; gap:10px;">
         <input type="checkbox" id="mAutoSendEmail" checked style="width:16px; height:16px; accent-color:var(--gold-bright); cursor:pointer;">
         <label for="mAutoSendEmail" style="cursor:pointer; margin:0; font-size:0.80rem; color:#FFFFFF;">
-          🚀 <b>Auto-Dispatch 24K Gold Tracking Dossier &amp; Certified PDFs to Buyer via Google SMTP</b>
+          <b>Automatically notify buyer with consignment tracking dossier and documents via email</b>
         </label>
       </div>
 
@@ -570,7 +570,7 @@
       <div style="display:flex; justify-content:flex-end; gap:10px; border-top:1.5px solid rgba(217,172,82,0.25); padding-top:16px; margin-top:4px;">
         <button type="button" class="btn-action" onclick="closeModal('consignModal')">Cancel</button>
         <button type="submit" id="btnSaveConsign" class="btn-action primary" style="background:linear-gradient(135deg, #D9AC52 0%, #B8872F 100%); color:#14110E; font-weight:700; font-size:0.86rem; padding:12px 24px; box-shadow:0 4px 15px rgba(217,172,82,0.4); border:none; cursor:pointer;">
-          💾 Save &amp; Dispatch Consignment ➔
+          Save &amp; Dispatch Consignment ➔
         </button>
       </div>
 
@@ -870,15 +870,15 @@
 <div class="toast" id="toast">Changes saved successfully!</div>
 
     <!-- Application Scripts -->
-  <script src="js/data/products.js?v=112.0"></script>
-  <script src="js/data/tracking-data.js?v=112.0"></script>
-  <script src="js/modules/storage.js?v=112.0"></script>
-  <script src="js/modules/toast.js?v=112.0"></script>
-  <script src="js/modules/currency.js?v=112.0"></script>
-  <script src="js/desk.js?v=112.0"></script>
-  <script src="js/modules/pwa.js?v=112.0"></script>
+  <script src="js/data/products.js?v=2.4.0"></script>
+  <script src="js/data/tracking-data.js?v=2.4.0"></script>
+  <script src="js/modules/storage.js?v=2.4.0"></script>
+  <script src="js/modules/toast.js?v=2.4.0"></script>
+  <script src="js/modules/currency.js?v=2.4.0"></script>
+  <script src="js/desk.js?v=2.4.0"></script>
+  <script src="js/modules/pwa.js?v=2.4.0"></script>
 
-<!-- ================= MODAL: DEEP BUYER INTELLIGENCE & TELEMETRY AUDIT ================= -->
+<!-- Buyer Telemetry & Audit Modal -->
 <div class="admin-modal-overlay" id="sessionAuditModal" style="display:none;align-items:center;justify-content:center;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.85);z-index:99999;backdrop-filter:blur(6px);padding:20px;box-sizing:border-box;">
   <div style="background:#14110E;border:1.5px solid var(--gold-bright);border-radius:12px;width:100%;max-width:960px;max-height:90vh;overflow-y:auto;box-shadow:0 0 50px rgba(217,172,82,0.3);display:flex;flex-direction:column;color:#F5EFE0;font-family:var(--font-sans);">
     
