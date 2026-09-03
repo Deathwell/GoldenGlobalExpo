@@ -88,6 +88,7 @@ async def get_forex(force: int = 0):
             with open(cache_file, 'r', encoding='utf-8') as f:
                 data = json.load(f)
             if now - data.get('timestamp', 0) < 1800:
+                data['success'] = True
                 return data
         except Exception: pass
 
@@ -98,9 +99,10 @@ async def get_forex(force: int = 0):
         if live and live.get('result') == 'success' and 'rates' in live:
             rates = live['rates']
             os.makedirs(os.path.join(str(BASE_DIR), 'data'), exist_ok=True)
+            payload = {'success': True, 'rates': rates, 'timestamp': now, 'source': 'live'}
             with open(cache_file, 'w', encoding='utf-8') as f:
-                json.dump({'rates': rates, 'timestamp': now}, f, indent=2)
-            return {'success': True, 'rates': rates, 'source': 'live', 'timestamp': now}
+                json.dump(payload, f, indent=2)
+            return payload
     except Exception as net_err:
         if os.path.exists(cache_file):
             with open(cache_file, 'r', encoding='utf-8') as f:

@@ -1,0 +1,74 @@
+{
+  "name": "Golden Global Expo \u2014 Institutional Agri Export",
+  "short_name": "GoldenGlobal",
+  "description": "Institutional Agricultural Commodity Export Portal with Real-Time B/L Telemetry, Sortex Specifications, and Digital Trade Desk.",
+  "start_url": "/index.html",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#0b1320",
+  "theme_color": "#0b1320",
+  "categories": [
+    "business",
+    "finance",
+    "productivity"
+  ],
+  "icons": [
+    {
+      "src": "/images/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/images/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/images/icon-maskable.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Cargo Tracking",
+      "short_name": "Track Cargo",
+      "description": "6-Stage Maritime Customs & B/L Telemetry",
+      "url": "/tracking.html",
+      "icons": [
+        {
+          "src": "/images/icon-192.png",
+          "sizes": "192x192"
+        }
+      ]
+    },
+    {
+      "name": "Executive Desk",
+      "short_name": "Trade Desk",
+      "description": "Commercial CRM & Consignment Pipeline",
+      "url": "/desk.html",
+      "icons": [
+        {
+          "src": "/images/icon-192.png",
+          "sizes": "192x192"
+        }
+      ]
+    },
+    {
+      "name": "Commodities Catalog",
+      "short_name": "Commodities",
+      "description": "13 Certified Agricultural Export Lots",
+      "url": "/index.html#products",
+      "icons": [
+        {
+          "src": "/images/icon-192.png",
+          "sizes": "192x192"
+        }
+      ]
+    }
+  ]
+}

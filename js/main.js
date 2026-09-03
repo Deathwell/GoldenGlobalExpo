@@ -1173,12 +1173,18 @@ function handleRfqSubmit(e) {
       localStorage.setItem('gge_inquiries', JSON.stringify(existingInq));
     } catch(err) {}
 
-    // Immediate server POST to /api/inquiries
-    fetch('/api/inquiries', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(sampleLead)
-    }).catch(() => {});
+    // Immediate server POST to /api/inquiries with PWA Offline Vault fallback
+    if (!navigator.onLine && window.GGE_PWA) {
+      window.GGE_PWA.queueOfflineInquiry(sampleLead);
+    } else {
+      fetch('/api/inquiries', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(sampleLead)
+      }).catch(() => {
+        if (window.GGE_PWA) window.GGE_PWA.queueOfflineInquiry(sampleLead);
+      });
+    }
 
     fetch('/api/audit', {
       method: 'POST',
@@ -1241,12 +1247,18 @@ function handleRfqSubmit(e) {
       localStorage.setItem('gge_inquiries', JSON.stringify(existing));
     } catch(err) {}
 
-    // Immediate server POST to /api/inquiries
-    fetch('/api/inquiries', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(rfqLead)
-    }).catch(() => {});
+    // Immediate server POST to /api/inquiries with PWA Offline Vault fallback
+    if (!navigator.onLine && window.GGE_PWA) {
+      window.GGE_PWA.queueOfflineInquiry(rfqLead);
+    } else {
+      fetch('/api/inquiries', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(rfqLead)
+      }).catch(() => {
+        if (window.GGE_PWA) window.GGE_PWA.queueOfflineInquiry(rfqLead);
+      });
+    }
 
     fetch('/api/audit', {
       method: 'POST',

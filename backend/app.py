@@ -83,7 +83,23 @@ app.include_router(auth_router)
 app.include_router(payments_router)
 app.include_router(stream_router)
 
-# 4. Portal Route Gates & HTML Delivery
+# 4. PWA Manifest & Service Worker Delivery
+@app.get("/manifest.json")
+async def serve_manifest():
+    return FileResponse(
+        os.path.join(BASE_DIR, 'manifest.json'),
+        media_type="application/manifest+json"
+    )
+
+@app.get("/sw.js")
+async def serve_sw():
+    return FileResponse(
+        os.path.join(BASE_DIR, 'sw.js'),
+        media_type="application/javascript",
+        headers={"Service-Worker-Allowed": "/"}
+    )
+
+# 5. Portal Route Gates & HTML Delivery
 @app.get("/")
 @app.get("/index.html")
 async def serve_index():
