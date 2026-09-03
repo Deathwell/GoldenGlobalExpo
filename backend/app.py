@@ -131,6 +131,8 @@ async def enterprise_security_middleware(request: Request, call_next):
     response.headers["X-Content-Type-Options"] = "nosniff"
     response.headers["X-XSS-Protection"] = "1; mode=block"
     response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+    response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
+    response.headers["Content-Security-Policy"] = "default-src 'self' 'unsafe-inline' 'unsafe-eval' data: blob: https://*;"
     response.headers["Permissions-Policy"] = "camera=(), microphone=(), geolocation=()"
     response.headers["Access-Control-Allow-Origin"] = "*"
     response.headers["Access-Control-Allow-Methods"] = "POST, GET, OPTIONS, PUT, DELETE"
@@ -338,6 +340,12 @@ async def get_inquiries():
 async def save_inquiries(request: Request):
     try:
         data = await request.json()
+        if not data or (isinstance(data, dict) and not any(data.values())):
+            return JSONResponse(status_code=400, content={'success': False, 'error': 'Inquiry payload cannot be empty.'})
+
+        if isinstance(data, dict) and not data.get('name') and not data.get('email') and not data.get('phone') and not data.get('commodities'):
+            return JSONResponse(status_code=400, content={'success': False, 'error': 'Inquiry requires contact information or commodity selection.'})
+
         session = SessionLocal()
         try:
             items_to_save = data if isinstance(data, list) else [data]
