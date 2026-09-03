@@ -1,5 +1,23 @@
 [
   {
+    "id": "TEST-RFQ-1788446964",
+    "type": "BULK_INQUIRY",
+    "name": "Automated Test Corp",
+    "company": "Global Agri Trade Ltd",
+    "email": "qa@globalagri.com",
+    "phone": "+971 55 000 1111",
+    "country": "Dubai, UAE",
+    "address": "",
+    "commodities": "Organic Turmeric Salem",
+    "volume": "25 MT",
+    "incoterms": "CIF",
+    "payable": "",
+    "status": "New RFQ",
+    "blCode": "",
+    "date": "2026-09-03",
+    "createdAt": 1788446964.7558775
+  },
+  {
     "id": "TEST-RFQ-1788446816",
     "type": "BULK_INQUIRY",
     "name": "Automated Test Corp",
