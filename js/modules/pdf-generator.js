@@ -920,7 +920,7 @@ async function generateProformaInvoicePDF(orderData) {
   printContainer.style.width = '210mm';
   printContainer.style.minHeight = '297mm';
   printContainer.style.backgroundColor = '#FFFFFF';
-  printContainer.style.fontFamily = "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
+  printContainer.style.fontFamily = "'Inter', 'Noto Sans Thai', 'Noto Sans SC', 'Noto Naskh Arabic', 'Noto Sans Devanagari', 'Leelawadee UI', 'Thonburi', Tahoma, 'Work Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
   printContainer.style.color = '#14110E';
   printContainer.style.padding = '0';
   printContainer.style.boxSizing = 'border-box';

@@ -14,9 +14,22 @@ class RateLimiter:
     def __init__(self):
         self.history = {}
         self.locked = {}
+        self._last_prune = time.time()
+
+    def _prune(self, now: float):
+        self._last_prune = now
+        self.locked = {ip: exp for ip, exp in self.locked.items() if exp > now}
+        for ep in list(self.history.keys()):
+            for ip in list(self.history[ep].keys()):
+                self.history[ep][ip] = [t for t in self.history[ep][ip] if now - t < 3600]
+                if not self.history[ep][ip]:
+                    del self.history[ep][ip]
 
     def is_allowed(self, endpoint: str, ip: str, max_requests: int, window_seconds: int):
         now = time.time()
+        if now - self._last_prune > 300:
+            self._prune(now)
+
         if ip in self.locked and now < self.locked[ip]:
             retry_after = int(self.locked[ip] - now)
             return False, retry_after

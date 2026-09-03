@@ -108,13 +108,14 @@ async def verify_otp(request: Request, response: Response):
         finally:
             session.close()
 
+        is_https = (request.headers.get("x-forwarded-proto") == "https") or (request.url.scheme == "https")
         response.set_cookie(
             key="gge_admin_session",
             value=token,
             max_age=SESSION_EXPIRE_SECONDS,
             httponly=True,
             samesite="lax",
-            secure=False
+            secure=is_https
         )
 
         return {
@@ -159,13 +160,14 @@ async def admin_password_login(request: Request, response: Response):
         finally:
             session.close()
 
+        is_https = (request.headers.get("x-forwarded-proto") == "https") or (request.url.scheme == "https")
         response.set_cookie(
             key="gge_admin_session",
             value=token,
             max_age=SESSION_EXPIRE_SECONDS,
             httponly=True,
             samesite="lax",
-            secure=False
+            secure=is_https
         )
 
         return {
