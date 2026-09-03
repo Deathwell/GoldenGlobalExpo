@@ -1,0 +1,1021 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Executive Trade Desk — Golden Global Expo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@600;700&family=Work+Sans:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <!-- Stylesheet -->
+  <link rel="stylesheet" href="css/desk.css?v=98.0">
+</head>
+<body>
+
+<!-- 2-Step Email OTP Security Gate Modal -->
+<div class="auth-overlay" id="authOverlay">
+  <div class="auth-card" style="position:relative;">
+    <!-- Return to Storefront Icon -->
+    <a href="index.html" style="position:absolute;top:16px;right:18px;color:var(--muted);text-decoration:none;font-size:1.1rem;transition:color 0.2s ease;" title="Return to Main Website" onmouseover="this.style.color='#fff'" onmouseout="this.style.color='var(--muted)'">✕</a>
+
+    <svg class="seal" viewBox="0 0 40 40" fill="none" style="margin:0 auto 14px;display:block;width:44px;height:44px;">
+      <circle cx="20" cy="20" r="18.5"/>
+      <circle cx="20" cy="20" r="14.5"/>
+      <text x="20" y="24" text-anchor="middle" font-family="Fraunces, serif" font-size="12" fill="var(--gold-bright)" stroke="none">GGE</text>
+    </svg>
+
+    <!-- STEP 1: ADMIN ID / EMAIL INPUT -->
+    <div id="authStep1">
+      <h2>Executive Access</h2>
+      <p>Enter your authorized Admin ID to receive a secure 6-digit one-time access passcode (OTP).</p>
+      
+      <div style="text-align:left;margin-bottom:14px;">
+        <label style="font-family:var(--font-mono);font-size:0.72rem;color:var(--muted);text-transform:uppercase;display:block;margin-bottom:4px;">Registered Admin Email</label>
+        <input type="email" id="adminEmailInput" value="nigadearyan@gmail.com" placeholder="name@domain.com" style="margin-bottom:0;text-align:left;font-size:0.95rem;letter-spacing:normal;" onkeydown="if(event.key==='Enter') sendOTP();">
+      </div>
+
+      <button type="button" id="btnSendCode" class="btn-login" onclick="sendOTP()">
+        Send 6-Digit Security Code ➔
+      </button>
+      <div class="auth-error" id="step1Error"></div>
+
+      <div style="margin-top:18px;border-top:1px solid rgba(245,239,224,0.1);padding-top:14px;">
+        <a href="index.html" class="auth-link" style="color:var(--gold-bright);text-decoration:none;font-weight:600;display:inline-flex;align-items:center;gap:6px;">
+          ← Return to Main Website
+        </a>
+      </div>
+    </div>
+
+    <!-- STEP 2: 6-DIGIT OTP VERIFICATION INPUT -->
+    <div id="authStep2" style="display:none;">
+      <h2>Security Verification</h2>
+      <p style="margin-bottom:18px;">A 6-digit security code has been sent to your email:<br><b id="otpTargetEmail" style="color:var(--gold-bright);">nigadearyan@gmail.com</b><br><small style="color:var(--muted);font-size:0.75rem;">(Please check your Gmail Inbox &amp; Spam folder)</small></p>
+
+      <div class="otp-inputs-grid" id="otpInputsGrid">
+        <input type="text" maxlength="1" class="otp-digit" inputmode="numeric" autofocus>
+        <input type="text" maxlength="1" class="otp-digit" inputmode="numeric">
+        <input type="text" maxlength="1" class="otp-digit" inputmode="numeric">
+        <input type="text" maxlength="1" class="otp-digit" inputmode="numeric">
+        <input type="text" maxlength="1" class="otp-digit" inputmode="numeric">
+        <input type="text" maxlength="1" class="otp-digit" inputmode="numeric">
+      </div>
+
+      <button type="button" id="btnVerifyCode" class="btn-login" onclick="verifyOTP()">
+        Verify &amp; Unlock Portal 🔓
+      </button>
+
+      <div class="auth-error" id="otpError"></div>
+
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-top:16px;">
+        <button type="button" class="auth-link" onclick="resendOTP()">Resend Code</button>
+        <button type="button" class="auth-link" onclick="backToStep1()">← Change Email</button>
+      </div>
+
+      <div style="margin-top:18px;border-top:1px solid rgba(245,239,224,0.1);padding-top:14px;text-align:center;">
+        <a href="index.html" class="auth-link" style="color:var(--gold-bright);text-decoration:none;font-weight:600;display:inline-flex;align-items:center;gap:6px;">
+          ← Return to Main Website
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Header -->
+<header class="admin-header">
+  <div class="header-wrap">
+    <a href="#" class="admin-brand">
+      <svg class="seal" viewBox="0 0 40 40" fill="none">
+        <circle cx="20" cy="20" r="18.5"/>
+        <circle cx="20" cy="20" r="14.5"/>
+        <text x="20" y="24" text-anchor="middle" font-family="Fraunces, serif" font-size="12" fill="var(--gold-bright)" stroke="none">GGE</text>
+      </svg>
+      <div>
+        <div class="brand-title">Golden Global Expo</div>
+        <span class="brand-badge">Executive Trade Desk</span>
+      </div>
+    </a>
+    <div class="header-actions">
+      <a href="index.html" target="_blank" class="btn-site">View Live Storefront ↗</a>
+      <a href="tracking.html" target="_blank" class="btn-site">Tracking Portal ↗</a>
+      <button type="button" class="btn-logout" onclick="logout()">Lock Desk</button>
+    </div>
+  </div>
+</header>
+
+<!-- Main Container -->
+<main class="admin-main">
+  <!-- Executive KPI Metrics -->
+  <div class="kpi-grid">
+    <div class="kpi-card">
+      <div class="kpi-lbl">Total Export Inquiries</div>
+      <div class="kpi-val" id="kpiInquiries">5 Leads</div>
+      <div class="kpi-sub">Live Global Buyer RFQs</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-lbl">Active Pipeline Volume</div>
+      <div class="kpi-val" id="kpiValue">$275,400</div>
+      <div class="kpi-sub">FOB / CIF Quotations</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-lbl">Live Consignments</div>
+      <div class="kpi-val" id="kpiConsignments">3 FCL</div>
+      <div class="kpi-sub">Active Sea Transits</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-lbl">Base Port Operations</div>
+      <div class="kpi-val" style="font-size:1.4rem;">JNPT Mumbai</div>
+      <div class="kpi-sub">Phyto &amp; Customs Active</div>
+    </div>
+  </div>
+
+  <!-- Navigation Tabs -->
+  <div class="admin-tabs">
+    <button type="button" class="tab-btn active" onclick="switchTab('inquiriesTab', this)">📬 Inquiry Desk &amp; CRM</button>
+    <button type="button" class="tab-btn" onclick="switchTab('pricingTab', this)">🏷️ Commodity Price Manager</button>
+    <button type="button" class="tab-btn" onclick="switchTab('trackingTab', this)">🚢 Consignment Tracker</button>
+    <button type="button" class="tab-btn" onclick="switchTab('analyticsTab', this)">📊 Live Buyer Analytics &amp; Telemetry</button>
+    <button type="button" class="tab-btn" onclick="switchTab('securityTab', this)">🔒 Security &amp; Access Control</button>
+    <button type="button" class="tab-btn" onclick="switchTab('auditTab', this)">📜 Immutable Audit &amp; Compliance Ledger</button>
+  </div>
+
+  <!-- TAB 1: INQUIRIES & LEAD CRM -->
+  <div class="tab-pane active" id="inquiriesTab">
+    <div class="section-toolbar">
+      <div class="section-title">
+        <h3>Incoming Buyer RFQs &amp; Proforma Inquiries</h3>
+        <p>Real-time export leads received from Dubai, Europe, Singapore, Africa, and North America.</p>
+      </div>
+      <div class="toolbar-actions">
+        <button type="button" class="btn-action" onclick="refreshInquiriesLive(this)" title="Fetch latest incoming buyer inquiries from central database">
+          🔄 Sync Live Inquiries
+        </button>
+        <button type="button" class="btn-action" onclick="exportToCSV()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          Export Leads (CSV)
+        </button>
+        <button type="button" class="btn-action primary" onclick="openAddLeadModal()">+ Add Manual Buyer RFQ</button>
+      </div>
+    </div>
+
+    <div class="table-card">
+      <div class="table-responsive">
+        <table>
+          <thead>
+            <tr>
+              <th>Date &amp; Time</th>
+              <th>Buyer &amp; Entity</th>
+              <th>Destination Port</th>
+              <th>Commodity &amp; Volume</th>
+              <th>Status</th>
+              <th>Direct Actions</th>
+            </tr>
+          </thead>
+          <tbody id="inquiriesTableBody">
+            <!-- Dynamically Injected -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB 2: COMMODITY PRICE CONTROL -->
+  <div class="tab-pane" id="pricingTab">
+    <div class="section-toolbar">
+      <div class="section-title">
+        <h3>Export Price Benchmark Manager</h3>
+        <p>Edit indicative FOB / CIF prices per metric ton ($ / MT). Live website updates instantly across tabs.</p>
+        <div style="display:flex; align-items:center; gap:8px; margin-top:6px;">
+          <span id="deskForexBadge" style="display:inline-flex; align-items:center; gap:6px; background:rgba(46,125,50,0.15); color:#81C784; border:1px solid rgba(129,199,132,0.4); padding:3px 10px; border-radius:4px; font-size:0.72rem; font-family:var(--font-mono);">⚡ Live Global Forex Active: 1 USD = ₹94.89 INR · €0.862 EUR · 3.67 AED</span>
+          <button type="button" class="btn-action" onclick="refreshForexNow(this)" style="padding:3px 10px; font-size:0.70rem; background:rgba(217,172,82,0.15); border:1px solid rgba(217,172,82,0.4); color:var(--gold-bright); border-radius:4px; cursor:pointer;" title="Pull latest live rates from interbank forex API">🔄 Refresh FX</button>
+        </div>
+      </div>
+      <div class="toolbar-actions">
+        <button type="button" class="btn-action" onclick="resetPricesToDefault()">Reset Defaults</button>
+        <button type="button" class="btn-action primary" onclick="savePrices()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+          Save All Price Changes
+        </button>
+      </div>
+    </div>
+
+    <div class="price-editor-grid" id="priceEditorGrid">
+      <!-- Dynamically Injected -->
+    </div>
+  </div>
+
+  <!-- TAB 3: CONSIGNMENT TRACKING MANAGER -->
+  <div class="tab-pane" id="trackingTab">
+    <div class="section-toolbar">
+      <div class="section-title">
+        <h3>Live Consignment &amp; B/L Registry</h3>
+        <p>Manage shipment milestones and container status for your overseas buyers.</p>
+      </div>
+      <div class="toolbar-actions">
+        <button type="button" class="btn-action primary" onclick="openConsignmentModal()">+ Create New B/L Consignment</button>
+      </div>
+    </div>
+
+    <div class="tracking-manager-grid" id="consignmentsGrid">
+      <!-- Dynamically Injected -->
+    </div>
+  </div>
+
+    <!-- TAB 4: LIVE BUYER ANALYTICS & VISITOR TELEMETRY -->
+  <div class="tab-pane" id="analyticsTab">
+    <div class="section-toolbar">
+      <div class="section-title">
+        <h3>Live Importer Sessions, Dwell Times &amp; Spec Downloads</h3>
+        <p>Real-time telemetry tracking international buyer visits, time spent on site, origin geography, inspected lots, and downloaded COA specifications.</p>
+      </div>
+      <div class="toolbar-actions">
+        <button type="button" class="btn-action" onclick="refreshAnalytics()">
+          🔄 Refresh Telemetry
+        </button>
+        <button type="button" class="btn-action" onclick="exportAnalyticsCSV()">
+          📥 Export Telemetry (CSV)
+        </button>
+        <button type="button" class="btn-action" onclick="clearAnalyticsLog()" style="color:#FF8A80;border-color:rgba(255,80,80,0.3);">
+          🗑️ Clear Log
+        </button>
+        <button type="button" class="btn-action" onclick="loadDemoTelemetry()" style="color:var(--gold-bright);border-color:rgba(217,172,82,0.3);">
+          ⚡ Reset Demo Data
+        </button>
+      </div>
+    </div>
+
+    <!-- Telemetry KPI Summary Grid -->
+    <div class="kpi-grid" style="margin-bottom:24px;">
+      <div class="kpi-card">
+        <div class="kpi-lbl">Total Importer Sessions</div>
+        <div class="kpi-val" id="telemetryTotalVisits" style="color:var(--gold-bright);">0 Sessions</div>
+        <div class="kpi-sub">Tracked Buyer Visits</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-lbl">Avg Dwell / Session Time</div>
+        <div class="kpi-val" id="telemetryAvgDwell" style="color:#81C784;">0m 0s</div>
+        <div class="kpi-sub">Time Spent on Storefront</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-lbl">Spec PDFs Downloaded</div>
+        <div class="kpi-val" id="telemetryTotalPdfs" style="color:#64B5F6;">0 Files</div>
+        <div class="kpi-sub">Technical COA Downloads</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-lbl">Top Buyer Origin</div>
+        <div class="kpi-val" id="telemetryTopOrigin" style="font-size:1.15rem;color:#FFD54F;">Dubai / Tokyo</div>
+        <div class="kpi-sub">Primary Trade Corridor</div>
+      </div>
+    </div>
+
+    <!-- Search and Filter Bar -->
+    <div style="display:flex;gap:12px;margin-bottom:16px;flex-wrap:wrap;align-items:center;">
+      <input type="text" id="analyticsSearchInp" placeholder="Search by Country, Session ID, or Commodity..." oninput="filterAnalyticsTable()" style="flex:1;min-width:240px;padding:8px 14px;background:rgba(0,0,0,0.4);border:1px solid rgba(217,172,82,0.3);color:#FFFFFF;border-radius:4px;font-size:0.82rem;">
+      <select id="analyticsFilterSelect" onchange="filterAnalyticsTable()" style="padding:8px 14px;background:#14110E;border:1px solid rgba(217,172,82,0.3);color:#F5EFE0;border-radius:4px;font-size:0.82rem;font-family:var(--font-mono);">
+        <option value="all">All Buyer Sessions</option>
+        <option value="downloads">With PDF Downloads Only</option>
+        <option value="rfq">RFQs &amp; Orders Placed</option>
+      </select>
+    </div>
+
+    <!-- Table Container -->
+    <div class="table-card">
+      <table class="admin-table">
+        <thead>
+          <tr>
+            <th>Pulse &amp; Session</th>
+            <th>Buyer Origin</th>
+            <th>Traffic Source &amp; Channel</th>
+            <th>IP &amp; Security Shield</th>
+            <th>Device &amp; Hardware</th>
+            <th>Live Scroll &amp; Section</th>
+            <th>Dwell &amp; Spec PDFs</th>
+            <th>Commercial Intent / Draft</th>
+            <th>Audit</th>
+          </tr>
+        </thead>
+        <tbody id="analyticsTableBody">
+          <!-- Injected dynamically -->
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- TAB 4: SECURITY & ACCESS CONTROL -->
+  <div class="tab-pane" id="securityTab">
+    <div class="section-toolbar">
+      <div class="section-title">
+        <h3>Bank-Grade Cryptographic Security &amp; Access Control</h3>
+        <p>Manage Master Passwords, SHA-256 Cryptographic Hashing, Brute-Force Shields, and Session Security.</p>
+      </div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(320px, 1fr));gap:20px;">
+      <!-- Security Status & Telemetry Card -->
+      <div class="kpi-card" style="padding:24px;">
+        <h4 style="font-family:var(--font-serif);font-size:1.15rem;margin-bottom:6px;">Active Stripe-Style Security</h4>
+        <p style="font-size:0.8rem;color:var(--muted);margin-bottom:18px;">Real-time enterprise threat mitigations active on this portal:</p>
+        
+        <div style="display:flex;flex-direction:column;gap:12px;font-family:var(--font-mono);font-size:0.75rem;">
+          <div style="display:flex;justify-content:space-between;border-bottom:1px solid var(--line);padding-bottom:8px;">
+            <span style="color:var(--muted);">Authentication Mode:</span>
+            <b style="color:var(--gold-bright);">Passwordless Email 2FA (OTP)</b>
+          </div>
+          <div style="display:flex;justify-content:space-between;border-bottom:1px solid var(--line);padding-bottom:8px;">
+            <span style="color:var(--muted);">Authorized Recipient:</span>
+            <b style="color:#81C784;">nigadearyan@gmail.com</b>
+          </div>
+          <div style="display:flex;justify-content:space-between;border-bottom:1px solid var(--line);padding-bottom:8px;">
+            <span style="color:var(--muted);">Public Storefront Exposure:</span>
+            <b style="color:#81C784;">ZERO (100% Isolated)</b>
+          </div>
+          <div style="display:flex;justify-content:space-between;border-bottom:1px solid var(--line);padding-bottom:8px;">
+            <span style="color:var(--muted);">Session Auto-Timeout:</span>
+            <b style="color:var(--gold-bright);">60 Mins Inactivity</b>
+          </div>
+          <div style="display:flex;justify-content:space-between;">
+            <span style="color:var(--muted);">Current Session Security:</span>
+            <b style="color:#81C784;">Encrypted Bearer Token</b>
+          </div>
+        </div>
+
+        <div style="margin-top:20px;background:rgba(255,255,255,0.03);border:1px solid var(--line);border-radius:4px;padding:12px;font-size:0.75rem;color:var(--muted);">
+          <b>Cloudflare Zero Trust / Subdomain Ready:</b><br>
+          In production, map this page to <code>desk.goldenglobalexpo.com</code> for complete subdomain isolation.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB 6: IMMUTABLE AUDIT & COMPLIANCE LEDGER -->
+  <div class="tab-pane" id="auditTab">
+    <div class="section-toolbar">
+      <div class="section-title">
+        <h3>🏛️ Enterprise Audit Trail &amp; Institutional Compliance Ledger</h3>
+        <p>Cryptographically keyed immutable ledger recording all operational state changes, status overrides, and price modifications.</p>
+      </div>
+      <div class="toolbar-actions">
+        <button type="button" class="btn-action" onclick="exportAuditLogJSON()">
+          📥 Export Audit Log (JSON)
+        </button>
+        <button type="button" class="btn-action btn-action--danger" onclick="clearAuditLog()">
+          ⚠️ Clear Audit History
+        </button>
+      </div>
+    </div>
+
+    <div class="table-card">
+      <div class="table-responsive">
+        <table>
+          <thead>
+            <tr>
+              <th>Audit Ref</th>
+              <th>Timestamp (UTC)</th>
+              <th>Action / Event</th>
+              <th>Entity ID</th>
+              <th>State Transition</th>
+              <th>Operator</th>
+            </tr>
+          </thead>
+          <tbody id="auditTrailTableBody">
+            <!-- Injected by renderAuditTrail() -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+</main>
+
+<!-- MODAL: ADD/EDIT CONSIGNMENT -->
+<div class="modal-backdrop" id="consignModal" style="display:none;">
+  <div class="modal-box" style="max-width: 840px; width: 95vw; background: #120E0B; border: 1.5px solid rgba(217,172,82,0.4); box-shadow: 0 20px 70px rgba(0,0,0,0.85);">
+    <div class="modal-head" style="border-bottom: 1.5px solid rgba(217,172,82,0.25); padding-bottom: 14px;">
+      <div style="display:flex; align-items:center; gap:10px;">
+        <span style="font-size:1.4rem;">🚢</span>
+        <div>
+          <h3 id="consignModalTitle" style="font-family:var(--font-serif); font-size:1.25rem; color:#FFFFFF; margin:0;">
+            Create Ocean Consignment
+          </h3>
+          <small style="color:var(--gold-bright); font-family:var(--font-mono); font-size:0.70rem;">
+            LIVE SATELLITE AIS &amp; MARITIME EDI DISPATCHER
+          </small>
+        </div>
+      </div>
+      <button class="modal-close" onclick="closeModal('consignModal')" style="font-size:1.4rem; color:var(--muted);">✕</button>
+    </div>
+    
+    <form id="consignForm" onsubmit="event.preventDefault(); saveConsignmentForm();" style="display:flex; flex-direction:column; gap:14px; margin-top:10px;">
+      <input type="hidden" id="editConsignIndex" value="-1">
+      <input type="hidden" id="mInquiryRef" value="">
+      
+      <!-- CARD 1: VOYAGE & CONTAINER / AIR COURIER IDENTIFIERS -->
+      <div class="dossier-card" style="margin:0;">
+        <div class="dossier-card-head">
+          <span id="mCard1Title">🚢 1. Voyage &amp; Container Identifiers</span>
+        </div>
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+          <div class="form-group" style="margin:0;">
+            <label style="display:flex; justify-content:space-between; align-items:center;">
+              <span id="mBlLabel">Bill of Lading (B/L) Code *</span>
+              <small id="mBlLockBadge" style="color:var(--gold-bright); font-family:var(--font-mono); font-size:0.65rem;">📝 EDITABLE OR AUTO-GENERATED</small>
+            </label>
+            <input type="text" id="mBlCode" class="dossier-input" placeholder="e.g. MEDUIN194820 or GGE-EXP-8K2N-4W9X" required style="text-transform:uppercase; font-weight:700; color:var(--gold-bright); background:rgba(0,0,0,0.4); border:1px solid rgba(217,172,82,0.3); font-family:var(--font-mono);">
+          </div>
+          <div class="form-group" style="margin:0;">
+            <label id="mContainerLabel">Container Number (ISO 6346) <span style="font-weight:400;color:var(--muted);font-size:0.65rem;">(or leave empty if pending allocation)</span></label>
+            <input type="text" id="mContainer" class="dossier-input" placeholder="e.g. MSCU 749201-8 (Enter once carrier allocates box)" style="text-transform:uppercase;">
+          </div>
+          <div class="form-group" style="margin:0;">
+            <label id="mVesselLabel">Carrier Vessel Name (with IMO)</label>
+            <input type="text" id="mVessel" class="dossier-input" placeholder="e.g. MSC VALERIA (IMO 9461439)">
+          </div>
+          <div class="form-group" style="margin:0;">
+            <label id="mPodLabel">Port of Discharge / Destination *</label>
+            <input type="text" id="mPod" class="dossier-input" placeholder="e.g. Jebel Ali Port, Dubai (UAE)" required>
+          </div>
+        </div>
+      </div>
+
+      <!-- CARD 2: BUYER & CARGO DETAILS -->
+      <div class="dossier-card" style="margin:0;">
+        <div class="dossier-card-head">
+          <span>👤 2. Buyer, Cargo &amp; Milestones</span>
+        </div>
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+          <div class="form-group" style="margin:0;">
+            <label>Buyer / Consignee Entity *</label>
+            <input type="text" id="mBuyer" class="dossier-input" placeholder="e.g. Al-Noor Foodstuff Trading LLC (Dubai)" required>
+          </div>
+          <div class="form-group" style="margin:0;">
+            <label>Commodity &amp; Volume Details *</label>
+            <input type="text" id="mCommodity" class="dossier-input" placeholder="e.g. 24.0 MT · Tur Dal (Sortex Grade-A) · 20ft FCL" required>
+          </div>
+          <div class="form-group" style="margin:0;">
+            <label>Customer Tracking Email *</label>
+            <input type="email" id="mBuyerEmail" class="dossier-input" placeholder="e.g. buyer@company.com" required>
+          </div>
+          <div class="form-group" style="margin:0;">
+            <label>Customer WhatsApp</label>
+            <input type="text" id="mBuyerPhone" class="dossier-input" placeholder="e.g. +971501234567">
+          </div>
+          <div class="form-group" style="margin:0;">
+            <label>Estimated Arrival (ETA)</label>
+            <input type="text" id="mEta" class="dossier-input" placeholder="e.g. In 2 Days (~36 Hrs)">
+          </div>
+          <div class="form-group" style="margin:0;">
+            <label>Current Shipment Stage</label>
+            <select id="mStage" class="dossier-input">
+              <option value="1">Stage 1: Mandi Procurement</option>
+              <option value="2">Stage 2: Lab QA &amp; Sortex Clean Certified</option>
+              <option value="3">Stage 3: JNPT Customs &amp; Phyto Cleared</option>
+              <option value="4" selected>Stage 4: Ocean Transit (Active)</option>
+              <option value="5">Stage 5: Port Discharged &amp; Released</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <!-- CARD 3: LEGAL EXPORT DOCUMENT SUITE (4 SLOTS) -->
+      <div class="dossier-card" style="margin:0;">
+        <div class="dossier-card-head">
+          <span>📁 3. Legal Export Document Suite</span>
+          <small style="color:var(--muted); font-size:0.68rem; font-weight:normal;">(Directly Downloadable by Buyer in Tracking Portal)</small>
+        </div>
+
+        <div style="display:flex; flex-direction:column; gap:10px;">
+          <!-- Slot 1: Commercial Invoice -->
+          <div class="doc-slot-card" style="margin:0; background:rgba(0,0,0,0.4);">
+            <div>
+              <label style="font-size:0.70rem; color:var(--ivory); display:block; margin-bottom:4px;">1. Commercial Invoice &amp; Packing List</label>
+              <input type="text" id="mDoc_inv_ref" class="dossier-input" placeholder="e.g. GGE/EXP/2026/089" style="font-size:0.75rem;">
+            </div>
+            <div>
+              <input type="file" id="mDoc_inv_file" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png" style="display:none;" onchange="handleSlotFile('inv', event)">
+              <div id="mDoc_inv_preview">
+                <button type="button" class="doc-slot-btn" onclick="triggerSlotUpload('inv')">
+                  📎 Upload Invoice (PDF)
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Slot 2: Phytosanitary Certificate -->
+          <div class="doc-slot-card" style="margin:0; background:rgba(0,0,0,0.4);">
+            <div>
+              <label style="font-size:0.70rem; color:var(--ivory); display:block; margin-bottom:4px;">2. Phytosanitary Certificate</label>
+              <input type="text" id="mDoc_phyto_ref" class="dossier-input" placeholder="e.g. PSC/MH/JNPT/9912" style="font-size:0.75rem;">
+            </div>
+            <div>
+              <input type="file" id="mDoc_phyto_file" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png" style="display:none;" onchange="handleSlotFile('phyto', event)">
+              <div id="mDoc_phyto_preview">
+                <button type="button" class="doc-slot-btn" onclick="triggerSlotUpload('phyto')">
+                  📎 Upload Phyto Cert
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Slot 3: Lab QA / COA Report -->
+          <div class="doc-slot-card" style="margin:0; background:rgba(0,0,0,0.4);">
+            <div>
+              <label style="font-size:0.70rem; color:var(--ivory); display:block; margin-bottom:4px;">3. Lab Quality &amp; Purity Assay (COA)</label>
+              <input type="text" id="mDoc_coa_ref" class="dossier-input" placeholder="e.g. COA-SGS-94812" style="font-size:0.75rem;">
+            </div>
+            <div>
+              <input type="file" id="mDoc_coa_file" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png" style="display:none;" onchange="handleSlotFile('coa', event)">
+              <div id="mDoc_coa_preview">
+                <button type="button" class="doc-slot-btn" onclick="triggerSlotUpload('coa')">
+                  📎 Upload Lab COA
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Slot 4: Ocean Bill of Lading Document -->
+          <div class="doc-slot-card" style="margin:0; background:rgba(0,0,0,0.4);">
+            <div>
+              <label style="font-size:0.70rem; color:var(--ivory); display:block; margin-bottom:4px;">4. Ocean Bill of Lading (B/L Copy)</label>
+              <input type="text" id="mDoc_bl_ref" class="dossier-input" placeholder="e.g. Non-Negotiable Seaway Copy" style="font-size:0.75rem;">
+            </div>
+            <div>
+              <input type="file" id="mDoc_bl_file" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png" style="display:none;" onchange="handleSlotFile('bl', event)">
+              <div id="mDoc_bl_preview">
+                <button type="button" class="doc-slot-btn" onclick="triggerSlotUpload('bl')">
+                  📎 Upload B/L Copy
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div style="background:rgba(217,172,82,0.1); border:1px solid rgba(217,172,82,0.3); border-radius:6px; padding:12px 16px; margin:4px 0; display:flex; align-items:center; gap:10px;">
+        <input type="checkbox" id="mAutoSendEmail" checked style="width:16px; height:16px; accent-color:var(--gold-bright); cursor:pointer;">
+        <label for="mAutoSendEmail" style="cursor:pointer; margin:0; font-size:0.80rem; color:#FFFFFF;">
+          🚀 <b>Auto-Dispatch 24K Gold Tracking Dossier &amp; Certified PDFs to Buyer via Google SMTP</b>
+        </label>
+      </div>
+
+      <div id="consignSendStatus" style="display:none; padding:12px 16px; border-radius:6px; font-family:var(--font-mono); font-size:0.80rem;"></div>
+
+      <!-- Action Footer -->
+      <div style="display:flex; justify-content:flex-end; gap:10px; border-top:1.5px solid rgba(217,172,82,0.25); padding-top:16px; margin-top:4px;">
+        <button type="button" class="btn-action" onclick="closeModal('consignModal')">Cancel</button>
+        <button type="submit" id="btnSaveConsign" class="btn-action primary" style="background:linear-gradient(135deg, #D9AC52 0%, #B8872F 100%); color:#14110E; font-weight:700; font-size:0.86rem; padding:12px 24px; box-shadow:0 4px 15px rgba(217,172,82,0.4); border:none; cursor:pointer;">
+          💾 Save &amp; Dispatch Consignment ➔
+        </button>
+      </div>
+
+    </form>
+  </div>
+</div>
+
+<!-- MODAL: ADD MANUAL LEAD -->
+<div class="modal-backdrop" id="leadModal">
+  <div class="modal-box">
+    <div class="modal-head">
+      <h3>Add Manual Buyer RFQ</h3>
+      <button class="modal-close" onclick="closeModal('leadModal')">✕</button>
+    </div>
+    <form id="leadForm" onsubmit="event.preventDefault(); saveLeadForm();">
+      <div class="form-group">
+        <label>Buyer Name *</label>
+        <input type="text" id="lName" placeholder="e.g. Tariq Al-Mansoor" required>
+      </div>
+      <div class="form-group">
+        <label>Company / Trading House</label>
+        <input type="text" id="lCompany" placeholder="e.g. Al-Noor Trading LLC">
+      </div>
+      <div class="form-group">
+        <label>Corporate Email *</label>
+        <input type="email" id="lEmail" placeholder="trade@company.com" required>
+      </div>
+      <div class="form-group">
+        <label>Phone / WhatsApp</label>
+        <input type="text" id="lPhone" placeholder="+971501234567">
+      </div>
+      <div class="form-group">
+        <label>Destination Port &amp; Country</label>
+        <input type="text" id="lCountry" placeholder="e.g. Jebel Ali, Dubai (UAE)" required>
+      </div>
+      <div class="form-group">
+        <label>Commodity Requirements</label>
+        <input type="text" id="lCommodities" placeholder="e.g. Tur Dal &amp; Chana Dal" required>
+      </div>
+      <div class="form-group">
+        <label>Tonnage / Specification Notes</label>
+        <textarea id="lVolume" rows="2" placeholder="e.g. 2×20' FCL (50 MT) · Sortex Grade-A"></textarea>
+      </div>
+      <button type="submit" class="btn-login" style="margin-top:10px;">Add Lead to Inbox</button>
+    </form>
+  </div>
+</div>
+
+<!-- MODAL: DIRECT TRADE DOSSIER & LEGAL DOCUMENT DISPATCH SUITE -->
+<div class="modal-backdrop" id="emailDispatchModal" style="display:none;">
+  <div class="modal-box" style="max-width: 1060px; width: 95vw; background: #120E0B; border: 1.5px solid rgba(217,172,82,0.4); box-shadow: 0 20px 70px rgba(0,0,0,0.85);">
+    <div class="modal-head" style="border-bottom: 1.5px solid rgba(217,172,82,0.25); padding-bottom: 14px;">
+      <div style="display:flex; align-items:center; gap:10px;">
+        <span style="font-size:1.4rem;">📜</span>
+        <div>
+          <h3 id="emailModalTitle" style="font-family:var(--font-serif); font-size:1.3rem; color:#FFFFFF; margin:0;">
+            Official Export Quotation &amp; Legal Document Dispatcher
+          </h3>
+          <small style="color:var(--gold-bright); font-family:var(--font-mono); font-size:0.70rem;">
+            GOLDEN GLOBAL EXPO · VERIFIED ENTERPRISE DISPATCH PORTAL
+          </small>
+        </div>
+      </div>
+      <button class="modal-close" onclick="closeModal('emailDispatchModal')" style="font-size:1.4rem; color:var(--muted);">✕</button>
+    </div>
+    <div style="display: flex; flex-direction: column; gap: 16px; margin-top: 10px;">
+      
+      <!-- Buyer Header Card -->
+      <div style="display: flex; justify-content: space-between; align-items: center; background: rgba(0,0,0,0.55); padding: 12px 18px; border-radius: 6px; border: 1px solid rgba(217,172,82,0.2); font-family: var(--font-mono); font-size: 0.78rem; flex-wrap: wrap; gap: 10px;">
+        <div>Buyer Recipient: <b id="emRecipient" style="color:var(--gold-bright); font-size:0.85rem;"></b></div>
+        <div>Destination Port: <b id="emDest" style="color:var(--ivory);"></b></div>
+        <div>Quotation Reference: <b id="emRef" style="color:var(--gold-bright);"></b></div>
+      </div>
+
+      <!-- SECTION 1: COMMODITY SPECIFICATIONS & COMMERCIAL QUOTATION -->
+      <div class="dossier-card" style="margin:0;">
+        <div class="dossier-card-head" style="display:flex; justify-content:space-between; align-items:center;">
+          <span>🔢 Section 1: Commodity Specifications &amp; Commercial Pricing</span>
+          <small style="color:var(--gold-bright); font-size:0.70rem; font-family:var(--font-mono); text-transform:none;">(Auto-computes into Live Contract Letterhead &amp; PDF)</small>
+        </div>
+
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:20px; align-items:stretch;">
+          
+          <!-- Column 1: Quality, Purity & Lab Standards -->
+          <div class="dossier-spec-card" style="background:rgba(0,0,0,0.4); border:1px solid rgba(217,172,82,0.25); border-radius:8px; padding:18px; display:flex; flex-direction:column; gap:12px;">
+            <div class="dossier-spec-title" style="color:var(--gold-bright); font-weight:700; font-size:0.82rem; margin-bottom:4px; display:flex; align-items:center; gap:6px;">
+              🌾 1. Commodity Lot &amp; Lab Standards
+            </div>
+            
+            <div class="form-group" style="margin:0;">
+              <label style="font-size:0.72rem; color:var(--ivory); display:block; margin-bottom:5px;">Commodity Preset Lot</label>
+              <select id="dosLotSelect" class="dossier-input" onchange="applyLotPresetToDossier(this.value)" style="width:100%; padding:10px 12px; background:#141210; border:1px solid rgba(217,172,82,0.3); color:#FFFFFF; border-radius:4px; font-size:0.80rem;">
+                <option value="p1">Tur Dal (Classic Toor) · HS 0713.60</option>
+                <option value="p2">Moong Whole (Green Mung) · HS 0713.31</option>
+                <option value="p3">Chana Dal (Bengal Gram) · HS 0713.20</option>
+                <option value="p4">Masoor Dal (Red Split) · HS 0713.40</option>
+                <option value="p5">Chia Seeds (Organic Black) · HS 1207.99</option>
+                <option value="p6">Coriander Seeds (Dhania) · HS 0909.21</option>
+                <option value="p7">Cumin Seeds (Jeera Whole) · HS 0909.31</option>
+                <option value="p8">Moringa Leaf Powder · HS 1211.90</option>
+                <option value="p9">Mint Powder (Pudina) · HS 1211.90</option>
+                <option value="p10">Coriander Powder · HS 0909.22</option>
+                <option value="p11">Jowar Whole Sorghum · HS 1007.90</option>
+                <option value="p12">Jowar Gluten-Free Flour · HS 1102.90</option>
+                <option value="p13">Tissue Paper &amp; Napkins · HS 4818.10</option>
+              </select>
+            </div>
+
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+              <div class="form-group" style="margin:0;">
+                <label style="font-size:0.72rem; color:var(--ivory); display:block; margin-bottom:5px;">HS Tariff Code</label>
+                <input type="text" id="dosHs" class="dossier-input" placeholder="0713.60" oninput="compileLiveDossierLetterhead()" style="width:100%; padding:9px 12px; background:#141210; border:1px solid rgba(217,172,82,0.25); color:#FFFFFF; border-radius:4px; font-size:0.80rem; font-family:var(--font-mono);">
+              </div>
+              <div class="form-group" style="margin:0;">
+                <label style="font-size:0.72rem; color:var(--ivory); display:block; margin-bottom:5px;">Optical Sortex Purity</label>
+                <input type="text" id="dosPurity" class="dossier-input" placeholder="99.5% Sortex Clean" oninput="compileLiveDossierLetterhead()" style="width:100%; padding:9px 12px; background:#141210; border:1px solid rgba(217,172,82,0.25); color:#FFFFFF; border-radius:4px; font-size:0.80rem;">
+              </div>
+            </div>
+
+            <div class="form-group" style="margin:0;">
+              <label style="font-size:0.72rem; color:var(--ivory); display:block; margin-bottom:5px;">Moisture &amp; Admixture Limits</label>
+              <input type="text" id="dosMoisture" class="dossier-input" placeholder="11.0% Moisture / 0.5% Admixture" oninput="compileLiveDossierLetterhead()" style="width:100%; padding:9px 12px; background:#141210; border:1px solid rgba(217,172,82,0.25); color:#FFFFFF; border-radius:4px; font-size:0.80rem;">
+            </div>
+          </div>
+
+          <!-- Column 2: Commercial Pricing, Quintals & Clean Aligned Terms -->
+          <div class="dossier-spec-card" style="background:rgba(0,0,0,0.4); border:1px solid rgba(217,172,82,0.25); border-radius:8px; padding:18px; display:flex; flex-direction:column; gap:12px;">
+            <div class="dossier-spec-title" style="color:var(--gold-bright); font-weight:700; font-size:0.82rem; margin-bottom:4px; display:flex; align-items:center; justify-content:space-between;">
+              <span>🚢 2. Commercial Pricing &amp; Incoterms</span>
+              <span style="font-size:0.65rem; color:#8C8275; font-family:var(--font-mono); font-weight:normal;">MOQ: 3 Quintals (300 KG) – 220 Quintals</span>
+            </div>
+            
+            <!-- Quantity & Unit Grid -->
+            <div style="display:grid; grid-template-columns:3fr 2fr 3fr; gap:10px; align-items:flex-end;">
+              <div class="form-group" style="margin:0;">
+                <label style="font-size:0.72rem; color:var(--ivory); display:block; margin-bottom:5px;">Order Volume</label>
+                <input type="number" id="dosTonnageNum" class="dossier-input" value="22" step="1" min="1" oninput="calcQuotationTotal()" onkeyup="calcQuotationTotal()" onchange="calcQuotationTotal()" style="width:100%; padding:9px 12px; background:#141210; border:1px solid rgba(217,172,82,0.3); color:#FFFFFF; border-radius:4px; font-size:0.85rem; font-family:var(--font-mono); font-weight:700;">
+              </div>
+
+              <div class="form-group" style="margin:0;">
+                <label style="font-size:0.72rem; color:var(--ivory); display:block; margin-bottom:5px;">Unit</label>
+                <select id="dosUnitSelect" class="dossier-input" onchange="calcQuotationTotal()" style="width:100%; padding:9px 8px; background:#141210; border:1px solid rgba(217,172,82,0.3); color:var(--gold-bright); border-radius:4px; font-size:0.75rem; font-weight:600;">
+                  <option value="quintal" selected>Quintals (100 kg)</option>
+                  <option value="mt">Metric Tons (MT)</option>
+                  <option value="kg">KG (Kilograms)</option>
+                </select>
+              </div>
+
+              <div class="form-group" style="margin:0;">
+                <label id="dosPriceLabel" style="font-size:0.72rem; color:var(--ivory); display:block; margin-bottom:5px;">Price (USD / MT)</label>
+                <input type="number" id="dosPrice" class="dossier-input" placeholder="940" value="940" step="5" min="1" oninput="calcQuotationTotal()" onkeyup="calcQuotationTotal()" onchange="calcQuotationTotal()" style="width:100%; padding:9px 12px; background:#141210; border:1px solid rgba(217,172,82,0.3); color:#81C784; border-radius:4px; font-size:0.85rem; font-family:var(--font-mono); font-weight:700;">
+              </div>
+            </div>
+
+            <!-- Live High-Contrast Total Contract Value Bar -->
+            <div style="background:linear-gradient(135deg, rgba(217,172,82,0.18) 0%, rgba(184,135,47,0.1) 100%); border:1.5px solid var(--gold-bright); border-radius:6px; padding:10px 14px; display:flex; justify-content:space-between; align-items:center; box-shadow:0 4px 14px rgba(217,172,82,0.15);">
+              <div>
+                <span style="font-size:0.70rem; color:#EAE6DF; font-family:var(--font-mono); font-weight:600; display:block;">TOTAL CONTRACT VALUE</span>
+                <small id="dosVolumeSubtext" style="font-size:0.65rem; color:#D9AC52; font-family:var(--font-mono);">22 Quintals (2,200 KG / 2.2 MT)</small>
+              </div>
+              <b id="dosTotalValueDisplay" style="font-size:1.18rem; color:var(--gold-bright); font-family:var(--font-mono);">$2,068.00 USD</b>
+            </div>
+
+            <!-- Aligned Incoterms & Payment Terms Row -->
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+              <div class="form-group" style="margin:0;">
+                <label style="font-size:0.72rem; color:var(--ivory); display:block; margin-bottom:5px; white-space:nowrap;">Incoterms / Delivery Seaport</label>
+                <select id="dosIncoterms" class="dossier-input" onchange="calcQuotationTotal()" style="width:100%; padding:9px 12px; background:#141210; border:1px solid rgba(217,172,82,0.25); color:#FFFFFF; border-radius:4px; font-size:0.78rem;">
+                  <option value="FOB JNPT Nhava Sheva (INNSA1)">FOB JNPT Nhava Sheva (Mumbai)</option>
+                  <option value="CIF Jebel Ali Port, Dubai (UAE)">CIF Jebel Ali Port (Dubai)</option>
+                  <option value="CIF Port of Rotterdam (Netherlands)">CIF Port of Rotterdam</option>
+                  <option value="CIF Port of Singapore">CIF Port of Singapore (PSA)</option>
+                  <option value="CIF Port of Dammam (Saudi Arabia)">CIF Port of Dammam</option>
+                  <option value="CIF Port Klang (Malaysia)">CIF Port Klang (Malaysia)</option>
+                  <option value="CFR Destination Seaport">CFR Buyer Nominated Port</option>
+                </select>
+              </div>
+
+              <div class="form-group" style="margin:0;">
+                <label style="font-size:0.72rem; color:var(--ivory); display:block; margin-bottom:5px; white-space:nowrap;">Commercial Payment Terms</label>
+                <select id="dosTermsSelect" class="dossier-input" onchange="calcQuotationTotal()" style="width:100%; padding:9px 12px; background:#141210; border:1px solid rgba(217,172,82,0.25); color:#FFFFFF; border-radius:4px; font-size:0.78rem;">
+                  <option value="100% Irrevocable L/C at Sight">100% Irrevocable L/C at Sight</option>
+                  <option value="30% Advance T/T, 70% against Scanned B/L">30% T/T Advance, 70% vs B/L</option>
+                  <option value="100% Advance Wire Transfer">100% Advance Wire Transfer</option>
+                  <option value="Cash Against Documents (CAD)">Cash Against Documents (CAD)</option>
+                </select>
+              </div>
+            </div>
+
+            <input type="hidden" id="dosTonnage" value="22 Quintals (2,200 KG / 2.2 MT)">
+            <input type="hidden" id="dosLoadingPort" value="FOB JNPT Nhava Sheva (INNSA1)">
+            <input type="hidden" id="dosTerms" value="100% Irrevocable L/C at Sight">
+          </div>
+
+        </div>
+      </div>
+
+      <!-- SECTION 2: OPTIONAL CORPORATE PROFILE & ACCREDITATION ATTACHMENTS -->
+      <div class="dossier-card">
+        <div class="dossier-card-head">
+          <span>📁 Section 2: Corporate Profile, Catalog &amp; Accreditations (Optional Attachments)</span>
+          <small style="color:var(--muted); font-size:0.68rem; text-transform:none; font-weight:normal;">(Attach Official PDF Brochures to Email)</small>
+        </div>
+
+        <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(280px, 1fr)); gap:12px;">
+          <!-- Slot 1: Corporate Profile & Product Catalog -->
+          <div class="doc-slot-card" style="margin:0; background:rgba(0,0,0,0.4);">
+            <div>
+              <label style="font-size:0.70rem; color:var(--ivory); display:block; margin-bottom:4px;">1. Company Profile &amp; Product Catalog</label>
+              <input type="text" id="mDoc_dossier_cat_ref" class="dossier-input" placeholder="Golden Global Expo 2026 Catalog" oninput="compileLiveDossierLetterhead()" style="font-size:0.75rem;">
+            </div>
+            <div>
+              <input type="file" id="mDoc_dossier_cat_file" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png" style="display:none;" onchange="handleSlotFile('dossier_cat', event)">
+              <div id="mDoc_dossier_cat_preview">
+                <button type="button" class="doc-slot-btn" onclick="triggerSlotUpload('dossier_cat')">
+                  📎 Attach Catalog (PDF)
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Slot 2: APEDA & Spices Board Accreditation -->
+          <div class="doc-slot-card" style="margin:0; background:rgba(0,0,0,0.4);">
+            <div>
+              <label style="font-size:0.70rem; color:var(--ivory); display:block; margin-bottom:4px;">2. APEDA &amp; Export Accreditations</label>
+              <input type="text" id="mDoc_dossier_apeda_ref" class="dossier-input" placeholder="APEDA Reg: APEDA/2026/GGE" oninput="compileLiveDossierLetterhead()" style="font-size:0.75rem;">
+            </div>
+            <div>
+              <input type="file" id="mDoc_dossier_apeda_file" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png" style="display:none;" onchange="handleSlotFile('dossier_apeda', event)">
+              <div id="mDoc_dossier_apeda_preview">
+                <button type="button" class="doc-slot-btn" onclick="triggerSlotUpload('dossier_apeda')">
+                  📎 Attach APEDA Cert
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Slot 3: Specimen Quality Assay / Test Report -->
+          <div class="doc-slot-card" style="margin:0; background:rgba(0,0,0,0.4);">
+            <div>
+              <label style="font-size:0.70rem; color:var(--ivory); display:block; margin-bottom:4px;">3. Specimen Quality &amp; Lab Assay</label>
+              <input type="text" id="mDoc_dossier_specimen_ref" class="dossier-input" placeholder="NABL / SGS Specimen Assay" oninput="compileLiveDossierLetterhead()" style="font-size:0.75rem;">
+            </div>
+            <div>
+              <input type="file" id="mDoc_dossier_specimen_file" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png" style="display:none;" onchange="handleSlotFile('dossier_specimen', event)">
+              <div id="mDoc_dossier_specimen_preview">
+                <button type="button" class="doc-slot-btn" onclick="triggerSlotUpload('dossier_specimen')">
+                  📎 Attach Specimen (PDF)
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Live Generated Letterhead Output (Collapsible) -->
+      <details style="background:rgba(0,0,0,0.4); border:1px solid rgba(217,172,82,0.25); border-radius:6px; padding:12px 16px;">
+        <summary style="font-family:var(--font-mono); font-size:0.74rem; color:var(--gold-bright); text-transform:uppercase; font-weight:600; cursor:pointer;">
+          👁️ Click to View / Edit Generated Formal Letterhead Text
+        </summary>
+        <textarea id="emBody" rows="7" style="font-family:var(--font-mono); font-size:0.75rem; line-height:1.55; color:#F5EFE0; background:rgba(10,8,6,0.95); border:1px solid rgba(217,172,82,0.3); padding:12px; border-radius:4px; width:100%; margin-top:10px;"></textarea>
+      </details>
+
+      <!-- LIVE DIRECT TRANSMISSION STATUS BANNER -->
+      <div id="directSendStatus" style="display:none; padding:14px 18px; border-radius:6px; font-family:var(--font-mono); font-size:0.80rem;"></div>
+
+      <!-- Action Bar -->
+      <div style="display: flex; gap: 12px; justify-content: space-between; align-items: center; border-top: 1.5px solid rgba(217,172,82,0.25); padding-top: 16px; flex-wrap: wrap;">
+        <div style="font-family:var(--font-mono); font-size:0.72rem; color:var(--muted); display:flex; align-items:center; gap:6px;">
+          <span style="display:inline-block; width:8px; height:8px; border-radius:50%; background:#81C784;"></span>
+          Active Sender: <b style="color:var(--ivory);">nigadearyan@gmail.com</b>
+        </div>
+        <div style="display:flex; gap:10px; flex-wrap:wrap;">
+          <button type="button" class="btn-action" onclick="downloadAllDossierFiles()" style="background:rgba(255,255,255,0.08);border:1px solid rgba(217,172,82,0.4);color:var(--gold-bright);">
+            📦 Download PDFs
+          </button>
+          <button type="button" class="btn-action" onclick="copyEmailToClipboard()">
+            📋 Copy Text
+          </button>
+          <button type="button" class="btn-action primary" id="btnDirectSendDossier" onclick="sendDossierDirectlyFromPortal()" style="background:linear-gradient(135deg, #D9AC52 0%, #B8872F 100%); color:#14110E; font-weight:700; font-size:0.86rem; padding:12px 22px; box-shadow:0 4px 15px rgba(217,172,82,0.4); border:none; cursor:pointer;">
+            🚀 AUTO-DISPATCH (Background)
+          </button>
+          <button type="button" class="btn-action" id="btnLaunchGmail" onclick="launchGmailWebClient()" style="background:rgba(234,67,53,0.15); border:1px solid rgba(234,67,53,0.4); color:#FF8A80; font-weight:600; font-size:0.80rem; padding:10px 16px; cursor:pointer;">
+            ✉️ Open in Web Gmail
+          </button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast">Changes saved successfully!</div>
+
+    <!-- Application Scripts -->
+  <script src="js/data/products.js?v=98.0"></script>
+  <script src="js/data/tracking-data.js?v=98.0"></script>
+  <script src="js/modules/storage.js?v=98.0"></script>
+  <script src="js/modules/toast.js?v=98.0"></script>
+  <script src="js/modules/currency.js?v=98.0"></script>
+  <script src="js/desk.js?v=98.0"></script>
+
+<!-- ================= MODAL: DEEP BUYER INTELLIGENCE & TELEMETRY AUDIT ================= -->
+<div class="admin-modal-overlay" id="sessionAuditModal" style="display:none;align-items:center;justify-content:center;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.85);z-index:99999;backdrop-filter:blur(6px);padding:20px;box-sizing:border-box;">
+  <div style="background:#14110E;border:1.5px solid var(--gold-bright);border-radius:12px;width:100%;max-width:960px;max-height:90vh;overflow-y:auto;box-shadow:0 0 50px rgba(217,172,82,0.3);display:flex;flex-direction:column;color:#F5EFE0;font-family:var(--font-sans);">
+    
+    <!-- Modal Header -->
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:18px 24px;border-bottom:1px solid rgba(217,172,82,0.25);background:#0E0C0A;border-radius:12px 12px 0 0;">
+      <div style="display:flex;align-items:center;gap:12px;">
+        <span id="auditPulseBadge" style="display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:20px;font-family:var(--font-mono);font-size:0.75rem;font-weight:700;background:rgba(76,175,80,0.2);color:#81C784;border:1px solid #81C784;">
+          ● LIVE ON SCREEN
+        </span>
+        <h3 id="auditSessionId" style="margin:0;font-family:var(--font-mono);font-size:1.2rem;color:var(--gold-bright);">GGE-VIS-9842</h3>
+        <span id="auditReturningBadge" style="font-size:0.72rem;background:rgba(217,172,82,0.2);border:1px solid var(--gold-bright);color:var(--gold-bright);padding:2px 8px;border-radius:4px;">★ 3rd Visit (Hot Lead)</span>
+      </div>
+      <button type="button" onclick="closeModal('sessionAuditModal')" style="background:none;border:none;color:#E0D8C8;font-size:1.5rem;cursor:pointer;line-height:1;">✕</button>
+    </div>
+
+    <!-- Modal Body Grid -->
+    <div style="padding:24px;display:flex;flex-direction:column;gap:20px;">
+
+      <!-- Top Overview Bar -->
+      <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(200px, 1fr));gap:14px;">
+        <div class="kpi-card" style="padding:14px;">
+          <small style="color:var(--muted);font-size:0.70rem;display:block;">BUYER LOCATION &amp; CITY</small>
+          <b id="auditOrigin" style="color:#FFFFFF;font-size:0.95rem;display:block;margin-top:3px;">🇦🇪 Dubai, UAE</b>
+        </div>
+        <div class="kpi-card" style="padding:14px;">
+          <small style="color:var(--muted);font-size:0.70rem;display:block;">TRAFFIC ACQUISITION</small>
+          <b id="auditTraffic" style="color:var(--gold-bright);font-size:0.88rem;display:block;margin-top:3px;">🌐 Google Organic Search</b>
+        </div>
+        <div class="kpi-card" style="padding:14px;">
+          <small style="color:var(--muted);font-size:0.70rem;display:block;">TOTAL DWELL TIME</small>
+          <b id="auditDwell" style="color:#81C784;font-family:var(--font-mono);font-size:0.95rem;display:block;margin-top:3px;">⏱️ 8m 44s (Reading Incoterms)</b>
+        </div>
+        <div class="kpi-card" style="padding:14px;">
+          <small style="color:var(--muted);font-size:0.70rem;display:block;">SECURITY &amp; SHIELD</small>
+          <b id="auditSecurity" style="color:#64B5F6;font-size:0.88rem;display:block;margin-top:3px;">🛡️ Verified Human (Clean IP)</b>
+        </div>
+      </div>
+
+      <!-- SECTION 1: COMMERCIAL INTENT & ABANDONED DRAFT CAPTURE -->
+      <div class="dossier-card" style="margin:0;background:#0E0C0A;border:1px solid rgba(217,172,82,0.3);">
+        <div class="dossier-card-head" style="display:flex;justify-content:space-between;align-items:center;">
+          <span style="color:var(--gold-bright);font-weight:700;">🎯 1. Commercial Intent &amp; Live Form Drafts</span>
+          <span id="auditDraftStatus" style="font-size:0.72rem;padding:2px 8px;border-radius:4px;background:rgba(255,179,0,0.2);color:#FFB300;border:1px solid #FFB300;">
+            ⚠️ Abandoned Lead (Draft Captured)
+          </span>
+        </div>
+        <div style="padding:16px;display:grid;grid-template-columns:1fr 1fr;gap:14px;font-size:0.82rem;">
+          <div>
+            <span style="color:var(--muted);display:block;margin-bottom:2px;">Captured Importer / Company:</span>
+            <b id="auditDraftCompany" style="color:#FFFFFF;font-size:0.92rem;">Al-Noor Foodstuff Trading LLC</b>
+          </div>
+          <div>
+            <span style="color:var(--muted);display:block;margin-bottom:2px;">Captured Buyer Email &amp; Contact:</span>
+            <b id="auditDraftEmail" style="color:#FFFFFF;font-family:var(--font-mono);">procurement@alnoor-food.ae</b>
+          </div>
+          <div>
+            <span style="color:var(--muted);display:block;margin-bottom:2px;">Target Volume &amp; Commodities:</span>
+            <b id="auditDraftVolume" style="color:#FFD54F;">15 Quintals (1,500 KG) · Classic Toor, Chia Seeds</b>
+          </div>
+          <div>
+            <span style="color:var(--muted);display:block;margin-bottom:2px;">Destination Seaport / Country:</span>
+            <b id="auditDraftDest" style="color:#FFFFFF;">Jebel Ali Port (AEJEA), Dubai, UAE</b>
+          </div>
+        </div>
+
+        <div style="padding:12px 16px;border-top:1px solid rgba(255,255,255,0.06);display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;background:rgba(0,0,0,0.3);">
+          <div style="font-size:0.75rem;color:#C8BCA6;">
+            <b>Language &amp; Currency Switch Path:</b> <span id="auditLangPath" style="font-family:var(--font-mono);color:var(--gold-bright);">EN (USD) → JA (JPY ¥) → AR (AED)</span>
+          </div>
+          <button type="button" class="btn-action primary" onclick="convertDraftToInquiry()" style="padding:6px 14px;font-size:0.78rem;">
+            ✉️ Convert Draft into Active RFQ
+          </button>
+        </div>
+      </div>
+
+      <!-- SECTION 2: LIVE NAVIGATION, SCROLL DEPTH & SPEC DOWNLOADS -->
+      <div class="dossier-card" style="margin:0;background:#0E0C0A;border:1px solid rgba(255,255,255,0.1);">
+        <div class="dossier-card-head">
+          <span style="color:#FFFFFF;font-weight:700;">🖱️ 2. Live Navigation, Scroll Behavior &amp; Spec Downloads</span>
+        </div>
+        <div style="padding:16px;display:grid;grid-template-columns:1fr 1fr;gap:16px;font-size:0.80rem;">
+          <div>
+            <span style="color:var(--muted);display:block;margin-bottom:6px;">Page Scroll Depth &amp; Position:</span>
+            <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;">
+              <div style="flex:1;height:8px;background:rgba(255,255,255,0.1);border-radius:4px;overflow:hidden;">
+                <div id="auditScrollProgress" style="width:85%;height:100%;background:#81C784;"></div>
+              </div>
+              <b id="auditScrollVal" style="font-family:var(--font-mono);color:#81C784;">85%</b>
+            </div>
+            <small id="auditActiveSection" style="color:#E0D8C8;display:block;">Currently Reading: <b>5-Stage Sortex QA Workflow</b></small>
+            <small id="auditLandingExit" style="color:var(--muted);display:block;margin-top:4px;">Landed on: <b>Hero / Overview</b> · Exit from: <b>Incoterms 2020</b></small>
+          </div>
+
+          <div>
+            <span style="color:var(--muted);display:block;margin-bottom:6px;">Technical Spec PDFs Downloaded:</span>
+            <div id="auditPdfsList" style="display:flex;flex-wrap:wrap;gap:6px;">
+              <span style="padding:3px 8px;border-radius:4px;background:rgba(217,172,82,0.2);border:1px solid var(--gold-bright);color:#FFD54F;font-family:var(--font-mono);font-size:0.72rem;">📄 P1_COA_AR.pdf</span>
+              <span style="padding:3px 8px;border-radius:4px;background:rgba(217,172,82,0.2);border:1px solid var(--gold-bright);color:#FFD54F;font-family:var(--font-mono);font-size:0.72rem;">📄 P5_COA_JA.pdf</span>
+            </div>
+            <span style="color:var(--muted);display:block;margin-top:10px;margin-bottom:4px;">Maritime Corridors Explored:</span>
+            <div id="auditCorridorsList" style="color:#FFFFFF;font-size:0.78rem;">
+              🚢 Jebel Ali (5-8d) · 🚢 Rotterdam (20-26d)
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- SECTION 3: NETWORK, HARDWARE & SECURITY DIAGNOSTICS -->
+      <div class="dossier-card" style="margin:0;background:#0E0C0A;border:1px solid rgba(255,255,255,0.1);">
+        <div class="dossier-card-head">
+          <span style="color:#64B5F6;font-weight:700;">🛡️ 3. Network, Device Hardware &amp; Security Diagnostics</span>
+        </div>
+        <div style="padding:16px;display:grid;grid-template-columns:repeat(auto-fit, minmax(200px, 1fr));gap:12px;font-size:0.78rem;font-family:var(--font-mono);">
+          <div style="background:rgba(0,0,0,0.4);padding:10px;border-radius:6px;border:1px solid rgba(255,255,255,0.05);">
+            <span style="color:var(--muted);display:block;font-size:0.68rem;">IP ADDRESS &amp; ISP</span>
+            <b id="auditIp" style="color:#FFFFFF;">194.67.210.84</b>
+            <small id="auditIsp" style="color:#8C8275;display:block;font-size:0.68rem;margin-top:2px;">Etisalat Commercial Gateway</small>
+          </div>
+          <div style="background:rgba(0,0,0,0.4);padding:10px;border-radius:6px;border:1px solid rgba(255,255,255,0.05);">
+            <span style="color:var(--muted);display:block;font-size:0.68rem;">DEVICE &amp; HARDWARE</span>
+            <b id="auditDevice" style="color:#FFFFFF;">💻 Desktop Workstation</b>
+            <small id="auditSpecs" style="color:#8C8275;display:block;font-size:0.68rem;margin-top:2px;">macOS 14.5 · Chrome 126 · 2560x1440</small>
+          </div>
+          <div style="background:rgba(0,0,0,0.4);padding:10px;border-radius:6px;border:1px solid rgba(255,255,255,0.05);">
+            <span style="color:var(--muted);display:block;font-size:0.68rem;">NETWORK SPEED &amp; PING</span>
+            <b id="auditSpeed" style="color:#81C784;">5G Fiber · 18ms Latency</b>
+            <small id="auditLangSys" style="color:#8C8275;display:block;font-size:0.68rem;margin-top:2px;">System Locales: ar-AE, en-US</small>
+          </div>
+          <div style="background:rgba(0,0,0,0.4);padding:10px;border-radius:6px;border:1px solid rgba(255,255,255,0.05);">
+            <span style="color:var(--muted);display:block;font-size:0.68rem;">BOT / VPN DETECTION</span>
+            <b id="auditBotScore" style="color:#81C784;">✅ 100% Human Trader</b>
+            <small id="auditVpn" style="color:#8C8275;display:block;font-size:0.68rem;margin-top:2px;">Clean Commercial IP (No Proxy)</small>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Modal Footer -->
+    <div style="padding:16px 24px;border-top:1px solid rgba(217,172,82,0.25);background:#0E0C0A;display:flex;justify-content:space-between;align-items:center;border-radius:0 0 12px 12px;">
+      <button type="button" class="btn-action" onclick="closeModal('sessionAuditModal')">Close Audit Dossier</button>
+      <button type="button" class="btn-action primary" onclick="exportSingleSessionJson()">📥 Export Session JSON</button>
+    </div>
+
+  </div>
+</div>
+
+</body>
+</html>

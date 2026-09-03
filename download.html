@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Official Export Document Vault — Golden Global Expo</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300..800;1,9..144,300..700&family=IBM+Plex+Mono:wght@400;500;600&family=Work+Sans:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&display=swap" rel="stylesheet">
+  <!-- Stylesheet -->
+  <link rel="stylesheet" href="css/download.css">
+</head>
+<body>
+
+  <div class="dl-card">
+    <svg class="dl-seal" viewBox="0 0 40 40" fill="none">
+      <circle cx="20" cy="20" r="18.5" stroke="currentColor" stroke-width="1"/>
+      <circle cx="20" cy="20" r="14.5" stroke="currentColor" stroke-dasharray="2 2"/>
+      <text x="20" y="24" text-anchor="middle" font-family="Fraunces, serif" font-size="12" fill="currentColor" stroke="none">GGE</text>
+    </svg>
+
+    <h1 class="dl-title">Official Document Vault</h1>
+    <p class="dl-sub" id="docTypeLabel">Export Legal Document Verification</p>
+
+    <div class="doc-box">
+      <div class="doc-meta">
+        <span id="manifestCode">MANIFEST: GGE-JNPT</span>
+        <span id="fileSize">-- KB</span>
+      </div>
+      <div class="doc-name" id="fileName">Loading document...</div>
+    </div>
+
+    <button type="button" class="btn-download" id="dlBtn" onclick="triggerDownload()">
+      📥 Download Document (PDF)
+    </button>
+
+    <div class="status-msg" id="statusMsg">⏳ Initializing secure download...</div>
+
+    <div class="links-row">
+      <a href="#" id="previewLink" target="_blank" style="display:none;">👁️ Preview in New Tab</a>
+      <a href="index.html">← Golden Global Expo Main Site</a>
+    </div>
+  </div>
+
+      <!-- Application Scripts -->
+  <script src="js/modules/storage.js?v=98.0"></script>
+  <script src="js/modules/toast.js?v=98.0"></script>
+  <script src="js/download.js?v=98.0"></script>
+</body>
+</html>

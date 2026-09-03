@@ -1,0 +1,33 @@
+# Environment Secrets Vault
+.env
+.env.local
+*.env
+
+# SQLite Databases & WAL logs
+*.db
+*.db-wal
+*.db-shm
+*.sqlite3
+
+# Python Bytecode & Cache
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Local Dev Snapshots & Backups
+.snapshots/
+*.zip
+*.tar.gz
+backups/
+
+# System and OS Files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Node / Scratch
+node_modules/
+scratch/

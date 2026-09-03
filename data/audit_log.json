@@ -1,0 +1,98 @@
+[
+  {
+    "id": "AUD-MTLGZE7W",
+    "timestamp": "2026-09-03T11:56:52.796Z",
+    "operator": "Payment Gateway (Razorpay)",
+    "action": "SAMPLE_ORDER_PAID_CAPTURED",
+    "entityId": "GGE-SMP-UPXP-8HVS",
+    "previousState": "CHECKOUT_PENDING",
+    "newState": "PAID_\u20b910.00_CAPTURED",
+    "details": "Gateway Ref: mock_pay_MTLGZE7U | Consignee: Aryan Nigade | Commodity: Chia Seeds (Raw Superfood 99.9% Purity)",
+    "prevHash": "80c34a370b539f59dea957ddfa4420475928581ccd9fe4852d3f2bcf53e14a12",
+    "hash": "88c87e219b2cbb9c2736465d15fe7304b62b0e5e09b53219edc006fcdcb23e12"
+  },
+  {
+    "id": "AUD-MTLGFQ53",
+    "timestamp": "2026-09-03T11:41:35.127Z",
+    "operator": "Payment Gateway (Razorpay)",
+    "action": "SAMPLE_ORDER_PAID_CAPTURED",
+    "entityId": "GGE-SMP-YCWJ-LZ2C",
+    "previousState": "CHECKOUT_PENDING",
+    "newState": "PAID_\u20b910.00_CAPTURED",
+    "details": "Gateway Ref: mock_pay_MTLGFQ52 | Consignee: Aryan Nigade | Commodity: Assayed Export Lot",
+    "prevHash": "222529ce28a4016f64ec0369c558cdb7c04a3488f26799a3bfe2f4bb77871519",
+    "hash": "80c34a370b539f59dea957ddfa4420475928581ccd9fe4852d3f2bcf53e14a12"
+  },
+  {
+    "id": "AUD-MTLGDPZQ-173",
+    "timestamp": "2026-09-03T11:40:01.622Z",
+    "operator": "nigadearyan@gmail.com",
+    "action": "ADMIN_LOGIN_SUCCESS",
+    "entityId": "AUTH",
+    "previousState": "UNAUTHENTICATED",
+    "newState": "Session token issued (f5a219353229...)",
+    "details": "",
+    "prevHash": "117e04a2f3ca7777004e2947ae3470f42f03b9c31d7bb2aa6e6a770ac52847c8",
+    "hash": "222529ce28a4016f64ec0369c558cdb7c04a3488f26799a3bfe2f4bb77871519"
+  },
+  {
+    "id": "AUD-MTL9F8GS-134",
+    "timestamp": "2026-09-03T08:25:14.908Z",
+    "operator": "nigadearyan@gmail.com",
+    "action": "ADMIN_LOGIN_SUCCESS",
+    "entityId": "AUTH",
+    "previousState": "UNAUTHENTICATED",
+    "newState": "Session token issued (3ee742fb6446...)",
+    "details": "",
+    "prevHash": "d52f21f15c1ed8336d2ac054a43d32d2b99a331656de135bb1ebe901066e6d20",
+    "hash": "117e04a2f3ca7777004e2947ae3470f42f03b9c31d7bb2aa6e6a770ac52847c8"
+  },
+  {
+    "id": "AUD-2026-PAY-8821",
+    "timestamp": "2026-09-02T22:44:08Z",
+    "operator": "Razorpay Payment Gateway (Webhook)",
+    "action": "SAMPLE_ORDER_PAID_CAPTURED",
+    "entityId": "GGE-SMP-LWFT-6WZA",
+    "previousState": "CHECKOUT_PENDING",
+    "newState": "PAID_INR_10.00_CAPTURED",
+    "details": "Gateway Ref: pay_TXKuamR0y16egW | Consignee: Aryan Nigade | Lot: Classic Toor (Tur Dal) (1kg Sealed Pouch)",
+    "prevHash": "dad36af32867411c64af3a599cb6a15b60fb7cc95baa87fd0aa6a32fdea2f35e",
+    "hash": "d52f21f15c1ed8336d2ac054a43d32d2b99a331656de135bb1ebe901066e6d20"
+  },
+  {
+    "id": "AUD-2026-FSSAI-019",
+    "timestamp": "2026-09-02T18:45:00Z",
+    "operator": "Quality Directorate (JNPT Hub)",
+    "action": "PHYTOSANITARY_CERTIFICATION",
+    "entityId": "PSC-MH-JNPT-2026-9912",
+    "previousState": "INSPECTION_PENDING",
+    "newState": "CLEARED_SORTEX_GRADE_A",
+    "details": "Mandatory export quarantine clearance by Government of India Plant Quarantine Station",
+    "prevHash": "4e7d8143fe914a6e96a064e75ab8c8990f8b9448fe002bbe6669580465d06cf9",
+    "hash": "dad36af32867411c64af3a599cb6a15b60fb7cc95baa87fd0aa6a32fdea2f35e"
+  },
+  {
+    "id": "AUD-2026-PRICE-004",
+    "timestamp": "2026-09-02T16:20:00Z",
+    "operator": "nigadearyan@gmail.com",
+    "action": "BENCHMARK_RATES_SYNCHRONIZED",
+    "entityId": "COMMODITY_MATRIX",
+    "previousState": "GLOBAL_DEFAULT",
+    "newState": "CLOUD_PERSISTED",
+    "details": "Updated FOB/CIF indicative price matrix across 13 certified agricultural commodities",
+    "prevHash": "6cfcfab30c06f7ac032fb3e20edabf2c29396513b8f632205e206edac607adf7",
+    "hash": "4e7d8143fe914a6e96a064e75ab8c8990f8b9448fe002bbe6669580465d06cf9"
+  },
+  {
+    "id": "AUD-2026-DGFT-001",
+    "timestamp": "2026-08-15T09:00:00Z",
+    "operator": "DGFT Mumbai Regional Office",
+    "action": "IEC_EXPORT_LICENSE_GENESIS",
+    "entityId": "IEC-0312049812",
+    "previousState": "PROVISIONAL",
+    "newState": "FULLY_AUTHENTICATED",
+    "details": "Golden Global Expo registered as licensed Indian Merchant Exporter under Foreign Trade Policy",
+    "prevHash": "0000000000000000000000000000000000000000000000000000000000000000",
+    "hash": "6cfcfab30c06f7ac032fb3e20edabf2c29396513b8f632205e206edac607adf7"
+  }
+]

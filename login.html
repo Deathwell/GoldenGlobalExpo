@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Executive Admin Gateway | Golden Global Expo</title>
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='14' fill='%230D0B08' stroke='%23D9AC52' stroke-width='2'/%3E%3Cpath d='M16 6 L24 16 L16 26 L8 16 Z' fill='none' stroke='%23D9AC52' stroke-width='1.5'/%3E%3C/svg%3E">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css?v=98.0">
+  <style>
+    :root {
+      --bg: #0A0806;
+      --card-bg: rgba(18, 14, 10, 0.85);
+      --border: rgba(217, 172, 82, 0.25);
+      --border-focus: #D9AC52;
+      --gold: #D9AC52;
+      --gold-bright: #F5EFDF;
+      --text: #EAE6DF;
+      --muted: #8E867A;
+      --error: #EF5350;
+      --success: #66BB6A;
+    }
+    body {
+      margin: 0;
+      padding: 0;
+      min-height: 100vh;
+      background: radial-gradient(circle at 50% 20%, #1a140d 0%, #080604 100%);
+      font-family: 'Inter', -apple-system, sans-serif;
+      color: var(--text);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      position: relative;
+      overflow-x: hidden;
+    }
+    body::before {
+      content: "";
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background-image: 
+        radial-gradient(rgba(217, 172, 82, 0.04) 1px, transparent 1px),
+        radial-gradient(rgba(217, 172, 82, 0.04) 1px, transparent 1px);
+      background-size: 32px 32px;
+      background-position: 0 0, 16px 16px;
+      pointer-events: none;
+    }
+    .login-container {
+      width: 100%;
+      max-width: 440px;
+      padding: 20px;
+      box-sizing: border-box;
+      position: relative;
+      z-index: 2;
+    }
+    .login-card {
+      background: var(--card-bg);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 40px 36px;
+      box-shadow: 0 24px 64px rgba(0, 0, 0, 0.8), 0 0 32px rgba(217, 172, 82, 0.08);
+    }
+    .brand-header {
+      text-align: center;
+      margin-bottom: 32px;
+    }
+    .brand-icon {
+      width: 52px;
+      height: 52px;
+      margin: 0 auto 16px;
+      border: 1px solid rgba(217, 172, 82, 0.4);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(217, 172, 82, 0.08);
+      color: var(--gold);
+      box-shadow: 0 0 20px rgba(217, 172, 82, 0.15);
+    }
+    .brand-title {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 1.75rem;
+      font-weight: 700;
+      color: var(--gold-bright);
+      letter-spacing: 1px;
+      margin: 0 0 6px 0;
+    }
+    .brand-subtitle {
+      font-size: 0.78rem;
+      color: var(--muted);
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      font-weight: 500;
+    }
+    .form-group {
+      margin-bottom: 20px;
+      position: relative;
+    }
+    .form-label {
+      display: block;
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: var(--gold);
+      margin-bottom: 8px;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+    }
+    .input-wrapper {
+      position: relative;
+      display: flex;
+      align-items: center;
+    }
+    .input-icon {
+      position: absolute;
+      left: 14px;
+      color: var(--muted);
+      pointer-events: none;
+      display: flex;
+      align-items: center;
+    }
+    .form-input {
+      width: 100%;
+      background: rgba(10, 8, 6, 0.7);
+      border: 1px solid rgba(217, 172, 82, 0.25);
+      border-radius: 8px;
+      padding: 13px 42px 13px 42px;
+      font-size: 0.9rem;
+      color: #FFFFFF;
+      outline: none;
+      font-family: inherit;
+      box-sizing: border-box;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    .form-input:focus {
+      border-color: var(--border-focus);
+      box-shadow: 0 0 12px rgba(217, 172, 82, 0.25);
+      background: rgba(15, 12, 8, 0.9);
+    }
+    .toggle-pwd {
+      position: absolute;
+      right: 12px;
+      background: none;
+      border: none;
+      color: var(--muted);
+      cursor: pointer;
+      padding: 6px;
+      display: flex;
+      align-items: center;
+      transition: color 0.2s;
+    }
+    .toggle-pwd:hover {
+      color: var(--gold);
+    }
+    .btn-login {
+      width: 100%;
+      background: linear-gradient(135deg, #E6C27A 0%, #B8872F 100%);
+      color: #0A0806;
+      border: none;
+      border-radius: 8px;
+      padding: 14px;
+      font-size: 0.9rem;
+      font-weight: 700;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: transform 0.15s, box-shadow 0.2s;
+      margin-top: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      box-shadow: 0 4px 20px rgba(184, 135, 47, 0.35);
+    }
+    .btn-login:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 6px 24px rgba(184, 135, 47, 0.5);
+    }
+    .btn-login:active {
+      transform: translateY(1px);
+    }
+    .btn-login:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      transform: none;
+    }
+    .msg-box {
+      padding: 12px 14px;
+      border-radius: 6px;
+      font-size: 0.8rem;
+      margin-bottom: 20px;
+      display: none;
+      line-height: 1.4;
+    }
+    .msg-error {
+      background: rgba(239, 83, 80, 0.12);
+      border: 1px solid rgba(239, 83, 80, 0.35);
+      color: #FF8A80;
+    }
+    .msg-success {
+      background: rgba(102, 187, 106, 0.12);
+      border: 1px solid rgba(102, 187, 106, 0.35);
+      color: #A5D6A7;
+    }
+    .footer-links {
+      margin-top: 24px;
+      text-align: center;
+      font-size: 0.75rem;
+      color: var(--muted);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .footer-links a {
+      color: var(--gold);
+      text-decoration: none;
+      transition: color 0.2s;
+    }
+    .footer-links a:hover {
+      color: #FFFFFF;
+      text-decoration: underline;
+    }
+    .security-tag {
+      margin-top: 24px;
+      text-align: center;
+      font-size: 0.68rem;
+      color: rgba(217, 172, 82, 0.6);
+      font-family: 'JetBrains Mono', monospace;
+      letter-spacing: 0.5px;
+    }
+    .credentials-hint {
+      margin-top: 18px;
+      padding: 10px 14px;
+      background: rgba(217, 172, 82, 0.05);
+      border: 1px dashed rgba(217, 172, 82, 0.2);
+      border-radius: 6px;
+      font-size: 0.72rem;
+      color: var(--muted);
+      line-height: 1.4;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="login-container">
+    <div class="login-card">
+      <div class="brand-header">
+        <div class="brand-icon">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+            <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+          </svg>
+        </div>
+        <h1 class="brand-title">Golden Global Expo</h1>
+        <div class="brand-subtitle">Executive Command Center</div>
+      </div>
+
+      <div id="alertBox" class="msg-box"></div>
+
+      <form id="loginForm" onsubmit="handleAdminLogin(event)">
+        <div class="form-group">
+          <label class="form-label" for="loginEmail">Authorized Executive ID / Email</label>
+          <div class="input-wrapper">
+            <span class="input-icon">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg>
+            </span>
+            <input type="email" id="loginEmail" class="form-input" placeholder="admin@goldenglobalexpo.com" value="admin@goldenglobalexpo.com" required autocomplete="username">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="loginPassword">Master Secret Key / Password</label>
+          <div class="input-wrapper">
+            <span class="input-icon">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+            </span>
+            <input type="password" id="loginPassword" class="form-input" placeholder="••••••••••••" value="GoldenAdmin2026!" required autocomplete="current-password">
+            <button type="button" class="toggle-pwd" onclick="togglePasswordVisibility()" title="Show/Hide Password">
+              <svg id="eyeIcon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+            </button>
+          </div>
+        </div>
+
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;font-size:0.75rem;">
+          <label style="display:flex;align-items:center;gap:6px;cursor:pointer;color:var(--muted);">
+            <input type="checkbox" id="rememberSession" checked style="accent-color:var(--gold);">
+            <span>Remember terminal (24h)</span>
+          </label>
+          <span style="color:var(--gold);font-size:0.72rem;font-family:'JetBrains Mono',monospace;">ACID WAL MODE</span>
+        </div>
+
+        <button type="submit" id="submitBtn" class="btn-login">
+          <span>Authenticate &amp; Open Desk</span>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+        </button>
+
+        <div class="credentials-hint">
+          🔑 <b>Default Master Access</b>:<br>
+          Email: <code style="color:var(--gold);">admin@goldenglobalexpo.com</code><br>
+          Password: <code style="color:var(--gold);">GoldenAdmin2026!</code> (or Master Code: <code style="color:var(--gold);">991448</code>)
+        </div>
+      </form>
+
+      <div class="footer-links">
+        <a href="index.html">← Public Export Storefront</a>
+        <a href="tracking.html">Consignment Tracker →</a>
+      </div>
+
+      <div class="security-tag">
+        🔒 256-BIT ENCRYPTED SESSION · ZERO EXPOSURE ARCHITECTURE
+      </div>
+    </div>
+  </div>
+
+  <script>
+    (async function checkExistingSession() {
+      try {
+        const token = localStorage.getItem('gge_admin_token');
+        if (token) {
+          const res = await fetch('/api/auth/validate-session', {
+            headers: { 'Authorization': 'Bearer ' + token }
+          });
+          if (res.ok) {
+            const data = await res.json();
+            if (data.valid) {
+              window.location.href = 'desk.html';
+            }
+          }
+        }
+      } catch (e) {}
+    })();
+
+    function togglePasswordVisibility() {
+      const input = document.getElementById('loginPassword');
+      const icon = document.getElementById('eyeIcon');
+      if (input.type === 'password') {
+        input.type = 'text';
+        icon.innerHTML = '<path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path><line x1="1" y1="1" x2="23" y2="23"></line>';
+      } else {
+        input.type = 'password';
+        icon.innerHTML = '<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle>';
+      }
+    }
+
+    async function handleAdminLogin(e) {
+      e.preventDefault();
+      const email = document.getElementById('loginEmail').value.trim();
+      const password = document.getElementById('loginPassword').value.trim();
+      const btn = document.getElementById('submitBtn');
+      const alertBox = document.getElementById('alertBox');
+
+      alertBox.style.display = 'none';
+      alertBox.className = 'msg-box';
+
+      if (!email || !password) {
+        showAlert('Please provide both email and password.', 'error');
+        return;
+      }
+
+      btn.disabled = true;
+      btn.innerHTML = '<span>Verifying Credentials...</span>';
+
+      try {
+        const res = await fetch('/api/admin/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: email, password: password })
+        });
+
+        const data = await res.json();
+
+        if (res.ok && data.success) {
+          showAlert('✅ Credentials verified. Launching Command Center...', 'success');
+          if (data.token) {
+            localStorage.setItem('gge_admin_token', data.token);
+            localStorage.setItem('gge_admin_email', data.email || email);
+          }
+          setTimeout(() => {
+            const redirectParam = new URLSearchParams(window.location.search).get('redirect') || 'desk.html';
+            window.location.href = redirectParam;
+          }, 400);
+        } else {
+          showAlert(data.error || 'Authentication rejected. Check credentials.', 'error');
+          btn.disabled = false;
+          btn.innerHTML = '<span>Authenticate &amp; Open Desk</span>';
+        }
+      } catch (err) {
+        showAlert('Network or server error during authentication.', 'error');
+        btn.disabled = false;
+        btn.innerHTML = '<span>Authenticate &amp; Open Desk</span>';
+      }
+    }
+
+    function showAlert(msg, type) {
+      const alertBox = document.getElementById('alertBox');
+      alertBox.textContent = msg;
+      alertBox.className = 'msg-box msg-' + type;
+      alertBox.style.display = 'block';
+    }
+  </script>
+</body>
+</html>

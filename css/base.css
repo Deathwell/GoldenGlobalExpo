@@ -1,0 +1,152 @@
+/**
+ * Golden Global Expo — Base Stylesheet
+ * Global Design Tokens, CSS Variables, Typography, Resets, RTL Rules & Luxury Sheens
+ */
+
+:root {
+  --ink: #14110E;
+  --ink-soft: #1C1713;
+  --ink-surface: #221C16;
+  --ivory: #F5EFE0;
+  --paper: #FBF8F0;
+  --gold: #B8872F;
+  --gold-bright: #D9AC52;
+  --gold-glow: rgba(217, 172, 82, 0.22);
+  --gold-line: rgba(184, 135, 47, 0.32);
+  --rust: #B35A22;
+  --rust-bright: #D46D2E;
+  --forest: #4B5A34;
+  --line: rgba(20, 17, 14, 0.12);
+  --line-dark: rgba(245, 239, 224, 0.12);
+  --font-display: 'Fraunces', Georgia, serif;
+  --font-body: 'Work Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-mono: 'IBM Plex Mono', monospace;
+  --font-arabic: 'Noto Naskh Arabic', serif;
+  --font-chinese: 'Noto Sans SC', 'Microsoft YaHei', sans-serif;
+  --font-devanagari: 'Noto Sans Devanagari', sans-serif;
+  --maxw: 1200px;
+  --ease-luxury: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* RTL Support for Arabic */
+[dir="rtl"] {
+  --font-display: 'Noto Naskh Arabic', 'Fraunces', serif;
+  --font-body: 'Noto Naskh Arabic', 'Work Sans', sans-serif;
+}
+[dir="rtl"] .eyebrow::before { margin-left: 10px; margin-right: 0; }
+[dir="rtl"] .hero-inner { text-align: right; }
+[dir="rtl"] .section-head { text-align: right; }
+[dir="rtl"] .spec-row { direction: rtl; text-align: right; }
+[dir="rtl"] .step { text-align: right; }
+[dir="rtl"] .transit-badge { border-left: none; border-right: 3px solid var(--rust); }
+[dir="rtl"] .nav-links { flex-direction: row-reverse; }
+[dir="rtl"] .float-action { right: auto; left: 28px; }
+
+/* Mandarin Chinese Font support */
+[lang="zh"] {
+  --font-display: 'Noto Sans SC', 'Microsoft YaHei', sans-serif;
+  --font-body: 'Noto Sans SC', 'Microsoft YaHei', sans-serif;
+}
+
+/* Devanagari Font support for Hindi */
+[lang="hi"] {
+  --font-display: 'Noto Sans Devanagari', 'Fraunces', serif;
+  --font-body: 'Noto Sans Devanagari', 'Work Sans', sans-serif;
+}
+
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: 16px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+
+img {
+  max-width: 100%;
+  display: block;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+h1, h2, h3, h4 {
+  font-family: var(--font-display);
+  margin: 0;
+  font-weight: 600;
+  letter-spacing: -0.015em;
+}
+
+p {
+  margin: 0;
+}
+
+ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+section {
+  scroll-margin-top: 80px;
+  position: relative;
+}
+
+.wrap {
+  max-width: var(--maxw);
+  margin: 0 auto;
+  padding: 0 clamp(20px, 4vw, 48px);
+}
+
+/* Scroll progress bar */
+.scroll-progress-bar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 2.5px;
+  background: linear-gradient(90deg, var(--gold), var(--gold-bright), #F3DA99);
+  transform-origin: left;
+  transform: scaleX(0);
+  z-index: 1000;
+  transition: transform 0.08s ease-out;
+  box-shadow: 0 0 10px rgba(217, 172, 82, 0.6);
+}
+
+/* Typography & Micro Badges */
+.eyebrow {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--gold);
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.eyebrow::before {
+  content: "";
+  width: 22px;
+  height: 1px;
+  background: currentColor;
+  display: inline-block;
+  transition: width 0.4s var(--ease-luxury);
+}
+
+.section-head:hover .eyebrow::before {
+  width: 34px;
+}

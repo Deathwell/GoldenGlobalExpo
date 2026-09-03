@@ -1,0 +1,119 @@
+{
+  "p1": {
+    "code": "p1",
+    "name": "Organic Turmeric Salem",
+    "category": "Spices",
+    "baseUsd": 145.5,
+    "price": 145.5,
+    "marginPct": 8.0,
+    "updatedAt": 1788436555.2679403
+  },
+  "p2": {
+    "code": "p2",
+    "name": "Classic Moong (Whole)",
+    "category": "Agri",
+    "baseUsd": 840.0,
+    "price": 840.0,
+    "marginPct": 0.0,
+    "updatedAt": 1788432527.2309349
+  },
+  "p3": {
+    "code": "p3",
+    "name": "Classic Chana Dal",
+    "category": "Agri",
+    "baseUsd": 760.0,
+    "price": 760.0,
+    "marginPct": 0.0,
+    "updatedAt": 1788432527.230935
+  },
+  "p4": {
+    "code": "p4",
+    "name": "Classic Masoor (Red Split)",
+    "category": "Agri",
+    "baseUsd": 790.0,
+    "price": 790.0,
+    "marginPct": 0.0,
+    "updatedAt": 1788432527.2309353
+  },
+  "p5": {
+    "code": "p5",
+    "name": "Chia Seeds (Superfood)",
+    "category": "Agri",
+    "baseUsd": 1850.0,
+    "price": 1850.0,
+    "marginPct": 0.0,
+    "updatedAt": 1788432527.2309356
+  },
+  "p6": {
+    "code": "p6",
+    "name": "Coriander Seeds (Dhania)",
+    "category": "Agri",
+    "baseUsd": 1420.0,
+    "price": 1420.0,
+    "marginPct": 0.0,
+    "updatedAt": 1788432527.2309358
+  },
+  "p7": {
+    "code": "p7",
+    "name": "Cumin Seeds (Jeera Whole)",
+    "category": "Agri",
+    "baseUsd": 3800.0,
+    "price": 3800.0,
+    "marginPct": 0.0,
+    "updatedAt": 1788432527.230936
+  },
+  "p8": {
+    "code": "p8",
+    "name": "Moringa Leaf Powder",
+    "category": "Agri",
+    "baseUsd": 3800.0,
+    "price": 3800.0,
+    "marginPct": 0.0,
+    "updatedAt": 1788432527.2309363
+  },
+  "p9": {
+    "code": "p9",
+    "name": "Mint Powder (Pudina)",
+    "category": "Agri",
+    "baseUsd": 3200.0,
+    "price": 3200.0,
+    "marginPct": 0.0,
+    "updatedAt": 1788432527.2309365
+  },
+  "p10": {
+    "code": "p10",
+    "name": "Coriander Powder",
+    "category": "Agri",
+    "baseUsd": 1650.0,
+    "price": 1650.0,
+    "marginPct": 0.0,
+    "updatedAt": 1788432527.2309368
+  },
+  "p11": {
+    "code": "p11",
+    "name": "Jowar (Whole Sorghum)",
+    "category": "Agri",
+    "baseUsd": 520.0,
+    "price": 520.0,
+    "marginPct": 0.0,
+    "updatedAt": 1788432527.230937
+  },
+  "p12": {
+    "code": "p12",
+    "name": "Jowar Flour (Gluten Free)",
+    "category": "Agri",
+    "baseUsd": 580.0,
+    "price": 580.0,
+    "marginPct": 0.0,
+    "updatedAt": 1788432527.2309372
+  },
+  "p13": {
+    "code": "p13",
+    "name": "Tissue Paper Virgin Pulp",
+    "category": "Agri",
+    "baseUsd": 1150.0,
+    "price": 1150.0,
+    "marginPct": 0.0,
+    "updatedAt": 1788432527.2309375
+  }
+}
