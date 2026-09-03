@@ -4,6 +4,7 @@ import json
 import time
 import re
 import secrets
+import threading
 import hmac
 import hashlib
 import ipaddress
@@ -71,6 +72,25 @@ SESSION_EXPIRE_SECONDS = int(os.environ.get("SESSION_EXPIRE_SECONDS", "86400"))
 ACTIVE_OTPS = {}
 PAYMENT_SESSIONS = {}
 CONNECTED_SSE_CLIENTS = set()
+_file_write_lock = threading.Lock()
+
+def atomic_json_write(filepath: str, data):
+    """
+    Thread-safe atomic JSON file writer. Writes to a process-unique temporary file
+    and performs an atomic rename (os.replace). Guarantees zero file corruption and zero
+    interleaving under extreme concurrent thread loads.
+    """
+    with _file_write_lock:
+        tmp_path = filepath + f".tmp.{os.getpid()}.{secrets.token_hex(4)}"
+        try:
+            with open(tmp_path, 'w', encoding='utf-8') as f:
+                json.dump(data, f, indent=2)
+            os.replace(tmp_path, filepath)
+        except Exception as e:
+            if os.path.exists(tmp_path):
+                try: os.remove(tmp_path)
+                except Exception: pass
+            print(f"[ATOMIC WRITE WARNING] Error writing {filepath}: {e}")
 
 def broadcast_sse(event_type: str, data: dict):
     msg = f"event: {event_type}\ndata: {json.dumps(data)}\n\n"
@@ -265,6 +285,9 @@ async def update_prices(request: Request):
                 cat_val = p.get('category', 'Agri') if isinstance(p, dict) else 'Agri'
                 margin_val = float(p.get('marginPct', 0.0) if isinstance(p, dict) else 0.0)
 
+                if price_val < 0 or price_val > 100000.0:
+                    return JSONResponse(status_code=400, content={'success': False, 'error': f'Price {price_val} for {code} is out of realistic export bounds ($0.01 - $100,000 / MT).'})
+
                 if record:
                     record.base_usd = price_val
                     record.price_inr = price_val
@@ -283,8 +306,7 @@ async def update_prices(request: Request):
                 mirror_dict = {}
                 for r in session.query(CommodityPriceModel).all():
                     mirror_dict[r.code] = r.to_dict()
-                with open(os.path.join(BASE_DIR, 'data', 'prices.json'), 'w', encoding='utf-8') as f:
-                    json.dump(mirror_dict, f, indent=2)
+                atomic_json_write(os.path.join(BASE_DIR, 'data', 'prices.json'), mirror_dict)
             except Exception: pass
 
             broadcast_sse("PRICE_UPDATED", {"count": len(prices), "timestamp": time.time()})
@@ -386,11 +408,10 @@ async def save_inquiries(request: Request):
                     ))
             session.commit()
 
-            # Mirror to JSON file
+            # Mirror to JSON file atomically
             all_inqs = [r.to_dict() for r in session.query(InquiryModel).order_by(InquiryModel.created_at.desc()).all()]
             try:
-                with open(os.path.join(BASE_DIR, 'data', 'inquiries.json'), 'w', encoding='utf-8') as f:
-                    json.dump(all_inqs, f, indent=2)
+                atomic_json_write(os.path.join(BASE_DIR, 'data', 'inquiries.json'), all_inqs)
             except Exception: pass
 
             broadcast_sse("NEW_INQUIRY", {"total": len(all_inqs), "timestamp": time.time()})
@@ -409,8 +430,7 @@ async def delete_inquiry(inquiry_id: str):
         session.commit()
         all_inqs = [r.to_dict() for r in session.query(InquiryModel).order_by(InquiryModel.created_at.desc()).all()]
         try:
-            with open(os.path.join(BASE_DIR, 'data', 'inquiries.json'), 'w', encoding='utf-8') as f:
-                json.dump(all_inqs, f, indent=2)
+            atomic_json_write(os.path.join(BASE_DIR, 'data', 'inquiries.json'), all_inqs)
         except Exception: pass
         broadcast_sse("NEW_INQUIRY", {"total": len(all_inqs), "timestamp": time.time()})
         return {'success': True, 'message': f'Inquiry {inquiry_id} deleted.'}
@@ -476,11 +496,10 @@ async def save_consignments(request: Request):
                     ))
             session.commit()
 
-            # Mirror to JSON file
+            # Mirror to JSON file atomically
             all_consigns = [r.to_dict() for r in session.query(ConsignmentModel).order_by(ConsignmentModel.updated_at.desc()).all()]
             try:
-                with open(os.path.join(BASE_DIR, 'data', 'consignments.json'), 'w', encoding='utf-8') as f:
-                    json.dump(all_consigns, f, indent=2)
+                atomic_json_write(os.path.join(BASE_DIR, 'data', 'consignments.json'), all_consigns)
             except Exception: pass
 
             broadcast_sse("CONSIGNMENT_UPDATED", {"total": len(all_consigns), "timestamp": time.time()})
@@ -499,8 +518,7 @@ async def delete_consignment(bl_code: str):
         session.commit()
         all_consigns = [r.to_dict() for r in session.query(ConsignmentModel).order_by(ConsignmentModel.updated_at.desc()).all()]
         try:
-            with open(os.path.join(BASE_DIR, 'data', 'consignments.json'), 'w', encoding='utf-8') as f:
-                json.dump(all_consigns, f, indent=2)
+            atomic_json_write(os.path.join(BASE_DIR, 'data', 'consignments.json'), all_consigns)
         except Exception: pass
         return {'success': True, 'message': f'Consignment {bl_code} deleted.'}
     except Exception as e:
@@ -567,11 +585,10 @@ async def save_audit_log(request: Request):
 
             session.commit()
 
-            # Mirror to JSON file
+            # Mirror to JSON file atomically
             all_logs = [r.to_dict() for r in session.query(AuditLogModel).order_by(AuditLogModel.timestamp.desc()).all()]
             try:
-                with open(os.path.join(BASE_DIR, 'data', 'audit_log.json'), 'w', encoding='utf-8') as f:
-                    json.dump(all_logs, f, indent=2)
+                atomic_json_write(os.path.join(BASE_DIR, 'data', 'audit_log.json'), all_logs)
             except Exception: pass
 
             return {'success': True, 'message': 'Audit event recorded in cryptographically chained database.'}
