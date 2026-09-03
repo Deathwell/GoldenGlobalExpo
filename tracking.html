@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@600;700&family=Work+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
     <!-- Stylesheet -->
-  <link rel="stylesheet" href="css/tracking.css?v=98.0">
+  <link rel="stylesheet" href="css/tracking.css?v=99.0">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
 </head>
@@ -69,43 +69,69 @@
         <span id="rStatusText">In Oceanic Transit</span>
       </div>
     </div>
+ 
+    <!-- Maritime Telemetry Radar Bar -->
+    <div class="maritime-radar-bar" style="margin:20px 0 24px; padding:16px 20px; background:rgba(217,172,82,0.06); border:1px solid rgba(217,172,82,0.22); border-radius:8px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:14px;">
+      <div style="display:flex; align-items:center; gap:12px;">
+        <div style="position:relative; width:14px; height:14px;">
+          <span style="display:block; width:100%; height:100%; border-radius:50%; background:#81C784;"></span>
+          <span style="position:absolute; top:-3px; left:-3px; width:20px; height:20px; border-radius:50%; border:2px solid #81C784; opacity:0.6;"></span>
+        </div>
+        <div>
+          <div style="font-family:var(--font-mono); font-size:0.75rem; color:var(--gold-bright); letter-spacing:0.08em; text-transform:uppercase; font-weight:700;">
+            AUTOMATED VESSEL TELEMETRY ACTIVE
+          </div>
+          <div style="font-size:0.80rem; color:rgba(245,239,224,0.75);">
+            Speed: <span style="color:#FFF; font-weight:600;" id="rSpeed">18.4 Knots</span> · Heading: <span style="color:#FFF; font-weight:600;" id="rHeading">278° WNW</span> · Sea Coordinates: <span style="color:var(--gold-bright); font-family:var(--font-mono);" id="rCoords">18°57'N 72°40'E (Arabian Sea Corridor)</span>
+          </div>
+        </div>
+      </div>
+      <div style="font-family:var(--font-mono); font-size:0.75rem; background:rgba(0,0,0,0.45); padding:6px 14px; border-radius:4px; border:1px solid rgba(255,255,255,0.08); display:flex; gap:12px;">
+        <span><span style="color:#787268;">VOYAGE:</span> <b style="color:#FFF;" id="rVoyageId">264W</b></span>
+        <span><span style="color:#787268;">RADAR BEACON:</span> <b style="color:#81C784;">ONLINE</b></span>
+      </div>
+    </div>
 
-    <!-- Stepper -->
+    <!-- 6-Stage Customs & Maritime Stepper -->
     <div class="stepper" id="stepper">
       <div class="step-node completed">
         <div class="step-bar"><div class="step-circle">✓</div><div class="step-line"></div></div>
-        <div class="step-label"><b>Mandi Sourced</b><span>Latur APMC Hub</span></div>
+        <div class="step-label"><b>Mandi Origin</b><span>Latur / Unjha APMC</span></div>
       </div>
       <div class="step-node completed">
         <div class="step-bar"><div class="step-circle">✓</div><div class="step-line"></div></div>
-        <div class="step-label"><b>Lab QA Certified</b><span>Grade-A Purity 99.5%</span></div>
+        <div class="step-label"><b>Quality &amp; Lab QA</b><span>SGS / Intertek Sortex</span></div>
       </div>
       <div class="step-node completed">
         <div class="step-bar"><div class="step-circle">✓</div><div class="step-line"></div></div>
-        <div class="step-label"><b>JNPT Gate-In</b><span>Phyto &amp; Customs OK</span></div>
+        <div class="step-label"><b>CFS Stuffing</b><span>Phyto &amp; Fumigated</span></div>
+      </div>
+      <div class="step-node completed">
+        <div class="step-bar"><div class="step-circle">✓</div><div class="step-line"></div></div>
+        <div class="step-label"><b>Customs LEO</b><span>EDI Gate Cleared</span></div>
       </div>
       <div class="step-node active">
-        <div class="step-bar"><div class="step-circle">4</div><div class="step-line"></div></div>
+        <div class="step-bar"><div class="step-circle">5</div><div class="step-line"></div></div>
         <div class="step-label"><b>Ocean Transit</b><span id="rVesselShort">MSC Valeria</span></div>
       </div>
       <div class="step-node">
-        <div class="step-bar"><div class="step-circle">5</div><div class="step-line"></div></div>
+        <div class="step-bar"><div class="step-circle">6</div><div class="step-line"></div></div>
         <div class="step-label"><b>Port Discharge</b><span id="rPodShort">Jebel Ali (UAE)</span></div>
       </div>
     </div>
 
-    <!-- Telemetry -->
+    <!-- Telemetry Board (8 Maritime Cards) -->
     <div class="telemetry-grid">
       <div class="telemetry-card">
-        <small>Active Vessel</small>
+        <small>Active Ocean Vessel &amp; IMO</small>
         <strong id="rVessel">MSC VALERIA (IMO 9461439)</strong>
       </div>
       <div class="telemetry-card">
-        <small>Port of Loading</small>
-        <strong>JNPT (Nhava Sheva, Mumbai)</strong>
+        <small>Port of Loading (POL)</small>
+        <strong>JNPT (Nhava Sheva Sea Port, INNSA1)</strong>
       </div>
       <div class="telemetry-card">
-        <small>Port of Discharge</small>
+        <small>Port of Discharge (POD)</small>
         <strong id="rPod">Jebel Ali, Dubai (UAE)</strong>
       </div>
       <div class="telemetry-card">
@@ -113,12 +139,20 @@
         <strong id="rEta" style="color:var(--gold-bright);">In 2 Days (~36 Hrs)</strong>
       </div>
       <div class="telemetry-card">
-        <small>Container Number</small>
+        <small>Container ISO Number</small>
         <strong id="rContainer">MSCU 892104-7 (20' GP)</strong>
       </div>
       <div class="telemetry-card">
-        <small>Demurrage Free Days</small>
+        <small>Customs Bolt Seal (ISO 17712)</small>
+        <strong id="rBoltSeal" style="color:var(--gold-bright); font-family:var(--font-mono);">IND-CUS-88412-SEAL</strong>
+      </div>
+      <div class="telemetry-card">
+        <small>Demurrage Free Period</small>
         <strong style="color:#81C784;">14 Free Days at Port</strong>
+      </div>
+      <div class="telemetry-card">
+        <small>Net / Gross Cargo Weight</small>
+        <strong id="rCargoWeight">24.0 MT Net / 26.2 MT Gross</strong>
       </div>
     </div>
 
@@ -155,9 +189,9 @@
 </footer>
 
     <!-- Application Scripts -->
-  <script src="js/data/tracking-data.js?v=98.0"></script>
-  <script src="js/modules/storage.js?v=98.0"></script>
-  <script src="js/modules/toast.js?v=98.0"></script>
-  <script src="js/tracking.js?v=98.0"></script>
+  <script src="js/data/tracking-data.js?v=99.0"></script>
+  <script src="js/modules/storage.js?v=99.0"></script>
+  <script src="js/modules/toast.js?v=99.0"></script>
+  <script src="js/tracking.js?v=99.0"></script>
 </body>
 </html>

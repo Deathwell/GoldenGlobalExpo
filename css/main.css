@@ -3566,3 +3566,26 @@ h1, h2, h3, h4 {
     font-size: 1.8rem !important;
   }
 }
+
+/* ================= LUXURY MICRO-INTERACTIONS & MOBILE HAPTIC TOUCH ================= */
+* {
+  -webkit-tap-highlight-color: transparent;
+}
+
+button, .btn, .mode-btn, .switcher-pill-btn, .card-spec-btn {
+  transition: transform 0.16s cubic-bezier(0.16, 1, 0.3, 1), background-color 0.16s, border-color 0.16s, box-shadow 0.16s;
+  touch-action: manipulation;
+}
+
+button:active, .btn:active, .mode-btn:active, .switcher-pill-btn:active, .card-spec-btn:active {
+  transform: scale(0.978) !important;
+}
+
+.compliance-card {
+  transition: transform 0.22s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.22s, box-shadow 0.22s;
+}
+
+.compliance-card:active {
+  transform: scale(0.985);
+}
+

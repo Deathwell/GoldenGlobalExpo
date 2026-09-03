@@ -238,11 +238,12 @@ function renderTrackingResult(data) {
   
   const stage = parseInt(data.stage || 1, 10);
   const stageNames = {
-    1: "Stage 1: Mandi Sourced & Grading",
-    2: "Stage 2: Lab QA & Phytosanitary Clear",
-    3: "Stage 3: JNPT Customs Gate-In",
-    4: "Stage 4: In Oceanic Transit",
-    5: "Stage 5: Port Cleared & Delivered"
+    1: "Stage 1: Mandi Origin & Grading",
+    2: "Stage 2: Quality Assay & Laboratory QA",
+    3: "Stage 3: Nhava Sheva CFS Stuffing & Phyto",
+    4: "Stage 4: Customs EDI & Let Export Order (LEO)",
+    5: "Stage 5: High Seas Ocean Transit",
+    6: "Stage 6: Discharge Port Cleared & Gate-Out"
   };
   
   const statusDisplay = data.status || stageNames[stage] || "Active Shipment";
@@ -251,7 +252,7 @@ function renderTrackingResult(data) {
   
   const pill = document.getElementById('rStatusPill');
   if (pill) {
-    if (stage === 5) {
+    if (stage >= 6) {
       pill.classList.add('completed');
     } else {
       pill.classList.remove('completed');
@@ -276,14 +277,40 @@ function renderTrackingResult(data) {
   }
   setEl('rPodShort', podShort);
   
-  setEl('rEta', data.eta || (stage === 5 ? 'Delivered' : 'In 3 Days'));
-  setEl('resEta', data.eta || (stage === 5 ? 'Delivered' : 'In 3 Days'));
+  setEl('rEta', data.eta || (stage >= 6 ? 'Delivered' : 'In 3 Days (~48 Hrs)'));
+  setEl('resEta', data.eta || (stage >= 6 ? 'Delivered' : 'In 3 Days (~48 Hrs)'));
   
   const containerDisplay = data.container || "MSCU 892104-7 (20' GP)";
   setEl("rContainer", containerDisplay);
   setEl("resContainer", containerDisplay);
 
-  // Update Visual 5-Stage Stepper Nodes
+  // High-Security Customs Bolt Seal & Cargo Weight Tally
+  const sealDisplay = (data.bl && data.bl.includes('SMP')) 
+    ? 'DHL-EXP-TAMPER-EVIDENT-SEAL' 
+    : `IND-CUS-${Math.abs((data.bl || 'GGE').split('').reduce((a,b)=>{a=((a<<5)-a)+b.charCodeAt(0);return a&a},0) % 90000 + 10000)}-SEAL`;
+  setEl('rBoltSeal', sealDisplay);
+
+  const cargoWeightDisplay = (data.bl && data.bl.includes('SMP'))
+    ? '500g Commercial Sample Pouch · Courier Air Cargo'
+    : '24.0 Metric Tons Net (240 Quintals) · 26.2 MT Gross';
+  setEl('rCargoWeight', cargoWeightDisplay);
+
+  // Maritime Radar Telemetry Dynamic Simulation
+  if (stage >= 6) {
+    setEl('rSpeed', '0.0 Knots (Moored / Discharged)');
+    setEl('rHeading', 'Berth Complete');
+    setEl('rCoords', 'Port Discharge Terminal (Gate Cleared)');
+  } else if (stage === 5) {
+    setEl('rSpeed', '18.4 Knots (Cruise Speed)');
+    setEl('rHeading', '278° WNW');
+    setEl('rCoords', '18°57\'N 72°40\'E (Arabian Sea Corridor)');
+  } else {
+    setEl('rSpeed', '0.0 Knots (Port Terminal)');
+    setEl('rHeading', 'Stationary at CFS');
+    setEl('rCoords', '18°57\'01"N 72°56\'54"E (Nhava Sheva Sea Port)');
+  }
+
+  // Update Visual 6-Stage Stepper Nodes
   const stepNodes = document.querySelectorAll('.step-node');
   stepNodes.forEach((node, index) => {
     const stepNum = index + 1;
@@ -296,7 +323,7 @@ function renderTrackingResult(data) {
       if (circle) circle.textContent = '✓';
     } else if (stepNum === stage) {
       // Current active stage
-      if (stage === 5) {
+      if (stage >= 6) {
         node.classList.add('completed');
         if (circle) circle.textContent = '✓';
       } else {
