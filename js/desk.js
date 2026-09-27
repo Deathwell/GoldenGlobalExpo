@@ -924,11 +924,9 @@ function switchTab(tabId, btn) {
     }
   }
   if (tabId === 'pricingTab') {
-    if (typeof fetchLiveForexRates === 'function') {
-      fetchLiveForexRates().then(() => renderPriceEditor());
-    } else if (typeof fetchServerPrices === 'function') {
-      fetchServerPrices();
-    }
+    const p1 = (typeof fetchServerPrices === 'function') ? fetchServerPrices() : Promise.resolve();
+    const p2 = (typeof fetchLiveForexRates === 'function') ? fetchLiveForexRates() : Promise.resolve();
+    Promise.all([p1, p2]).then(() => renderPriceEditor()).catch(() => renderPriceEditor());
   }
   if (tabId === 'auditTab') {
     fetchServerAuditLog();
@@ -2903,7 +2901,8 @@ function renderPriceEditor() {
   const fx = getLiveForexRates();
   updateDeskForexBadge(fx);
 
-  container.innerHTML = topSampleCard + Object.keys(prices).map(key => {
+  const commodityKeys = Object.keys(prices).filter(k => k !== 'sample' && k !== 'sample_pouch' && !k.toLowerCase().startsWith('sample'));
+  container.innerHTML = topSampleCard + commodityKeys.map(key => {
     const p = prices[key];
     const usd = p.baseUsd || 0;
     const eurDisplay = formatFxDeskValue(usd * fx.EUR, '€', true);
@@ -2915,6 +2914,17 @@ function renderPriceEditor() {
     const safeKey = escapeHtml(key);
     const safeName = escapeHtml(p.name || '');
     const safeHs = escapeHtml(p.hs || '—');
+
+    // Retrieve domestic pack rates from p.domesticPacks or window.domesticCommodityCatalog
+    const domCatalog = window.domesticCommodityCatalog || {};
+    const domPacks = (p.domesticPacks && Object.keys(p.domesticPacks).length > 0)
+      ? p.domesticPacks
+      : (domCatalog[key] ? domCatalog[key].packs : {}) || {};
+
+    const p500 = domPacks['500g'] !== undefined ? domPacks['500g'] : (domPacks['500gm'] || '');
+    const p1k = domPacks['1kg'] !== undefined ? domPacks['1kg'] : '';
+    const p5k = domPacks['5kg'] !== undefined ? domPacks['5kg'] : '';
+    const p25k = domPacks['25kg'] !== undefined ? domPacks['25kg'] : '';
 
     return `
       <div class="price-item-card" data-key="${safeKey}">
@@ -2936,6 +2946,46 @@ function renderPriceEditor() {
           <span>RUB: <b class="fx-rub">${rubDisplay}</b></span>
           <span>CNY: <b class="fx-cny">${cnyDisplay}</b></span>
           <span>LOT: <b>${safeKey.toUpperCase()}</b></span>
+        </div>
+
+        <!-- DOMESTIC INR PACK PRICING (500g, 1kg, 5kg, 25kg) -->
+        <div class="domestic-pricing-box" style="margin-top:14px; padding-top:12px; border-top:1px dashed rgba(217,172,82,0.3);">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+            <label style="font-size:0.74rem; font-weight:700; color:#FFA726; text-transform:uppercase; letter-spacing:0.5px; display:inline-flex; align-items:center; gap:5px;">
+              <span>🇮🇳 Domestic Selling Rates (INR ₹)</span>
+            </label>
+            <span style="font-size:0.68rem; color:var(--muted); font-family:var(--font-mono);">National UPI Packs</span>
+          </div>
+          <div style="display:grid; grid-template-columns:repeat(4, 1fr); gap:6px;">
+            <div style="display:flex; flex-direction:column; gap:3px;">
+              <span style="font-size:0.68rem; color:#C2B69D; font-family:var(--font-mono); text-align:center;">500g</span>
+              <div style="display:flex; align-items:center; background:rgba(0,0,0,0.5); border:1px solid rgba(255,153,51,0.35); border-radius:4px; padding:3px 5px;">
+                <span style="color:#FFA726; font-size:0.72rem; margin-right:2px;">₹</span>
+                <input type="number" class="domestic-pack-input" data-pack="500g" value="${p500}" min="1" step="1" placeholder="₹" style="width:100%; background:transparent; border:none; color:#FFFFFF; font-size:0.80rem; font-weight:700; font-family:var(--font-mono); text-align:right; outline:none;">
+              </div>
+            </div>
+            <div style="display:flex; flex-direction:column; gap:3px;">
+              <span style="font-size:0.68rem; color:#C2B69D; font-family:var(--font-mono); text-align:center;">1kg</span>
+              <div style="display:flex; align-items:center; background:rgba(0,0,0,0.5); border:1px solid rgba(255,153,51,0.35); border-radius:4px; padding:3px 5px;">
+                <span style="color:#FFA726; font-size:0.72rem; margin-right:2px;">₹</span>
+                <input type="number" class="domestic-pack-input" data-pack="1kg" value="${p1k}" min="1" step="1" placeholder="₹" style="width:100%; background:transparent; border:none; color:#FFFFFF; font-size:0.80rem; font-weight:700; font-family:var(--font-mono); text-align:right; outline:none;">
+              </div>
+            </div>
+            <div style="display:flex; flex-direction:column; gap:3px;">
+              <span style="font-size:0.68rem; color:#C2B69D; font-family:var(--font-mono); text-align:center;">5kg</span>
+              <div style="display:flex; align-items:center; background:rgba(0,0,0,0.5); border:1px solid rgba(255,153,51,0.35); border-radius:4px; padding:3px 5px;">
+                <span style="color:#FFA726; font-size:0.72rem; margin-right:2px;">₹</span>
+                <input type="number" class="domestic-pack-input" data-pack="5kg" value="${p5k}" min="1" step="1" placeholder="₹" style="width:100%; background:transparent; border:none; color:#FFFFFF; font-size:0.80rem; font-weight:700; font-family:var(--font-mono); text-align:right; outline:none;">
+              </div>
+            </div>
+            <div style="display:flex; flex-direction:column; gap:3px;">
+              <span style="font-size:0.68rem; color:#C2B69D; font-family:var(--font-mono); text-align:center;">25kg</span>
+              <div style="display:flex; align-items:center; background:rgba(0,0,0,0.5); border:1px solid rgba(255,153,51,0.35); border-radius:4px; padding:3px 5px;">
+                <span style="color:#FFA726; font-size:0.72rem; margin-right:2px;">₹</span>
+                <input type="number" class="domestic-pack-input" data-pack="25kg" value="${p25k}" min="1" step="1" placeholder="₹" style="width:100%; background:transparent; border:none; color:#FFFFFF; font-size:0.80rem; font-weight:700; font-family:var(--font-mono); text-align:right; outline:none;">
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     `;
@@ -3053,28 +3103,80 @@ async function savePrices() {
     saveBtn.disabled = true;
   }
 
-  const prices = (typeof getPrices === 'function') ? getPrices() : (window.defaultPrices || {});
+  // Work with fresh deep copies of existing prices and domestic catalog
+  const prices = JSON.parse(JSON.stringify((typeof getPrices === 'function') ? getPrices() : (window.defaultPrices || {})));
+  const domCatalog = JSON.parse(JSON.stringify((typeof window !== 'undefined' && window.domesticCommodityCatalog) || {}));
+
+  let hasValidationError = false;
+  let validationMsg = '';
+
   document.querySelectorAll('.price-item-card').forEach(card => {
     const key = card.getAttribute('data-key');
+    if (!key || key === 'sample' || key === 'sample_pouch' || key.toLowerCase().startsWith('sample')) return;
+
     const input = card.querySelector('.price-input');
-    if (prices[key] && input) {
-      prices[key].baseUsd = parseFloat(input.value) || prices[key].baseUsd;
+    if (!prices[key]) {
+      prices[key] = { baseUsd: 1000 };
+    }
+    if (input) {
+      const usdVal = parseFloat(input.value);
+      if (isNaN(usdVal) || usdVal < 0.01 || usdVal > 100000) {
+        hasValidationError = true;
+        validationMsg = `Invalid export benchmark ($0.01 – $100,000 / MT) for ${prices[key].name || key}.`;
+      } else {
+        prices[key].baseUsd = usdVal;
+      }
+    }
+    const packInputs = card.querySelectorAll('.domestic-pack-input');
+    if (packInputs.length > 0) {
+      if (!prices[key].domesticPacks) {
+        prices[key].domesticPacks = {};
+      }
+      if (!domCatalog[key]) {
+        domCatalog[key] = { packs: {} };
+      }
+      if (!domCatalog[key].packs) {
+        domCatalog[key].packs = {};
+      }
+      packInputs.forEach(pInp => {
+        const packSize = pInp.getAttribute('data-pack');
+        const rawStr = (pInp.value || '').trim();
+        if (!rawStr) return; // Leave empty if unconfigured; do not throw false validation error
+
+        const val = parseFloat(rawStr);
+        if (isNaN(val) || val < 1.0 || val > 1000000.0) {
+          hasValidationError = true;
+          validationMsg = `Domestic price for ${prices[key].name || key} (${packSize}) must be between ₹1 and ₹10,00,000.`;
+        } else if (packSize) {
+          prices[key].domesticPacks[packSize] = val;
+          domCatalog[key].packs[packSize] = val;
+        }
+      });
     }
   });
+
+  if (hasValidationError) {
+    if (typeof showToast === 'function') {
+      showToast(`⚠️ ${validationMsg}`, 'error');
+    }
+    alert(`⚠️ Validation Error:\n\n${validationMsg}`);
+    if (saveBtn) {
+      saveBtn.innerHTML = `
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+        Save All Price Changes
+      `;
+      saveBtn.disabled = false;
+    }
+    return;
+  }
 
   let samplePriceVal = 499.00;
   const sampleInp = document.getElementById('globalSamplePriceInp');
   if (sampleInp) {
     samplePriceVal = parseFloat(sampleInp.value) || 499.00;
-    localStorage.setItem('gge_sample_price_inr', samplePriceVal);
   }
 
-  // 1. Save to localStorage
-  try {
-    localStorage.setItem('gge_prices', JSON.stringify(prices));
-  } catch(e) {}
-
-  // 2. Direct Cloud POST to /api/prices
+  // Cloud POST to /api/prices
   try {
     const token = sessionStorage.getItem('gge_bearer_token') || localStorage.getItem('gge_admin_token');
     const headers = { 'Content-Type': 'application/json' };
@@ -3087,43 +3189,71 @@ async function savePrices() {
       body: JSON.stringify({ prices, samplePriceInr: samplePriceVal })
     });
 
-    if (res.status === 403) {
-      const errData = await res.json();
-      if (typeof showToast === 'function') {
-        showToast(`⛔ Access Denied: Pricing table modifications restricted to Super-Admin.`);
-      }
-      alert(`⛔ Access Denied:\n\n${errData.error || 'Logistics operations staff cannot modify export pricing.'}`);
-      if (saveBtn) {
-        saveBtn.innerHTML = `<span>Save Locked 🔒</span>`;
-        saveBtn.disabled = true;
+    const resData = await res.json().catch(() => ({}));
+
+    if (!res.ok || !resData.success) {
+      if (res.status === 401) {
+        if (typeof showToast === 'function') {
+          showToast(`⛔ Session expired or unauthenticated. Please sign in as Super-Admin.`, 'error');
+        }
+        alert(`⛔ Authentication Required:\n\nPlease log into the Trade Desk as Super-Admin to modify commodity prices.`);
+      } else if (res.status === 403) {
+        if (typeof showToast === 'function') {
+          showToast(`⛔ Access Denied: Pricing table modifications restricted to Super-Admin.`);
+        }
+        alert(`⛔ Access Denied:\n\n${resData.error || resData.detail || 'Logistics operations staff cannot modify export pricing.'}`);
+        if (saveBtn) {
+          saveBtn.innerHTML = `<span>Save Locked 🔒</span>`;
+          saveBtn.disabled = true;
+          return;
+        }
+      } else {
+        const errMsg = resData.error || resData.detail || `Server error (${res.status})`;
+        if (typeof showToast === 'function') {
+          showToast(`❌ Could not save prices: ${errMsg}`, 'error');
+        }
+        alert(`❌ Price Update Failed:\n\n${errMsg}`);
       }
       return;
     }
 
-    const data = await res.json();
+    // Server confirmed update - now persist to localStorage and in-memory caches
+    localStorage.setItem('gge_prices', JSON.stringify(prices));
+    localStorage.setItem('gge_domestic_catalog', JSON.stringify(domCatalog));
+    localStorage.setItem('gge_sample_price_inr', samplePriceVal);
+    if (typeof window !== 'undefined') {
+      window.domesticCommodityCatalog = domCatalog;
+    }
+
+    if (typeof showToast === 'function') {
+      showToast("✅ Commodity benchmark & domestic pack rates published to live storefronts & cloud database!", "success");
+    }
   } catch(err) {
-    console.warn('[PRICES] Server offline, saved locally:', err);
-  }
-
-  if (saveBtn) {
-    saveBtn.innerHTML = `
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
-      Save All Price Changes
-    `;
-    saveBtn.disabled = false;
-  }
-
-  if (typeof showToast === 'function') {
-    showToast("✅ Commodity benchmark rates published to live storefronts & cloud database!");
+    console.warn('[PRICES] Server offline or network error:', err);
+    if (typeof showToast === 'function') {
+      showToast("⚠️ Network error: Could not connect to pricing server. Changes not published to cloud.", "error");
+    }
+  } finally {
+    if (saveBtn && !saveBtn.innerHTML.includes('Save Locked')) {
+      saveBtn.innerHTML = `
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+        Save All Price Changes
+      `;
+      saveBtn.disabled = false;
+    }
   }
 }
 
 function resetPricesToDefault() {
-  if (confirm("Reset all commodity benchmark prices to default factory values?")) {
+  if (confirm("Reset all commodity benchmark prices and domestic pack rates to default factory values?")) {
     localStorage.removeItem('gge_prices');
+    localStorage.removeItem('gge_domestic_catalog');
+    if (typeof window !== 'undefined' && window.defaultDomesticCatalog) {
+      window.domesticCommodityCatalog = JSON.parse(JSON.stringify(window.defaultDomesticCatalog));
+    }
     renderPriceEditor();
     if (typeof showToast === 'function') {
-      showToast("Prices restored to factory defaults.");
+      showToast("Default commodity benchmark prices & domestic pack rates restored in editor. Click Save to persist to cloud.", "info");
     }
   }
 }
@@ -3997,6 +4127,7 @@ function renderCommoditiesTable() {
     const packs = c.domesticPacks || c.domestic_packs;
     if (packs && typeof packs === 'object') {
       const parts = [];
+      if (packs['500g']) parts.push(`500g: ₹${packs['500g']}`);
       if (packs['1kg']) parts.push(`1kg: ₹${packs['1kg']}`);
       if (packs['5kg']) parts.push(`5kg: ₹${packs['5kg']}`);
       if (packs['25kg']) parts.push(`25kg: ₹${packs['25kg']}`);

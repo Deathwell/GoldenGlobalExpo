@@ -165,13 +165,35 @@ function syncLiveProductPrices() {
   });
 
   applyCurrency(currentCurrency);
+
+  // If currently viewing domestic trade segment, re-render pack chips with fresh rates
+  if (typeof window.setMarketSegment === 'function' && window.currentMarketSegment === 'domestic') {
+    try { window.setMarketSegment('domestic'); } catch (_) {}
+  }
+  if (typeof window.syncDomesticPriceCalc === 'function') {
+    try { window.syncDomesticPriceCalc(); } catch (_) {}
+  }
 }
 
 // Cross-tab real-time sync
 if (typeof window !== 'undefined' && typeof window.addEventListener === 'function') {
   window.addEventListener('storage', (e) => {
-    if (e.key === 'gge_prices') {
+    if (e.key === 'gge_prices' || e.key === 'gge_domestic_catalog') {
+      if (e.key === 'gge_prices' && e.newValue) {
+        try {
+          const parsed = JSON.parse(e.newValue);
+          if (typeof syncDomesticCatalogWithPrices === 'function') {
+            syncDomesticCatalogWithPrices(parsed);
+          }
+        } catch (_) {}
+      }
       syncLiveProductPrices();
+      if (typeof window.syncDomesticPriceCalc === 'function') {
+        try { window.syncDomesticPriceCalc(); } catch (_) {}
+      }
+      if (typeof window.setMarketSegment === 'function' && window.currentMarketSegment === 'domestic') {
+        try { window.setMarketSegment('domestic'); } catch (_) {}
+      }
     }
   });
 }
@@ -320,7 +342,18 @@ if (typeof window !== 'undefined') {
         }
       });
       forexSse.addEventListener('PRICE_UPDATED', () => {
-        syncLiveProductPrices();
+        if (typeof fetchServerPrices === 'function') {
+          fetchServerPrices().then(() => syncLiveProductPrices()).catch(() => syncLiveProductPrices());
+        } else {
+          syncLiveProductPrices();
+        }
+      });
+      forexSse.addEventListener('COMMODITY_CATALOG_UPDATED', () => {
+        if (typeof fetchServerPrices === 'function') {
+          fetchServerPrices().then(() => syncLiveProductPrices()).catch(() => syncLiveProductPrices());
+        } else {
+          syncLiveProductPrices();
+        }
       });
     } catch (_) {}
   }

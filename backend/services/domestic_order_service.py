@@ -99,22 +99,69 @@ class DomesticOrderService:
         return ""
 
     @classmethod
+    def get_current_rates(cls) -> Dict[str, Any]:
+        """Returns domestic commodity rates merged with database overrides."""
+        rates = {k: {**v, "packs": dict(v["packs"])} for k, v in DOMESTIC_COMMODITY_SCHEDULE.items()}
+        try:
+            from backend.db import SessionLocal, CommoditySpecificationModel, CommodityPriceModel
+            session = SessionLocal()
+            try:
+                specs = session.query(CommoditySpecificationModel).all()
+                for s in specs:
+                    if s.code not in rates and s.domestic_packs_json:
+                        try:
+                            packs = json.loads(s.domestic_packs_json)
+                            if isinstance(packs, dict) and packs:
+                                rates[s.code] = {
+                                    "name": s.name,
+                                    "category": s.category.lower() if s.category else "pulses",
+                                    "hsn": s.hs_code.split(".")[0] if s.hs_code else "0713",
+                                    "packs": {k: float(v) for k, v in packs.items()}
+                                }
+                        except Exception:
+                            pass
+                prices = session.query(CommodityPriceModel).all()
+                for p in prices:
+                    if hasattr(p, 'domestic_packs_json') and p.domestic_packs_json and p.domestic_packs_json != '{}':
+                        try:
+                            packs = json.loads(p.domestic_packs_json)
+                            if isinstance(packs, dict) and packs:
+                                clean_packs = {k: float(v) for k, v in packs.items()}
+                                if p.code in rates:
+                                    rates[p.code]["packs"].update(clean_packs)
+                                else:
+                                    rates[p.code] = {
+                                        "name": p.name or p.code,
+                                        "category": (p.category or "pulses").lower(),
+                                        "hsn": "0713",
+                                        "packs": clean_packs
+                                    }
+                        except Exception:
+                            pass
+            finally:
+                session.close()
+        except Exception:
+            pass
+        return rates
+
+    @classmethod
     def calculate_price(cls, commodity_input: str, pack_size: str, quantity: int = 1) -> float:
         norm_pack = cls.normalize_pack_size(pack_size) or "1kg"
+        rates = cls.get_current_rates()
         matched = None
         c_clean = str(commodity_input or "").lower().strip()
-        if commodity_input in DOMESTIC_COMMODITY_SCHEDULE:
-            matched = DOMESTIC_COMMODITY_SCHEDULE[commodity_input]
+        if commodity_input in rates:
+            matched = rates[commodity_input]
         else:
             if c_clean:
-                for k, item in DOMESTIC_COMMODITY_SCHEDULE.items():
+                for k, item in rates.items():
                     if k == c_clean or item["name"].lower() in c_clean or (len(c_clean) >= 3 and c_clean in item["name"].lower()):
                         matched = item
                         break
                 if not matched:
                     for k, aliases in COMMODITY_ALIASES.items():
                         if any(alias in c_clean for alias in aliases):
-                            matched = DOMESTIC_COMMODITY_SCHEDULE.get(k)
+                            matched = rates.get(k)
                             break
         unit_price = matched["packs"].get(norm_pack, 160.0) if matched else 160.0
         return round(unit_price * max(1, quantity), 2)
@@ -123,7 +170,7 @@ class DomesticOrderService:
     def get_rates_payload(cls) -> Dict[str, Any]:
         return {
             "success": True,
-            "rates": DOMESTIC_COMMODITY_SCHEDULE,
+            "rates": cls.get_current_rates(),
             "allowedPacks": ALLOWED_PACKS,
             "upiVpa": UPI_VPA,
             "payeeName": UPI_PAYEE_NAME

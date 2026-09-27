@@ -14,7 +14,7 @@ from fastapi.responses import JSONResponse
 from backend.core.config import BASE_DIR
 from backend.core.atomic_io import atomic_json_write
 from backend.core.events import broadcast_sse
-from backend.db import SessionLocal, CommodityPriceModel, AdminSessionModel, DATA_DIR
+from backend.db import SessionLocal, CommodityPriceModel, CommoditySpecificationModel, AdminSessionModel, DATA_DIR
 
 router = APIRouter(tags=["Commodity Prices & Forex"])
 
@@ -26,14 +26,28 @@ async def get_prices():
     try:
         prices_dict = {}
         sample_price = DEFAULT_SAMPLE_PRICE_INR
+        specs = {s.code: s for s in session.query(CommoditySpecificationModel).all()}
         for item in session.query(CommodityPriceModel).all():
             val = item.base_usd if (item.base_usd is not None and item.base_usd > 0) else (item.price_inr or 0.0)
+            packs = {}
+            if hasattr(item, 'domestic_packs_json') and item.domestic_packs_json and item.domestic_packs_json != '{}':
+                try:
+                    packs = json.loads(item.domestic_packs_json)
+                except Exception:
+                    packs = {}
+            if not packs and item.code in specs:
+                try:
+                    packs = json.loads(specs[item.code].domestic_packs_json) if specs[item.code].domestic_packs_json else {}
+                except Exception:
+                    packs = {}
+
             prices_dict[item.code] = {
                 'name': item.name,
                 'price': val,
                 'baseUsd': val,
                 'category': item.category,
-                'marginPct': item.margin_pct
+                'marginPct': item.margin_pct,
+                'domesticPacks': packs
             }
             if item.code in ("sample", "sample_pouch"):
                 sample_price = item.price_inr or item.base_usd or DEFAULT_SAMPLE_PRICE_INR
@@ -80,33 +94,119 @@ async def update_prices(request: Request, user: dict = Depends(require_auth(["ad
             for code, p in prices.items():
                 clean_code = str(code).strip()[:64]
                 record = session.query(CommodityPriceModel).filter_by(code=clean_code).first()
+
+                price_val_provided = False
+                if isinstance(p, dict):
+                    if 'baseUsd' in p or 'price' in p:
+                        raw_price = p.get('baseUsd', p.get('price'))
+                        price_val_provided = True
+                    elif record and record.base_usd is not None and record.base_usd > 0:
+                        raw_price = record.base_usd
+                    else:
+                        raw_price = 850.0
+                else:
+                    raw_price = p
+                    price_val_provided = True
+
                 try:
-                    price_val = float(p.get('baseUsd', p.get('price', 0.0)) if isinstance(p, dict) else p)
+                    price_val = float(raw_price)
                 except (ValueError, TypeError):
                     return JSONResponse(status_code=400, content={'success': False, 'error': f'Invalid price value for {clean_code}.'})
-                name_val = str(p.get('name', clean_code) if isinstance(p, dict) else clean_code)[:128]
-                cat_val = str(p.get('category', 'Agri') if isinstance(p, dict) else 'Agri')[:64]
-                try:
-                    margin_val = float(p.get('marginPct', 0.0) if isinstance(p, dict) else 0.0)
-                except (ValueError, TypeError):
-                    margin_val = 0.0
 
-                if math.isnan(price_val) or math.isinf(price_val) or price_val < 0 or price_val > 100000.0:
-                    return JSONResponse(status_code=400, content={'success': False, 'error': f'Price {price_val} for {clean_code} is out of realistic export bounds ($0.01 - $100,000 / MT).'})
+                if price_val_provided:
+                    if math.isnan(price_val) or math.isinf(price_val) or price_val < 0.01 or price_val > 100000.0:
+                        return JSONResponse(status_code=400, content={'success': False, 'error': f'Price {price_val} for {clean_code} is out of realistic export bounds ($0.01 - $100,000 / MT).'})
+
+                existing_name = record.name if record and record.name else clean_code
+                existing_cat = record.category if record and record.category else 'Agri'
+                name_val = str(p.get('name') or existing_name if isinstance(p, dict) else existing_name)[:128]
+                cat_val = str(p.get('category') or existing_cat if isinstance(p, dict) else existing_cat)[:64]
+                try:
+                    margin_val = float(p.get('marginPct', record.margin_pct if record else 0.0) if isinstance(p, dict) else (record.margin_pct if record else 0.0))
+                except (ValueError, TypeError):
+                    margin_val = record.margin_pct if record else 0.0
+
                 if math.isnan(margin_val) or math.isinf(margin_val) or margin_val < 0 or margin_val > 500.0:
                     return JSONResponse(status_code=400, content={'success': False, 'error': f'Margin percentage for {clean_code} must be between 0% and 500%.'})
 
+                # Process domestic pack prices if provided
+                clean_dom_packs = {}
+                if isinstance(p, dict):
+                    dom_packs = p.get('domesticPacks') or p.get('packs')
+                    if dom_packs is not None:
+                        if not isinstance(dom_packs, dict):
+                            return JSONResponse(status_code=400, content={'success': False, 'error': f'Invalid domestic packs format for {clean_code}.'})
+                        for pk, pv in dom_packs.items():
+                            clean_pk = str(pk or "").strip().lower().replace(" ", "")
+                            if clean_pk in ["500g", "500gm", "500gms", "0.5kg"]:
+                                clean_pk = "500g"
+                            elif clean_pk in ["1kg", "1000g", "1.0kg", "1kgs"]:
+                                clean_pk = "1kg"
+                            elif clean_pk in ["5kg", "5000g", "5.0kg", "5kgs"]:
+                                clean_pk = "5kg"
+                            elif clean_pk in ["25kg", "25000g", "25.0kg", "25kgs"]:
+                                clean_pk = "25kg"
+                            else:
+                                return JSONResponse(status_code=400, content={'success': False, 'error': f'Unsupported domestic pack size {clean_pk} for {clean_code}. Supported: 500g, 1kg, 5kg, 25kg.'})
+
+                            try:
+                                num_pv = float(pv)
+                                if math.isnan(num_pv) or math.isinf(num_pv) or num_pv < 1.0 or num_pv > 1000000.0:
+                                    return JSONResponse(status_code=400, content={'success': False, 'error': f'Domestic price {num_pv} for {clean_code} pack {pk} out of bounds.'})
+                                clean_dom_packs[clean_pk] = num_pv
+                            except (ValueError, TypeError):
+                                return JSONResponse(status_code=400, content={'success': False, 'error': f'Invalid domestic price value for {clean_code} pack {pk}.'})
+
                 if record:
-                    record.base_usd = price_val
-                    record.price_inr = price_val
+                    if price_val_provided:
+                        record.base_usd = price_val
+                        record.price_inr = price_val
                     record.name = name_val
                     record.category = cat_val
                     record.margin_pct = margin_val
+                    if clean_dom_packs:
+                        existing_p_packs = {}
+                        try:
+                            if record.domestic_packs_json:
+                                existing_p_packs = json.loads(record.domestic_packs_json)
+                        except Exception:
+                            pass
+                        existing_p_packs.update(clean_dom_packs)
+                        record.domestic_packs_json = json.dumps(existing_p_packs)
                     record.updated_at = time.time()
                 else:
-                    session.add(CommodityPriceModel(
+                    new_item = CommodityPriceModel(
                         code=clean_code, name=name_val, category=cat_val, base_usd=price_val, price_inr=price_val, margin_pct=margin_val
-                    ))
+                    )
+                    if clean_dom_packs:
+                        new_item.domestic_packs_json = json.dumps(clean_dom_packs)
+                    session.add(new_item)
+
+                # Synchronize with CommoditySpecificationModel
+                spec_record = session.query(CommoditySpecificationModel).filter_by(code=clean_code).first()
+                if spec_record:
+                    if price_val_provided:
+                        spec_record.base_usd = price_val
+                    if clean_dom_packs:
+                        existing_s_packs = {}
+                        try:
+                            if spec_record.domestic_packs_json:
+                                existing_s_packs = json.loads(spec_record.domestic_packs_json)
+                        except Exception:
+                            pass
+                        existing_s_packs.update(clean_dom_packs)
+                        spec_record.domestic_packs_json = json.dumps(existing_s_packs)
+                    spec_record.updated_at = time.time()
+
+                # Synchronize with in-memory domestic order service schedule
+                if clean_dom_packs:
+                    try:
+                        from backend.services.domestic_order_service import DOMESTIC_COMMODITY_SCHEDULE
+                        if clean_code in DOMESTIC_COMMODITY_SCHEDULE:
+                            DOMESTIC_COMMODITY_SCHEDULE[clean_code]["packs"].update(clean_dom_packs)
+                    except Exception:
+                        pass
+
             session.commit()
 
             try:
@@ -114,9 +214,15 @@ async def update_prices(request: Request, user: dict = Depends(require_auth(["ad
                 for r in session.query(CommodityPriceModel).all():
                     mirror_dict[r.code] = r.to_dict()
                 atomic_json_write(os.path.join(DATA_DIR, 'prices.json'), mirror_dict)
+
+                mirror_specs = {}
+                for r in session.query(CommoditySpecificationModel).all():
+                    mirror_specs[r.code] = r.to_dict()
+                atomic_json_write(os.path.join(DATA_DIR, 'commodities.json'), mirror_specs)
             except Exception: pass
 
             broadcast_sse("PRICE_UPDATED", {"count": len(prices), "timestamp": time.time()})
+            broadcast_sse("COMMODITY_CATALOG_UPDATED", {"action": "prices_updated", "count": len(prices)})
             return {'success': True, 'message': 'Prices updated successfully in ACID database.', 'count': len(prices)}
         finally:
             session.close()

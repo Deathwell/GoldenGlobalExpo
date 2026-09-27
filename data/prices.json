@@ -1,147 +1,183 @@
 {
   "p1": {
     "code": "p1",
-    "name": "Organic Turmeric Salem",
-    "category": "Spices",
-    "baseUsd": 145.5,
-    "price": 145.5,
-    "marginPct": 8.0,
-    "updatedAt": 1789499252.3709435
+    "name": "Classic Toor (Tur Dal)",
+    "category": "Pulses",
+    "baseUsd": 825.0,
+    "price": 825.0,
+    "marginPct": 0.0,
+    "domesticPacks": {
+      "500g": 95.0,
+      "1kg": 210.0,
+      "5kg": 820.0,
+      "25kg": 3950.0
+    },
+    "updatedAt": 1790551540.7636828
   },
   "p2": {
     "code": "p2",
     "name": "Classic Moong (Whole)",
-    "category": "Pulses",
-    "baseUsd": 840.0,
-    "price": 840.0,
+    "category": "Agri",
+    "baseUsd": 100000.0,
+    "price": 100000.0,
     "marginPct": 0.0,
-    "updatedAt": 1788782150.719673
+    "domesticPacks": {
+      "500g": 80.0,
+      "1kg": 150.0,
+      "5kg": 725.0,
+      "25kg": 3500.0
+    },
+    "updatedAt": 1790551540.764592
   },
   "p3": {
     "code": "p3",
     "name": "Classic Chana Dal",
-    "category": "Pulses",
+    "category": "Agri",
     "baseUsd": 760.0,
     "price": 760.0,
     "marginPct": 0.0,
-    "updatedAt": 1788782150.7196734
+    "domesticPacks": {
+      "500g": 65.0,
+      "1kg": 120.0,
+      "5kg": 575.0,
+      "25kg": 2750.0
+    },
+    "updatedAt": 1790551540.7655182
   },
   "p4": {
     "code": "p4",
     "name": "Classic Masoor (Red Split)",
-    "category": "Pulses",
+    "category": "Agri",
     "baseUsd": 790.0,
     "price": 790.0,
     "marginPct": 0.0,
-    "updatedAt": 1788782150.7196736
+    "domesticPacks": {
+      "500g": 70.0,
+      "1kg": 130.0,
+      "5kg": 625.0,
+      "25kg": 3000.0
+    },
+    "updatedAt": 1790551540.7665951
   },
   "p5": {
     "code": "p5",
     "name": "Chia Seeds (Superfood)",
-    "category": "Seeds",
+    "category": "Agri",
     "baseUsd": 1850.0,
     "price": 1850.0,
     "marginPct": 0.0,
-    "updatedAt": 1788782150.7196739
+    "domesticPacks": {
+      "500g": 190.0,
+      "1kg": 360.0,
+      "5kg": 1700.0,
+      "25kg": 8200.0
+    },
+    "updatedAt": 1790551540.7678354
   },
   "p6": {
     "code": "p6",
     "name": "Coriander Seeds (Dhania)",
-    "category": "Spices",
+    "category": "Agri",
     "baseUsd": 1420.0,
     "price": 1420.0,
     "marginPct": 0.0,
-    "updatedAt": 1788782150.719674
+    "domesticPacks": {
+      "500g": 95.0,
+      "1kg": 180.0,
+      "5kg": 850.0,
+      "25kg": 4100.0
+    },
+    "updatedAt": 1790551540.76897
   },
   "p7": {
     "code": "p7",
     "name": "Cumin Seeds (Jeera Whole)",
-    "category": "Spices",
+    "category": "Agri",
     "baseUsd": 3800.0,
     "price": 3800.0,
     "marginPct": 0.0,
-    "updatedAt": 1788782150.7196743
+    "domesticPacks": {
+      "500g": 240.0,
+      "1kg": 460.0,
+      "5kg": 2200.0,
+      "25kg": 10500.0
+    },
+    "updatedAt": 1790551540.7700543
   },
   "p8": {
     "code": "p8",
     "name": "Moringa Leaf Powder",
-    "category": "Powders",
+    "category": "Agri",
     "baseUsd": 3800.0,
     "price": 3800.0,
     "marginPct": 0.0,
-    "updatedAt": 1788782150.7196746
+    "domesticPacks": {
+      "500g": 220.0,
+      "1kg": 420.0,
+      "5kg": 2000.0,
+      "25kg": 9500.0
+    },
+    "updatedAt": 1790551540.7713172
   },
   "p9": {
     "code": "p9",
     "name": "Mint Powder (Pudina)",
-    "category": "Powders",
+    "category": "Agri",
     "baseUsd": 3200.0,
     "price": 3200.0,
     "marginPct": 0.0,
-    "updatedAt": 1788782150.7196748
+    "domesticPacks": {
+      "500g": 180.0,
+      "1kg": 340.0,
+      "5kg": 1600.0,
+      "25kg": 7800.0
+    },
+    "updatedAt": 1790551540.7722356
   },
   "p10": {
     "code": "p10",
     "name": "Coriander Powder",
-    "category": "Powders",
+    "category": "Agri",
     "baseUsd": 1650.0,
     "price": 1650.0,
     "marginPct": 0.0,
-    "updatedAt": 1788782150.719675
+    "domesticPacks": {
+      "500g": 110.0,
+      "1kg": 210.0,
+      "5kg": 1000.0,
+      "25kg": 4800.0
+    },
+    "updatedAt": 1790551540.7729743
   },
   "p11": {
     "code": "p11",
     "name": "Jowar (Whole Sorghum)",
-    "category": "Grains",
+    "category": "Agri",
     "baseUsd": 520.0,
     "price": 520.0,
     "marginPct": 0.0,
-    "updatedAt": 1788782150.7196753
-  },
-  "p12": {
-    "code": "p12",
-    "name": "Jowar Flour (Sorghum Flour)",
-    "category": "Grains",
-    "baseUsd": 620.0,
-    "price": 620.0,
-    "marginPct": 0.0,
-    "updatedAt": 1788782150.7196753
+    "domesticPacks": {
+      "500g": 45.0,
+      "1kg": 80.0,
+      "5kg": 380.0,
+      "25kg": 1800.0
+    },
+    "updatedAt": 1790551540.773825
   },
   "p13": {
     "code": "p13",
     "name": "Tissue Paper Virgin Pulp",
-    "category": "Paper",
+    "category": "Agri",
     "baseUsd": 1150.0,
     "price": 1150.0,
     "marginPct": 0.0,
-    "updatedAt": 1788782150.7196753
-  },
-  "p14": {
-    "code": "p14",
-    "name": "Emmer Wheat (Khapli Wheat)",
-    "category": "Grains",
-    "baseUsd": 680.0,
-    "price": 680.0,
-    "marginPct": 0.0,
-    "updatedAt": 1788782150.719676
-  },
-  "p15": {
-    "code": "p15",
-    "name": "Pure Cow Ghee (Desi Bilona)",
-    "category": "Dairy",
-    "baseUsd": 6800.0,
-    "price": 6800.0,
-    "marginPct": 0.0,
-    "updatedAt": 1788782150.719676
-  },
-  "p17": {
-    "code": "p17",
-    "name": "Indian Home Spices (Individual Lots)",
-    "category": "Spices",
-    "baseUsd": 2450.0,
-    "price": 2450.0,
-    "marginPct": 0.0,
-    "updatedAt": 1788782150.7196763
+    "domesticPacks": {
+      "500g": 150.0,
+      "1kg": 280.0,
+      "5kg": 1300.0,
+      "25kg": 5800.0
+    },
+    "updatedAt": 1790551540.774922
   },
   "sample_pouch": {
     "code": "sample_pouch",
@@ -150,6 +186,67 @@
     "baseUsd": 499.0,
     "price": 499.0,
     "marginPct": 0.0,
-    "updatedAt": 1789499252.5585072
+    "domesticPacks": {},
+    "updatedAt": 1790551540.7759156
+  },
+  "p14": {
+    "code": "p14",
+    "name": "Emmer Wheat (Khapli Wheat)",
+    "category": "Grains",
+    "baseUsd": 680.0,
+    "price": 680.0,
+    "marginPct": 0.0,
+    "domesticPacks": {
+      "500g": 55.0,
+      "1kg": 100.0,
+      "5kg": 480.0,
+      "25kg": 2300.0
+    },
+    "updatedAt": 1790551540.7769165
+  },
+  "p15": {
+    "code": "p15",
+    "name": "Pure Cow Ghee (Desi Bilona)",
+    "category": "Dairy",
+    "baseUsd": 6800.0,
+    "price": 6800.0,
+    "marginPct": 0.0,
+    "domesticPacks": {
+      "500g": 450.0,
+      "1kg": 850.0,
+      "5kg": 4100.0,
+      "25kg": 19800.0
+    },
+    "updatedAt": 1790551540.778038
+  },
+  "p17": {
+    "code": "p17",
+    "name": "Indian Home Spices (Individual Lots)",
+    "category": "Spices",
+    "baseUsd": 2450.0,
+    "price": 2450.0,
+    "marginPct": 0.0,
+    "domesticPacks": {
+      "500g": 160.0,
+      "1kg": 300.0,
+      "5kg": 1420.0,
+      "25kg": 6800.0
+    },
+    "updatedAt": 1790551540.77911
+  },
+  "p12": {
+    "code": "p12",
+    "name": "Jowar Flour (Sorghum Flour)",
+    "category": "Grains",
+    "baseUsd": 620.0,
+    "price": 620.0,
+    "marginPct": 0.0,
+    "domesticPacks": {
+      "500g": 50.0,
+      "1kg": 90.0,
+      "5kg": 430.0,
+      "25kg": 2050.0
+    },
+    "updatedAt": 1790551540.7800977
   }
 }

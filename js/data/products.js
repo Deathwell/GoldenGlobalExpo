@@ -671,10 +671,18 @@ const domesticCommodityCatalog = {
   }
 };
 
+// Merge default domestic pack rates into defaultPrices
+Object.keys(defaultPrices).forEach(k => {
+  if (domesticCommodityCatalog[k] && domesticCommodityCatalog[k].packs) {
+    defaultPrices[k].domesticPacks = { ...domesticCommodityCatalog[k].packs };
+  }
+});
+
 if (typeof window !== "undefined") {
   window.specDatabase = specDatabase;
   window.defaultPrices = defaultPrices;
   window.domesticCommodityCatalog = domesticCommodityCatalog;
+  window.defaultDomesticCatalog = JSON.parse(JSON.stringify(domesticCommodityCatalog));
 }
 
 if (typeof module !== "undefined" && module.exports) {

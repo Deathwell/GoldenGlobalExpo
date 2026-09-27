@@ -35,7 +35,7 @@ DEFAULT_CATALOG = [
         "shelf_life": "24 Months",
         "certifications": "APEDA Compliance, FSSAI Export Standards, Phytosanitary, Non-GMO",
         "base_usd": 820.0,
-        "domestic_packs": {"500g": 90, "1kg": 160, "5kg": 780, "25kg": 3750}
+        "domestic_packs": {"500g": 85, "1kg": 160, "5kg": 775, "25kg": 3750}
     },
     {
         "code": "p2",
@@ -56,7 +56,7 @@ DEFAULT_CATALOG = [
         "shelf_life": "24 Months",
         "certifications": "APEDA Compliance, FSSAI Export Standards, Phytosanitary, Non-GMO",
         "base_usd": 840.0,
-        "domestic_packs": {"500g": 85, "1kg": 150, "5kg": 720, "25kg": 3450}
+        "domestic_packs": {"500g": 80, "1kg": 150, "5kg": 725, "25kg": 3500}
     },
     {
         "code": "p3",
@@ -77,7 +77,7 @@ DEFAULT_CATALOG = [
         "shelf_life": "24 Months",
         "certifications": "APEDA Compliance, FSSAI Export Standards, SGS Ready",
         "base_usd": 760.0,
-        "domestic_packs": {"500g": 70, "1kg": 125, "5kg": 590, "25kg": 2800}
+        "domestic_packs": {"500g": 65, "1kg": 120, "5kg": 575, "25kg": 2750}
     },
     {
         "code": "p4",
@@ -98,7 +98,7 @@ DEFAULT_CATALOG = [
         "shelf_life": "24 Months",
         "certifications": "APEDA Compliance, FSSAI Export Standards, Phytosanitary, Non-GMO",
         "base_usd": 790.0,
-        "domestic_packs": {"500g": 75, "1kg": 135, "5kg": 640, "25kg": 3050}
+        "domestic_packs": {"500g": 70, "1kg": 130, "5kg": 625, "25kg": 3000}
     },
     {
         "code": "p5",
@@ -119,7 +119,7 @@ DEFAULT_CATALOG = [
         "shelf_life": "36 Months",
         "certifications": "FSSAI Standards, APEDA Compliance, ETO-Free, Gluten-Free",
         "base_usd": 1850.0,
-        "domestic_packs": {"500g": 190, "1kg": 350, "5kg": 1680, "25kg": 8000}
+        "domestic_packs": {"500g": 190, "1kg": 360, "5kg": 1700, "25kg": 8200}
     },
     {
         "code": "p6",
@@ -140,7 +140,7 @@ DEFAULT_CATALOG = [
         "shelf_life": "24 Months",
         "certifications": "Spices Board India, FSSAI Standards, Phytosanitary",
         "base_usd": 1420.0,
-        "domestic_packs": {"500g": 110, "1kg": 200, "5kg": 950, "25kg": 4500}
+        "domestic_packs": {"500g": 95, "1kg": 180, "5kg": 850, "25kg": 4100}
     },
     {
         "code": "p7",
@@ -161,7 +161,7 @@ DEFAULT_CATALOG = [
         "shelf_life": "24 Months",
         "certifications": "Spices Board of India, FSSAI Export Standard, ETO Tested",
         "base_usd": 3800.0,
-        "domestic_packs": {"500g": 280, "1kg": 520, "5kg": 2480, "25kg": 11800}
+        "domestic_packs": {"500g": 240, "1kg": 460, "5kg": 2200, "25kg": 10500}
     },
     {
         "code": "p8",
@@ -182,7 +182,7 @@ DEFAULT_CATALOG = [
         "shelf_life": "24 Months",
         "certifications": "Organic NPOP, FSSAI Standards, Heavy Metal Tested",
         "base_usd": 3800.0,
-        "domestic_packs": {"500g": 220, "1kg": 400, "5kg": 1900, "25kg": 9000}
+        "domestic_packs": {"500g": 220, "1kg": 420, "5kg": 2000, "25kg": 9500}
     },
     {
         "code": "p9",
@@ -203,7 +203,7 @@ DEFAULT_CATALOG = [
         "shelf_life": "24 Months",
         "certifications": "FSSAI Export Standards, Micro-Organism Screened",
         "base_usd": 3200.0,
-        "domestic_packs": {"500g": 180, "1kg": 330, "5kg": 1550, "25kg": 7400}
+        "domestic_packs": {"500g": 180, "1kg": 340, "5kg": 1600, "25kg": 7800}
     },
     {
         "code": "p10",
@@ -224,7 +224,7 @@ DEFAULT_CATALOG = [
         "shelf_life": "18 Months",
         "certifications": "Agmark Special Grade, Spices Board, FSSAI",
         "base_usd": 1650.0,
-        "domestic_packs": {"500g": 120, "1kg": 220, "5kg": 1050, "25kg": 5000}
+        "domestic_packs": {"500g": 110, "1kg": 210, "5kg": 1000, "25kg": 4800}
     },
     {
         "code": "p11",
@@ -245,7 +245,7 @@ DEFAULT_CATALOG = [
         "shelf_life": "24 Months",
         "certifications": "APEDA Compliance, FSSAI Export Standards, Non-GMO",
         "base_usd": 520.0,
-        "domestic_packs": {"500g": 40, "1kg": 75, "5kg": 350, "25kg": 1650}
+        "domestic_packs": {"500g": 45, "1kg": 80, "5kg": 380, "25kg": 1800}
     },
     {
         "code": "p12",
@@ -266,7 +266,7 @@ DEFAULT_CATALOG = [
         "shelf_life": "12 Months",
         "certifications": "Gluten-Free Certified, FSSAI Export Standards",
         "base_usd": 620.0,
-        "domestic_packs": {"500g": 45, "1kg": 85, "5kg": 400, "25kg": 1900}
+        "domestic_packs": {"500g": 50, "1kg": 90, "5kg": 430, "25kg": 2050}
     },
     {
         "code": "p13",
@@ -398,12 +398,31 @@ async def list_commodities(
         records = q.order_by(CommoditySpecificationModel.code.asc()).all()
         commodities = [r.to_dict() for r in records]
 
-        # Sync spot price from CommodityPriceModel if available
-        prices = {p.code: (p.base_usd if p.base_usd and p.base_usd > 0 else p.price_inr) for p in session.query(CommodityPriceModel).all()}
+        # Sync spot price and domestic pack overrides from CommodityPriceModel if available
+        price_recs = session.query(CommodityPriceModel).all()
+        prices = {p.code: (p.base_usd if p.base_usd and p.base_usd > 0 else p.price_inr) for p in price_recs}
+        price_dom_packs = {}
+        for p in price_recs:
+            if hasattr(p, 'domestic_packs_json') and p.domestic_packs_json and p.domestic_packs_json != '{}':
+                try:
+                    price_dom_packs[p.code] = json.loads(p.domestic_packs_json)
+                except Exception:
+                    pass
+
         for c in commodities:
             if c["code"] in prices and prices[c["code"]] is not None and prices[c["code"]] > 0:
                 c["baseUsd"] = prices[c["code"]]
                 c["price"] = prices[c["code"]]
+            if c["code"] in price_dom_packs and price_dom_packs[c["code"]]:
+                c["domesticPacks"] = {**c.get("domesticPacks", {}), **price_dom_packs[c["code"]]}
+
+        # Mirror to data/commodities.json
+        try:
+            from backend.core.atomic_io import atomic_json_write
+            mirror_dict = {c["code"]: c for c in commodities}
+            atomic_json_write(os.path.join(DATA_DIR, 'commodities.json'), mirror_dict)
+        except Exception:
+            pass
 
         return {"success": True, "count": len(commodities), "commodities": commodities}
     finally:
@@ -419,9 +438,17 @@ async def get_commodity(code: str):
             raise HTTPException(status_code=404, detail=f"Commodity '{code}' not found in catalog.")
         data = rec.to_dict()
         price_rec = session.query(CommodityPriceModel).filter_by(code=code.strip()).first()
-        if price_rec and price_rec.base_usd:
-            data["baseUsd"] = price_rec.base_usd
-            data["price"] = price_rec.base_usd
+        if price_rec:
+            if price_rec.base_usd:
+                data["baseUsd"] = price_rec.base_usd
+                data["price"] = price_rec.base_usd
+            if hasattr(price_rec, 'domestic_packs_json') and price_rec.domestic_packs_json and price_rec.domestic_packs_json != '{}':
+                try:
+                    p_packs = json.loads(price_rec.domestic_packs_json)
+                    if p_packs:
+                        data["domesticPacks"] = {**data.get("domesticPacks", {}), **p_packs}
+                except Exception:
+                    pass
         return {"success": True, "commodity": data}
     finally:
         session.close()
@@ -503,6 +530,7 @@ async def create_commodity(
 
         # Also register in CommodityPriceModel so pricing router sees it
         price_rec = session.query(CommodityPriceModel).filter_by(code=code).first()
+        dom_packs_json = json.dumps(dom_packs) if dom_packs else '{}'
         if not price_rec:
             session.add(CommodityPriceModel(
                 code=code,
@@ -510,14 +538,27 @@ async def create_commodity(
                 category=item.category,
                 base_usd=base_usd,
                 price_inr=base_usd,
-                margin_pct=0.0
+                margin_pct=0.0,
+                domestic_packs_json=dom_packs_json
             ))
         else:
             price_rec.base_usd = base_usd
             price_rec.name = name
+            if dom_packs:
+                price_rec.domestic_packs_json = dom_packs_json
 
         session.commit()
+        try:
+            from backend.core.atomic_io import atomic_json_write
+            all_specs = {s.code: s.to_dict() for s in session.query(CommoditySpecificationModel).all()}
+            atomic_json_write(os.path.join(DATA_DIR, 'commodities.json'), all_specs)
+            all_prices = {p.code: p.to_dict() for p in session.query(CommodityPriceModel).all()}
+            atomic_json_write(os.path.join(DATA_DIR, 'prices.json'), all_prices)
+        except Exception:
+            pass
+
         broadcast_sse("COMMODITY_CATALOG_UPDATED", {"code": code, "action": "created", "name": name})
+        broadcast_sse("PRICE_UPDATED", {"code": code, "action": "created"})
         return {"success": True, "message": f"Commodity '{name}' registered successfully.", "commodity": item.to_dict()}
     finally:
         session.close()
@@ -563,13 +604,33 @@ async def update_commodity(
             if price_rec:
                 price_rec.base_usd = new_p
         if "domesticPacks" in payload or "packs" in payload:
-            rec.domestic_packs_json = json.dumps(payload.get("domesticPacks") or payload.get("packs") or {})
+            dom_packs = payload.get("domesticPacks") or payload.get("packs") or {}
+            rec.domestic_packs_json = json.dumps(dom_packs)
+            price_rec = session.query(CommodityPriceModel).filter_by(code=code.strip()).first()
+            if price_rec:
+                price_rec.domestic_packs_json = json.dumps(dom_packs)
+            try:
+                from backend.services.domestic_order_service import DOMESTIC_COMMODITY_SCHEDULE
+                if code.strip() in DOMESTIC_COMMODITY_SCHEDULE and isinstance(dom_packs, dict):
+                    DOMESTIC_COMMODITY_SCHEDULE[code.strip()]["packs"].update({k: float(v) for k, v in dom_packs.items()})
+            except Exception:
+                pass
         if "coaUrl" in payload: rec.coa_url = str(payload["coaUrl"]).strip()
         if "isActive" in payload: rec.is_active = 1 if payload["isActive"] else 0
         rec.updated_at = time.time()
 
         session.commit()
+        try:
+            from backend.core.atomic_io import atomic_json_write
+            all_specs = {s.code: s.to_dict() for s in session.query(CommoditySpecificationModel).all()}
+            atomic_json_write(os.path.join(DATA_DIR, 'commodities.json'), all_specs)
+            all_prices = {p.code: p.to_dict() for p in session.query(CommodityPriceModel).all()}
+            atomic_json_write(os.path.join(DATA_DIR, 'prices.json'), all_prices)
+        except Exception:
+            pass
+
         broadcast_sse("COMMODITY_CATALOG_UPDATED", {"code": code, "action": "updated"})
+        broadcast_sse("PRICE_UPDATED", {"code": code, "action": "updated"})
         return {"success": True, "message": f"Commodity '{rec.name}' specifications updated.", "commodity": rec.to_dict()}
     finally:
         session.close()

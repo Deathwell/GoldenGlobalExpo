@@ -1,5 +1,5 @@
-// Golden Global Expo — Service Worker (Release v5.0.0)
-const CACHE_NAME = 'gge-pwa-v5.0.1';
+// Golden Global Expo — Service Worker (Release v5.2.0)
+const CACHE_NAME = 'gge-pwa-v5.2.0';
 
 const PRECACHE_ASSETS = [
   '/',
@@ -13,11 +13,9 @@ const PRECACHE_ASSETS = [
   '/css/manifest.css',
   '/css/mobile.css',
   '/css/tablet.css',
-  '/css/desk.css',
   '/css/tracking.css',
   '/css/download.css',
   '/js/main.js',
-  '/js/desk.js',
   '/js/tracking.js',
   '/js/download.js',
   '/js/data/products.js',
@@ -41,13 +39,14 @@ const PRECACHE_ASSETS = [
 
 // Install Event: Pre-cache static assets
 self.addEventListener('install', (event) => {
+  self.skipWaiting();
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
       console.log('[PWA SW] Pre-caching institutional trade assets...');
       return cache.addAll(PRECACHE_ASSETS).catch((err) => {
         console.warn('[PWA SW] Pre-cache partial warning:', err);
       });
-    }).then(() => self.skipWaiting())
+    })
   );
 });
 
@@ -76,8 +75,13 @@ self.addEventListener('fetch', (event) => {
 
   const url = new URL(event.request.url);
 
-  // 1. Bypass Server-Sent Events (SSE), Auth endpoints, and Administrative Desk route gate completely
-  if (url.pathname.includes('/api/stream/events') || url.pathname.includes('/api/auth/') || url.pathname === '/desk' || url.pathname === '/desk.html') {
+  // 1. Bypass Server-Sent Events (SSE), Auth endpoints, and Administrative Desk routes & assets completely
+  if (url.pathname.includes('/api/stream/events') || 
+      url.pathname.includes('/api/auth/') || 
+      url.pathname === '/desk' || 
+      url.pathname === '/desk.html' ||
+      url.pathname.includes('/desk.js') ||
+      url.pathname.includes('/desk.css')) {
     return;
   }
 

@@ -226,10 +226,15 @@ class CommodityPriceModel(Base):
     base_usd = Column(Float, default=0.0)
     price_inr = Column(Float, default=0.0)
     margin_pct = Column(Float, default=0.0)
+    domestic_packs_json = Column(Text, default='{}')
     updated_at = Column(Float, default=time.time)
 
     def to_dict(self):
         val = self.base_usd if (self.base_usd is not None and self.base_usd > 0) else self.price_inr
+        try:
+            packs = json.loads(self.domestic_packs_json) if self.domestic_packs_json else {}
+        except Exception:
+            packs = {}
         return {
             'code': self.code,
             'name': self.name,
@@ -237,6 +242,7 @@ class CommodityPriceModel(Base):
             'baseUsd': val,
             'price': val,
             'marginPct': self.margin_pct,
+            'domesticPacks': packs,
             'updatedAt': self.updated_at
         }
 
@@ -416,7 +422,11 @@ def init_db():
                 if 'base_usd' not in cols:
                     cursor.execute("ALTER TABLE commodity_prices ADD COLUMN base_usd FLOAT DEFAULT 0.0;")
                     conn.connection.commit()
+                if 'domestic_packs_json' not in cols:
+                    cursor.execute("ALTER TABLE commodity_prices ADD COLUMN domestic_packs_json TEXT DEFAULT '{}';")
+                    conn.connection.commit()
 
+                # Sync domestic pack rates from commodity_specifications if available
                 cursor.execute("PRAGMA table_info(admin_sessions);")
                 s_cols = [col[1] for col in cursor.fetchall()]
                 if 'role' not in s_cols:
@@ -613,11 +623,51 @@ def migrate_legacy_json_data():
             "p17": {"name": "Indian Home Spices (Individual Lots)", "category": "Spices", "baseUsd": 2450.0}
         }
 
+        DEFAULT_DOMESTIC_PACKS = {
+            "p1": {"500g": 85.0, "1kg": 160.0, "5kg": 775.0, "25kg": 3750.0},
+            "p2": {"500g": 80.0, "1kg": 150.0, "5kg": 725.0, "25kg": 3500.0},
+            "p3": {"500g": 65.0, "1kg": 120.0, "5kg": 575.0, "25kg": 2750.0},
+            "p4": {"500g": 70.0, "1kg": 130.0, "5kg": 625.0, "25kg": 3000.0},
+            "p5": {"500g": 190.0, "1kg": 360.0, "5kg": 1700.0, "25kg": 8200.0},
+            "p6": {"500g": 95.0, "1kg": 180.0, "5kg": 850.0, "25kg": 4100.0},
+            "p7": {"500g": 240.0, "1kg": 460.0, "5kg": 2200.0, "25kg": 10500.0},
+            "p8": {"500g": 220.0, "1kg": 420.0, "5kg": 2000.0, "25kg": 9500.0},
+            "p9": {"500g": 180.0, "1kg": 340.0, "5kg": 1600.0, "25kg": 7800.0},
+            "p10": {"500g": 110.0, "1kg": 210.0, "5kg": 1000.0, "25kg": 4800.0},
+            "p11": {"500g": 45.0, "1kg": 80.0, "5kg": 380.0, "25kg": 1800.0},
+            "p12": {"500g": 50.0, "1kg": 90.0, "5kg": 430.0, "25kg": 2050.0},
+            "p13": {"500g": 150.0, "1kg": 280.0, "5kg": 1300.0, "25kg": 5800.0},
+            "p14": {"500g": 55.0, "1kg": 100.0, "5kg": 480.0, "25kg": 2300.0},
+            "p15": {"500g": 450.0, "1kg": 850.0, "5kg": 4100.0, "25kg": 19800.0},
+            "p17": {"500g": 160.0, "1kg": 300.0, "5kg": 1420.0, "25kg": 6800.0}
+        }
+
+        LEGACY_DOMESTIC_PACKS = {
+            "p1": {"500g": 90.0, "1kg": 160.0, "5kg": 780.0, "25kg": 3750.0},
+            "p2": {"500g": 85.0, "1kg": 150.0, "5kg": 720.0, "25kg": 3450.0},
+            "p3": {"500g": 70.0, "1kg": 125.0, "5kg": 590.0, "25kg": 2800.0},
+            "p4": {"500g": 75.0, "1kg": 135.0, "5kg": 640.0, "25kg": 3050.0},
+            "p5": {"500g": 190.0, "1kg": 350.0, "5kg": 1680.0, "25kg": 8000.0},
+            "p6": {"500g": 110.0, "1kg": 200.0, "5kg": 950.0, "25kg": 4500.0},
+            "p7": {"500g": 280.0, "1kg": 520.0, "5kg": 2480.0, "25kg": 11800.0},
+            "p8": {"500g": 220.0, "1kg": 400.0, "5kg": 1900.0, "25kg": 9000.0},
+            "p9": {"500g": 180.0, "1kg": 330.0, "5kg": 1550.0, "25kg": 7400.0},
+            "p10": {"500g": 120.0, "1kg": 220.0, "5kg": 1050.0, "25kg": 5000.0},
+            "p11": {"500g": 40.0, "1kg": 75.0, "5kg": 350.0, "25kg": 1650.0},
+            "p12": {"500g": 45.0, "1kg": 85.0, "5kg": 400.0, "25kg": 1900.0},
+            "p13": {"500g": 150.0, "1kg": 280.0, "5kg": 1300.0, "25kg": 5800.0},
+            "p14": {"500g": 55.0, "1kg": 100.0, "5kg": 480.0, "25kg": 2300.0},
+            "p15": {"500g": 450.0, "1kg": 850.0, "5kg": 4100.0, "25kg": 19800.0},
+            "p17": {"500g": 160.0, "1kg": 300.0, "5kg": 1420.0, "25kg": 6800.0}
+        }
+
         # Purge deprecated duplicate sorghum if present
         session.query(CommodityPriceModel).filter_by(code="p16").delete()
 
         for code, def_item in DEFAULT_COMMODITY_PRICES.items():
             rec = session.query(CommodityPriceModel).filter_by(code=code).first()
+            def_packs_json = json.dumps(DEFAULT_DOMESTIC_PACKS.get(code, {}))
+            legacy_item = LEGACY_DOMESTIC_PACKS.get(code, {})
             if not rec:
                 session.add(CommodityPriceModel(
                     code=code,
@@ -625,7 +675,8 @@ def migrate_legacy_json_data():
                     category=def_item['category'],
                     base_usd=def_item['baseUsd'],
                     price_inr=def_item['baseUsd'],
-                    margin_pct=0.0
+                    margin_pct=0.0,
+                    domestic_packs_json=def_packs_json
                 ))
             else:
                 if rec.name != def_item['name']:
@@ -633,6 +684,27 @@ def migrate_legacy_json_data():
                 if not rec.base_usd or rec.base_usd == 0:
                     rec.base_usd = def_item['baseUsd']
                     if not rec.price_inr: rec.price_inr = def_item['baseUsd']
+                curr_p = {}
+                try:
+                    if hasattr(rec, 'domestic_packs_json') and rec.domestic_packs_json:
+                        curr_p = {k: float(v) for k, v in json.loads(rec.domestic_packs_json).items()}
+                except Exception:
+                    pass
+                if not curr_p:
+                    rec.domestic_packs_json = def_packs_json
+
+        # Also migrate commodity_specifications if empty
+        for s_rec in session.query(CommoditySpecificationModel).all():
+            if s_rec.code in DEFAULT_DOMESTIC_PACKS:
+                curr_sp = {}
+                try:
+                    if s_rec.domestic_packs_json:
+                        curr_sp = {k: float(v) for k, v in json.loads(s_rec.domestic_packs_json).items()}
+                except Exception:
+                    pass
+                if not curr_sp:
+                    s_rec.domestic_packs_json = json.dumps(DEFAULT_DOMESTIC_PACKS[s_rec.code])
+
         session.commit()
 
         # 4. Audit Log
@@ -753,6 +825,14 @@ def migrate_legacy_json_data():
             db_doms = [r.to_dict() for r in session.query(DomesticOrderModel).order_by(DomesticOrderModel.created_at.desc()).all()]
             if db_doms:
                 atomic_json_write(dom_file, db_doms)
+
+            db_prices = {r.code: r.to_dict() for r in session.query(CommodityPriceModel).all()}
+            if db_prices:
+                atomic_json_write(os.path.join(DATA_DIR, 'prices.json'), db_prices)
+
+            db_commodities = {r.code: r.to_dict() for r in session.query(CommoditySpecificationModel).all()}
+            if db_commodities:
+                atomic_json_write(os.path.join(DATA_DIR, 'commodities.json'), db_commodities)
         except Exception as e:
             print(f"[DB MIGRATION] Mirror sync warning: {e}")
 

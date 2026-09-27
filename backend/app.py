@@ -285,6 +285,23 @@ async def serve_download():
 async def serve_verify():
     return FileResponse(os.path.join(BASE_DIR, 'verify.html'))
 
+# 5b. Uncached Admin & Dynamic Scripts Delivery
+@app.get("/js/desk.js")
+async def serve_desk_js():
+    return FileResponse(
+        os.path.join(BASE_DIR, 'js', 'desk.js'),
+        media_type="application/javascript",
+        headers={"Cache-Control": "no-store, no-cache, must-revalidate, max-age=0", "Pragma": "no-cache"}
+    )
+
+@app.get("/css/desk.css")
+async def serve_desk_css():
+    return FileResponse(
+        os.path.join(BASE_DIR, 'css', 'desk.css'),
+        media_type="text/css",
+        headers={"Cache-Control": "no-store, no-cache, must-revalidate, max-age=0", "Pragma": "no-cache"}
+    )
+
 # 6. Static Asset Pipelines (Zero-Exposure: 'data', 'docs', 'uploads' isolated from anonymous direct browsing)
 for static_dir in ['css', 'js', 'images', 'videos', 'audio']:
     dir_path = os.path.join(BASE_DIR, static_dir)

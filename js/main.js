@@ -1353,11 +1353,11 @@ function openSpecDrawer(lotId) {
           </div>
           <table class="drawer-spec-table">
             <tbody>
-              <tr><td>Grade &amp; Cleaning</td><td style="color:#FAF7EE;font-weight:600;">${window.domesticCommodityCatalog[lotId].grade}</td></tr>
-              <tr><td>500g Consumer Pouch</td><td style="color:#81C784;font-family:var(--font-mono);font-weight:700;">₹${window.domesticCommodityCatalog[lotId].packs['500g']}.00 INR</td></tr>
-              <tr><td>1.0 KG Kitchen Pack</td><td style="color:#81C784;font-family:var(--font-mono);font-weight:700;">₹${window.domesticCommodityCatalog[lotId].packs['1kg']}.00 INR</td></tr>
-              <tr><td>5.0 KG Family Pack</td><td style="color:#81C784;font-family:var(--font-mono);font-weight:700;">₹${window.domesticCommodityCatalog[lotId].packs['5kg']}.00 INR</td></tr>
-              <tr><td>25 KG Bulk Bag</td><td style="color:#81C784;font-family:var(--font-mono);font-weight:700;">₹${window.domesticCommodityCatalog[lotId].packs['25kg']}.00 INR</td></tr>
+              <tr><td>Grade &amp; Cleaning</td><td style="color:#FAF7EE;font-weight:600;">${window.domesticCommodityCatalog[lotId].grade || 'Sortex Clean Grade-A'}</td></tr>
+              <tr><td>500g Consumer Pouch</td><td style="color:#81C784;font-family:var(--font-mono);font-weight:700;">₹${Number(window.domesticCommodityCatalog[lotId].packs['500g'] || 0).toFixed(2)} INR</td></tr>
+              <tr><td>1.0 KG Kitchen Pack</td><td style="color:#81C784;font-family:var(--font-mono);font-weight:700;">₹${Number(window.domesticCommodityCatalog[lotId].packs['1kg'] || 0).toFixed(2)} INR</td></tr>
+              <tr><td>5.0 KG Family Pack</td><td style="color:#81C784;font-family:var(--font-mono);font-weight:700;">₹${Number(window.domesticCommodityCatalog[lotId].packs['5kg'] || 0).toFixed(2)} INR</td></tr>
+              <tr><td>25 KG Bulk Bag</td><td style="color:#81C784;font-family:var(--font-mono);font-weight:700;">₹${Number(window.domesticCommodityCatalog[lotId].packs['25kg'] || 0).toFixed(2)} INR</td></tr>
               <tr><td>Payment &amp; Logistics</td><td style="color:#FFA726;">Direct UPI (GPay/PhonePe) · Surface Express</td></tr>
             </tbody>
           </table>
@@ -2147,6 +2147,16 @@ function initMainApp() {
   
   if (typeof applyCurrency === 'function') {
     try { applyCurrency(window.currentCurrency || 'USD'); } catch (e) {}
+  }
+
+  // Fetch live prices from central backend to ensure current domestic and export rates
+  if (typeof fetchServerPrices === 'function') {
+    fetchServerPrices().then(() => {
+      if (typeof syncLiveProductPrices === 'function') syncLiveProductPrices();
+      if (typeof setMarketSegment === 'function' && window.currentMarketSegment === 'domestic') {
+        setMarketSegment('domestic');
+      }
+    }).catch(() => {});
   }
 
   // 3. Scroll Reveal Animations (Robust with fallback)

@@ -287,8 +287,68 @@ function getPrices() {
   return (window.defaultPrices || {});
 }
 
+function syncDomesticCatalogWithPrices(prices) {
+  if (!prices || typeof window === 'undefined') return;
+  if (!window.domesticCommodityCatalog) window.domesticCommodityCatalog = {};
+  let modified = false;
+  Object.keys(prices).forEach(key => {
+    const p = prices[key];
+    if (p && p.domesticPacks && typeof p.domesticPacks === 'object') {
+      if (!window.domesticCommodityCatalog[key]) {
+        window.domesticCommodityCatalog[key] = { packs: {} };
+      }
+      if (!window.domesticCommodityCatalog[key].packs) {
+        window.domesticCommodityCatalog[key].packs = {};
+      }
+      Object.keys(p.domesticPacks).forEach(pack => {
+        const val = parseFloat(p.domesticPacks[pack]);
+        if (!isNaN(val) && val > 0) {
+          window.domesticCommodityCatalog[key].packs[pack] = val;
+          modified = true;
+        }
+      });
+    }
+  });
+  if (modified) {
+    try {
+      localStorage.setItem('gge_domestic_catalog', JSON.stringify(window.domesticCommodityCatalog));
+    } catch(e) {}
+    if (typeof window.syncDomesticPriceCalc === 'function') {
+      try { window.syncDomesticPriceCalc(); } catch(e) {}
+    }
+    if (typeof window.setMarketSegment === 'function' && window.currentMarketSegment === 'domestic') {
+      try { window.setMarketSegment('domestic'); } catch(e) {}
+    }
+  }
+}
+window.syncDomesticCatalogWithPrices = syncDomesticCatalogWithPrices;
+
+// Initialize cached domestic catalog if present in localStorage
+try {
+  if (typeof window !== 'undefined') {
+    const cachedDom = localStorage.getItem('gge_domestic_catalog');
+    if (cachedDom) {
+      const parsedDom = JSON.parse(cachedDom);
+      if (parsedDom && typeof parsedDom === 'object') {
+        if (!window.domesticCommodityCatalog) window.domesticCommodityCatalog = {};
+        Object.keys(parsedDom).forEach(k => {
+          if (!window.domesticCommodityCatalog[k]) {
+            window.domesticCommodityCatalog[k] = parsedDom[k];
+          } else if (parsedDom[k] && parsedDom[k].packs) {
+            window.domesticCommodityCatalog[k].packs = {
+              ...window.domesticCommodityCatalog[k].packs,
+              ...parsedDom[k].packs
+            };
+          }
+        });
+      }
+    }
+  }
+} catch(e) {}
+
 function applyFetchedPrices(prices) {
   if (!prices) return;
+  syncDomesticCatalogWithPrices(prices);
   document.querySelectorAll('.card--product').forEach(card => {
     const lotId = card.getAttribute('data-lot-id');
     if (lotId && prices[lotId]) {
@@ -334,6 +394,7 @@ async function fetchServerPrices() {
         if (data.samplePriceInr && !isNaN(Number(data.samplePriceInr)) && Number(data.samplePriceInr) > 0) {
           localStorage.setItem('gge_sample_price_inr', Number(data.samplePriceInr));
         }
+        syncDomesticCatalogWithPrices(data.prices);
         applyFetchedPrices(data.prices);
         if (typeof window.syncLiveProductPrices === 'function') {
           window.syncLiveProductPrices();

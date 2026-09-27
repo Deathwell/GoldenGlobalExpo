@@ -36,7 +36,7 @@
   </style>
 
   <!-- Stylesheet -->
-  <link rel="stylesheet" href="css/desk.css?v=4.9.5">
+  <link rel="stylesheet" href="css/desk.css?v=5.2.0">
 </head>
 <body>
 
@@ -264,8 +264,8 @@
   <div class="tab-pane" id="pricingTab">
     <div class="section-toolbar">
       <div class="section-title">
-        <h3>Export Price Benchmark Manager</h3>
-        <p>Edit indicative FOB / CIF prices per metric ton ($ / MT). Live website updates instantly across tabs.</p>
+        <h3>Commodity Price &amp; Benchmark Manager (Global Export &amp; Domestic Trade)</h3>
+        <p>Edit indicative FOB / CIF export benchmarks ($ / MT) and domestic consumer &amp; trade pack rates (INR ₹: 500g, 1kg, 5kg, 25kg). Changes immediately synchronize with the public storefront, UPI checkout, and cloud database.</p>
         <div style="display:flex; align-items:center; gap:8px; margin-top:6px;">
           <span id="deskForexBadge" style="display:inline-flex; align-items:center; gap:6px; background:rgba(46,125,50,0.15); color:#81C784; border:1px solid rgba(129,199,132,0.4); padding:3px 10px; border-radius:4px; font-size:0.72rem; font-family:var(--font-mono);">⚡ Live Global Forex Active: 1 USD = ₹95.70 INR · €0.862 EUR · 3.67 AED</span>
           <button type="button" class="btn-action" onclick="refreshForexNow(this)" style="padding:3px 10px; font-size:0.70rem; background:rgba(217,172,82,0.15); border:1px solid rgba(217,172,82,0.4); color:var(--gold-bright); border-radius:4px; cursor:pointer;" title="Pull latest live rates from interbank forex API">🔄 Refresh FX</button>
@@ -1227,13 +1227,13 @@
 <div class="toast" id="toast">Changes saved successfully!</div>
 
     <!-- Application Scripts -->
-  <script src="/js/data/products.js?v=4.4.9"></script>
-  <script src="/js/data/tracking-data.js?v=4.4.9"></script>
-  <script src="/js/modules/storage.js?v=4.4.9"></script>
-  <script src="/js/modules/toast.js?v=4.4.9"></script>
-  <script src="/js/modules/currency.js?v=4.4.9"></script>
-  <script src="/js/desk.js?v=4.4.9"></script>
-  <script src="/js/modules/pwa.js?v=4.4.9"></script>
+  <script src="/js/data/products.js?v=5.2.0"></script>
+  <script src="/js/data/tracking-data.js?v=5.2.0"></script>
+  <script src="/js/modules/storage.js?v=5.2.0"></script>
+  <script src="/js/modules/toast.js?v=5.2.0"></script>
+  <script src="/js/modules/currency.js?v=5.2.0"></script>
+  <script src="/js/desk.js?v=5.2.0"></script>
+  <script src="/js/modules/pwa.js?v=5.2.0"></script>
 
 <!-- Buyer Telemetry & Audit Modal -->
 <div class="admin-modal-overlay" id="sessionAuditModal" style="display:none;align-items:center;justify-content:center;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.85);z-index:99999;backdrop-filter:blur(6px);padding:20px;box-sizing:border-box;">
