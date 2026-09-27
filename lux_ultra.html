@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=Work+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body, html { width: 100%; height: 100%; overflow: hidden; background: #070503; }
+
+    /* The $100k Sovereign Stage */
+    .lux-stage {
+      position: fixed;
+      inset: 0;
+      width: 100vw;
+      height: 100vh;
+      background: radial-gradient(ellipse 85% 75% at 50% 46%, #16120D 0%, #0B0907 55%, #040302 100%);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: space-between;
+      padding: 38px 48px;
+      z-index: 999999;
+      user-select: none;
+      overflow: hidden;
+    }
+
+    /* Cinematic Film Grain Overlay (SVG noise filter) */
+    .lux-noise {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      opacity: 0.038;
+      pointer-events: none;
+      z-index: 1;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+    }
+
+    /* 60fps Multi-Layer Stardust Canvas */
+    #luxCanvas {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 2;
+    }
+
+    /* Volumetric Breathing Gold Aura */
+    .lux-aura {
+      position: absolute;
+      top: 45%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 580px;
+      height: 580px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(217, 172, 82, 0.22) 0%, rgba(184, 135, 47, 0.08) 45%, transparent 70%);
+      filter: blur(60px);
+      pointer-events: none;
+      z-index: 2;
+      animation: auraPulse 4s ease-in-out infinite alternate;
+    }
+
+
+
+    /* Center Medallion Stage */
+    .lux-center {
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      margin: auto 0;
+      z-index: 5;
+      text-align: center;
+    }
+
+    .lux-medallion-wrapper {
+      position: relative;
+      width: 256px;
+      height: 256px;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* Outer Chronometer Celestial Orbit Ring (100% Concentric) */
+    .lux-orbit-ring {
+      position: absolute;
+      top: -32px;
+      left: -32px;
+      width: calc(100% + 64px);
+      height: calc(100% + 64px);
+      border-radius: 50%;
+      border: 1px dashed rgba(217, 172, 82, 0.35);
+      pointer-events: none;
+      animation: orbitSpin 50s linear infinite;
+    }
+    .lux-orbit-tick {
+      position: absolute;
+      width: 7px;
+      height: 7px;
+      background: #D9AC52;
+      border-radius: 50%;
+      box-shadow: 0 0 10px rgba(217, 172, 82, 0.8);
+    }
+    .lux-orbit-tick:nth-child(1) { top: -3.5px; left: 50%; transform: translateX(-50%); }
+    .lux-orbit-tick:nth-child(2) { bottom: -3.5px; left: 50%; transform: translateX(-50%); }
+    .lux-orbit-tick:nth-child(3) { left: -3.5px; top: 50%; transform: translateY(-50%); }
+    .lux-orbit-tick:nth-child(4) { right: -3.5px; top: 50%; transform: translateY(-50%); }
+
+    /* The Sovereign Porcelain & 24K Gold Medallion */
+    .lux-medallion-frame {
+      position: relative;
+      width: 256px;
+      height: 256px;
+      border-radius: 50%;
+      /* 24K Multi-layer Chamfered Gold Bezel */
+      background: linear-gradient(135deg, #FFF4D0 0%, #D9AC52 35%, #8B651B 70%, #D9AC52 100%);
+      padding: 3px;
+      box-shadow: 
+        0 30px 80px rgba(0, 0, 0, 0.75),
+        0 0 0 8px rgba(18, 14, 10, 0.90),
+        0 0 0 9.5px rgba(217, 172, 82, 0.40),
+        0 0 50px rgba(217, 172, 82, 0.30);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      animation: medallionRise 1.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+
+    .lux-medallion-inner {
+      width: 100%;
+      height: 100%;
+      border-radius: 50%;
+      background: radial-gradient(circle at 48% 46%, #FBF9F5 0%, #F1ECE2 55%, #DDD4C2 100%);
+      border: 1px solid rgba(139, 101, 27, 0.35);
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      box-shadow: inset 0 3px 12px rgba(255, 255, 255, 0.9), inset 0 -6px 16px rgba(45, 35, 20, 0.25);
+    }
+
+    /* High-Definition Transparent Emblem */
+    .lux-emblem {
+      width: 78%;
+      height: 78%;
+      object-fit: contain;
+      filter: drop-shadow(0 10px 18px rgba(45, 62, 43, 0.18));
+      animation: emblemReveal 1.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+      display: block;
+    }
+
+    /* Dual-Pass Specular Light Sheen */
+    .lux-shine-1 {
+      position: absolute;
+      inset: -60%;
+      background: linear-gradient(115deg, transparent 38%, rgba(255, 255, 255, 0.75) 49%, rgba(255, 245, 220, 0.95) 50%, rgba(217, 172, 82, 0.8) 52%, transparent 63%);
+      mix-blend-mode: overlay;
+      pointer-events: none;
+      transform: translateX(-130%) rotate(25deg);
+      animation: shineSweep 2.4s cubic-bezier(0.2, 0.8, 0.2, 1) forwards 0.5s;
+    }
+    .lux-shine-2 {
+      position: absolute;
+      inset: -60%;
+      background: radial-gradient(ellipse 60% 60% at 50% 50%, rgba(255, 255, 255, 0.35) 0%, transparent 70%);
+      mix-blend-mode: color-dodge;
+      pointer-events: none;
+      opacity: 0;
+      animation: diffuseGlow 2.0s ease-out forwards 0.9s;
+    }
+
+    /* Haute-Couture Editorial Typography */
+    .lux-provenance {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 0.62rem;
+      font-weight: 600;
+      letter-spacing: 0.40em;
+      text-transform: uppercase;
+      color: #D9AC52;
+      margin-top: 32px;
+      opacity: 0;
+      animation: textReveal 1.2s cubic-bezier(0.16, 1, 0.3, 1) forwards 0.7s;
+    }
+
+    .lux-title {
+      font-family: 'Fraunces', serif;
+      font-size: 1.85rem;
+      font-weight: 600;
+      letter-spacing: 0.24em;
+      text-transform: uppercase;
+      margin-top: 10px;
+      background: linear-gradient(135deg, #FFF9F0 0%, #F5DE98 45%, #D9AC52 75%, #A87D2C 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      text-shadow: 0 4px 20px rgba(0, 0, 0, 0.9);
+      opacity: 0;
+      animation: textReveal 1.2s cubic-bezier(0.16, 1, 0.3, 1) forwards 0.9s;
+    }
+
+    .lux-kicker {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 0.68rem;
+      font-weight: 500;
+      letter-spacing: 0.32em;
+      text-transform: uppercase;
+      color: rgba(245, 239, 224, 0.75);
+      margin-top: 10px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      opacity: 0;
+      animation: textReveal 1.2s cubic-bezier(0.16, 1, 0.3, 1) forwards 1.1s;
+    }
+    .lux-kicker::before,
+    .lux-kicker::after {
+      content: '';
+      display: inline-block;
+      width: 24px;
+      height: 1px;
+      background: rgba(217, 172, 82, 0.45);
+    }
+
+    /* Bottom Maritime Signature & Precision Progress */
+    .lux-bottombar {
+      position: relative;
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+      z-index: 10;
+    }
+    .lux-port-meta {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 0.64rem;
+      letter-spacing: 0.26em;
+      text-transform: uppercase;
+      color: rgba(245, 239, 224, 0.55);
+      font-weight: 500;
+    }
+    .lux-port-meta span {
+      color: #D9AC52;
+      opacity: 0.85;
+    }
+
+    /* Precision Traveling Photon Progress Rail */
+    .lux-progress-rail {
+      position: relative;
+      width: 180px;
+      height: 2px;
+      background: rgba(217, 172, 82, 0.18);
+      border-radius: 2px;
+      overflow: visible;
+    }
+    .lux-progress-fill {
+      position: absolute;
+      top: 0;
+      left: 0;
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, rgba(217, 172, 82, 0.4) 0%, #D9AC52 80%, #FFF4D0 100%);
+      border-radius: 2px;
+      animation: progressGrow 3.2s linear forwards 0.2s;
+    }
+    .lux-progress-photon {
+      position: absolute;
+      top: -3px;
+      right: -4px;
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #FFFFFF;
+      box-shadow: 0 0 10px #FFFFFF, 0 0 18px #D9AC52;
+    }
+
+    /* Keyframe Animations */
+    @keyframes auraPulse {
+      0% { transform: translate(-50%, -50%) scale(0.95); opacity: 0.8; }
+      100% { transform: translate(-50%, -50%) scale(1.08); opacity: 1.0; }
+    }
+    @keyframes orbitSpin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+    @keyframes medallionRise {
+      0% { transform: scale(0.84) translateY(8px); opacity: 0; }
+      100% { transform: scale(1.0) translateY(0); opacity: 1; }
+    }
+    @keyframes emblemReveal {
+      0% { transform: scale(0.92); opacity: 0; filter: blur(4px); }
+      100% { transform: scale(1.0); opacity: 1; filter: blur(0); }
+    }
+    @keyframes shineSweep {
+      0% { transform: translateX(-130%) rotate(25deg); }
+      100% { transform: translateX(140%) rotate(25deg); }
+    }
+    @keyframes diffuseGlow {
+      0% { opacity: 0; transform: scale(0.6); }
+      50% { opacity: 0.6; transform: scale(1.1); }
+      100% { opacity: 0; transform: scale(1.3); }
+    }
+    @keyframes textReveal {
+      0% { opacity: 0; transform: translateY(10px); }
+      100% { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes progressGrow {
+      0% { width: 0%; }
+      100% { width: 100%; }
+    }
+
+    /* Responsive Mobile Perfection */
+    @media (max-width: 767.98px) {
+      .lux-stage { padding: 30px 18px 28px; }
+      .lux-medallion-wrapper { width: 200px; height: 200px; }
+      .lux-orbit-ring { top: -20px; left: -20px; width: calc(100% + 40px); height: calc(100% + 40px); }
+      .lux-medallion-frame { width: 200px; height: 200px; }
+      .lux-provenance { font-size: 0.52rem; letter-spacing: 0.28em; margin-top: 22px; }
+      .lux-title { font-size: 1.25rem; letter-spacing: 0.16em; margin-top: 6px; }
+      .lux-kicker { font-size: 0.54rem; letter-spacing: 0.20em; margin-top: 8px; }
+      .lux-kicker::before, .lux-kicker::after { width: 14px; }
+      .lux-port-meta { font-size: 0.54rem; letter-spacing: 0.18em; }
+      .lux-progress-rail { width: 130px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="lux-stage">
+    <div class="lux-noise"></div>
+    <div class="lux-aura"></div>
+    <canvas id="luxCanvas"></canvas>
+
+    <!-- Center Stage: Celestial Chronometer & Porcelain Sovereign Medallion -->
+    <div class="lux-center">
+      <div class="lux-medallion-wrapper">
+        <div class="lux-orbit-ring">
+          <div class="lux-orbit-tick"></div>
+          <div class="lux-orbit-tick"></div>
+          <div class="lux-orbit-tick"></div>
+          <div class="lux-orbit-tick"></div>
+        </div>
+
+        <div class="lux-medallion-frame">
+          <div class="lux-medallion-inner">
+            <img class="lux-emblem" src="images/sf_logo_luxury_transparent.png" alt="Six Lady Farmers">
+            <div class="lux-shine-1"></div>
+            <div class="lux-shine-2"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="lux-provenance">Est. 2024 · Sovereign Agri-Merchant</div>
+      <h1 class="lux-title">Golden Global Expo</h1>
+      <p class="lux-kicker">A Six Lady Farmers Initiative</p>
+    </div>
+
+    <!-- Bottom Maritime Logistics Signature -->
+    <div class="lux-bottombar">
+      <div class="lux-port-meta">JNPT Nhava Sheva · Mumbai <span>[18.9499° N · 72.9514° E]</span></div>
+      <div class="lux-progress-rail">
+        <div class="lux-progress-fill">
+          <div class="lux-progress-photon"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // 3-Tier Multi-Depth Dynamic Stardust Engine
+    const canvas = document.getElementById('luxCanvas');
+    const ctx = canvas.getContext('2d');
+    let width = canvas.width = window.innerWidth;
+    let height = canvas.height = window.innerHeight;
+
+    window.addEventListener('resize', () => {
+      width = canvas.width = window.innerWidth;
+      height = canvas.height = window.innerHeight;
+    });
+
+    const particles = [];
+    const count = width < 768 ? 40 : 70;
+
+    for (let i = 0; i < count; i++) {
+      const tier = Math.random();
+      if (tier < 0.50) {
+        // Tier 0: Background micro-dust (subtle, slow)
+        particles.push({
+          x: Math.random() * width,
+          y: Math.random() * height,
+          r: Math.random() * 0.7 + 0.3,
+          baseAlpha: Math.random() * 0.30 + 0.15,
+          alpha: 0.2,
+          speed: Math.random() * 0.25 + 0.08,
+          sway: Math.random() * 1.5 + 0.5,
+          phase: Math.random() * Math.PI * 2,
+          blur: 0
+        });
+      } else if (tier < 0.88) {
+        // Tier 1: Midground twinkling gold stardust
+        particles.push({
+          x: Math.random() * width,
+          y: Math.random() * height,
+          r: Math.random() * 1.4 + 0.8,
+          baseAlpha: Math.random() * 0.45 + 0.35,
+          alpha: 0.5,
+          speed: Math.random() * 0.40 + 0.18,
+          sway: Math.random() * 2.5 + 1.0,
+          phase: Math.random() * Math.PI * 2,
+          blur: 6
+        });
+      } else {
+        // Tier 2: Foreground soft golden bokeh
+        particles.push({
+          x: Math.random() * width,
+          y: Math.random() * height,
+          r: Math.random() * 2.8 + 2.0,
+          baseAlpha: Math.random() * 0.22 + 0.12,
+          alpha: 0.18,
+          speed: Math.random() * 0.55 + 0.25,
+          sway: Math.random() * 3.5 + 1.5,
+          phase: Math.random() * Math.PI * 2,
+          blur: 14
+        });
+      }
+    }
+
+    let time = 0;
+    function render() {
+      time += 0.02;
+      ctx.clearRect(0, 0, width, height);
+
+      for (let p of particles) {
+        p.y -= p.speed;
+        p.x += Math.sin(time + p.phase) * (p.sway * 0.15);
+
+        // Sine wave twinkle
+        p.alpha = p.baseAlpha * (0.65 + 0.35 * Math.sin(time * 2 + p.phase));
+
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+        ctx.fillStyle = 'rgba(217, 172, 82, ' + p.alpha + ')';
+        if (p.blur > 0) {
+          ctx.shadowColor = 'rgba(245, 222, 152, 0.85)';
+          ctx.shadowBlur = p.blur;
+        } else {
+          ctx.shadowBlur = 0;
+        }
+        ctx.fill();
+
+        if (p.y < -15) {
+          p.y = height + 15;
+          p.x = Math.random() * width;
+        }
+      }
+      requestAnimationFrame(render);
+    }
+    render();
+  </script>
+</body>
+</html>

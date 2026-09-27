@@ -76,13 +76,20 @@
       if (!queue || !queue.length) return;
 
       var itemsToSync = queue.map(function(q) { return q.data; });
-      
-      fetch('/api/inquiries', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(itemsToSync)
-      }).then(function(res) {
-        if (res.ok) {
+      var chunks = [];
+      for (var i = 0; i < itemsToSync.length; i += 5) {
+        chunks.push(itemsToSync.slice(i, i + 5));
+      }
+
+      Promise.all(chunks.map(function(chunk) {
+        return fetch('/api/inquiries', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(chunk)
+        });
+      })).then(function(responses) {
+        var allOk = responses.every(function(r) { return r.ok; });
+        if (allOk) {
           localStorage.removeItem('gge_offline_rfq_vault');
           if (typeof showToast === 'function') {
             showToast(queue.length + ' offline inquiry(s) synchronized successfully.', 'success');

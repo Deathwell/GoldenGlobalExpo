@@ -1,115 +1,98 @@
 """
 Golden Global Expo — Consignments & Tracking Router
+Thin API controller delegating to ConsignmentService and ConsignmentRepository (SRP & SoC).
 """
 import os
+import re
+import json
 import time
-from fastapi import APIRouter, Request
+import secrets
+from fastapi import APIRouter, Request, Depends
 from fastapi.responses import JSONResponse
+from sqlalchemy import func
+
+from backend.core.auth_dependency import require_auth, get_current_user_from_request
+from backend.core.security import RATE_LIMITER, get_client_ip
 from backend.core.config import BASE_DIR
 from backend.core.atomic_io import atomic_json_write
 from backend.core.events import broadcast_sse
-from backend.db import SessionLocal, ConsignmentModel
+from backend.db import SessionLocal, ConsignmentModel, AuditLogModel, DATA_DIR
+from backend.services.consignment_service import ConsignmentService
+from backend.repositories.consignment_repo import ConsignmentRepository
+from backend.repositories.audit_repo import AuditRepository, compute_entry_hash
 
 router = APIRouter(tags=["Consignments & Maritime Tracking"])
 
 @router.get("/api/consignments")
-async def get_consignments():
+async def get_consignments(user: dict = Depends(require_auth())):
     session = SessionLocal()
     try:
-        records = session.query(ConsignmentModel).order_by(ConsignmentModel.updated_at.desc()).all()
-        return {'success': True, 'consignments': [r.to_dict() for r in records]}
+        return {'success': True, 'consignments': ConsignmentService.list_consignments(session)}
     finally:
         session.close()
 
 @router.get("/api/track")
-async def track_consignment(bl: str = ""):
-    """Track a shipment by B/L code with sanitized query handling."""
+async def track_consignment(request: Request, bl: str = ""):
+    """Track a shipment by B/L code with sanitized query handling and PII protection."""
+    client_ip = get_client_ip(request)
+    allowed, retry_after = RATE_LIMITER.is_allowed("track-consignment", client_ip, max_requests=60, window_seconds=300)
+    if not allowed:
+        return JSONResponse(
+            status_code=429,
+            content={"success": False, "error": f"Too many tracking requests. Please wait {retry_after} seconds.", "retryAfter": retry_after},
+            headers={"Retry-After": str(retry_after)}
+        )
+
     if not bl or not bl.strip():
         return JSONResponse(status_code=400, content={'success': False, 'error': 'Missing B/L tracking number.'})
+
     session = SessionLocal()
     try:
-        clean_bl = bl.strip()
-        record = session.query(ConsignmentModel).filter(ConsignmentModel.bl.ilike(clean_bl)).first()
-        if record:
-            return {'success': True, 'consignment': record.to_dict()}
-        return JSONResponse(status_code=404, content={'success': False, 'error': f'Consignment with B/L {clean_bl} not found.'})
+        user = get_current_user_from_request(request)
+        return ConsignmentService.track(bl, is_authenticated=(user is not None), session=session)
+    except KeyError as ke:
+        return JSONResponse(status_code=404, content={'success': False, 'error': str(ke).strip("'")})
     finally:
         session.close()
 
 @router.post("/api/consignments")
-async def save_consignments(request: Request):
+async def save_consignments(request: Request, user: dict = Depends(require_auth())):
     try:
-        data = await request.json()
+        try:
+            data = await request.json()
+        except json.JSONDecodeError:
+            return JSONResponse(status_code=400, content={'success': False, 'error': 'Invalid JSON payload.'})
+
+        if not isinstance(data, (dict, list)):
+            return JSONResponse(status_code=400, content={'success': False, 'error': 'Consignment payload must be an object or list.'})
+
+        if not data:
+            return JSONResponse(status_code=400, content={'success': False, 'error': 'Consignment payload cannot be empty.'})
+
+        items_to_save = data if isinstance(data, list) else [data]
         session = SessionLocal()
         try:
-            items_to_save = data if isinstance(data, list) else [data]
-            for item in items_to_save:
-                bl_val = item.get('bl') or item.get('blCode', '')
-                if not bl_val: continue
-                record = session.query(ConsignmentModel).filter_by(bl=bl_val).first()
-                if record:
-                    for field in ['inquiryRef', 'quotationRef', 'buyer', 'buyerEmail', 'buyerPhone', 'commodity', 'vessel', 'pod', 'eta', 'container', 'status', 'invRef', 'phytoRef', 'coaRef', 'blRef']:
-                        col = {
-                            'inquiryRef': 'inquiry_ref',
-                            'quotationRef': 'quotation_ref',
-                            'buyerEmail': 'buyer_email',
-                            'buyerPhone': 'buyer_phone',
-                            'invRef': 'inv_ref',
-                            'phytoRef': 'phyto_ref',
-                            'coaRef': 'coa_ref',
-                            'blRef': 'bl_ref'
-                        }.get(field, field)
-                        if field in item and item[field] is not None:
-                            setattr(record, col, item[field])
-                    if 'stage' in item and item['stage'] is not None:
-                        record.stage = int(item['stage'])
-                    record.updated_at = time.time()
-                else:
-                    session.add(ConsignmentModel(
-                        bl=bl_val,
-                        inquiry_ref=item.get('inquiryRef', ''),
-                        quotation_ref=item.get('quotationRef', ''),
-                        buyer=item.get('buyer', ''),
-                        buyer_email=item.get('buyerEmail', ''),
-                        buyer_phone=item.get('buyerPhone', ''),
-                        commodity=item.get('commodity', ''),
-                        vessel=item.get('vessel', 'Pending Ocean Booking'),
-                        pod=item.get('pod', ''),
-                        eta=item.get('eta', 'Pending Ocean Schedule'),
-                        container=item.get('container', 'PENDING ALLOCATION'),
-                        stage=int(item.get('stage', 1)),
-                        status=item.get('status', 'Stage 1: Mandi Sourced & Grading'),
-                        inv_ref=item.get('invRef', ''),
-                        phyto_ref=item.get('phytoRef', ''),
-                        coa_ref=item.get('coaRef', ''),
-                        bl_ref=item.get('blRef', '')
-                    ))
-            session.commit()
-
-            all_consigns = [r.to_dict() for r in session.query(ConsignmentModel).order_by(ConsignmentModel.updated_at.desc()).all()]
-            try:
-                atomic_json_write(os.path.join(str(BASE_DIR), 'data', 'consignments.json'), all_consigns)
-            except Exception: pass
-
-            broadcast_sse("CONSIGNMENT_UPDATED", {"total": len(all_consigns), "timestamp": time.time()})
-            return {'success': True, 'message': 'Consignments updated in ACID database.', 'total': len(all_consigns)}
+            return ConsignmentService.save_consignments(items_to_save, session)
+        except ValueError as ve:
+            return JSONResponse(status_code=400, content={'success': False, 'error': str(ve)})
         finally:
             session.close()
     except Exception as e:
         return JSONResponse(status_code=500, content={'success': False, 'error': str(e)})
 
 @router.delete("/api/consignments/{bl_code}")
-async def delete_consignment(bl_code: str):
+async def delete_consignment(bl_code: str, user: dict = Depends(require_auth(["admin", "logistics"]))):
     session = SessionLocal()
     try:
-        session.query(ConsignmentModel).filter_by(bl=bl_code).delete()
-        session.commit()
-        all_consigns = [r.to_dict() for r in session.query(ConsignmentModel).order_by(ConsignmentModel.updated_at.desc()).all()]
-        try:
-            atomic_json_write(os.path.join(str(BASE_DIR), 'data', 'consignments.json'), all_consigns)
-        except Exception: pass
-        return {'success': True, 'message': f'Consignment {bl_code} deleted.'}
+        return ConsignmentService.delete_consignment(
+            bl_code=bl_code,
+            operator=user.get("email") or "Logistics Coordinator",
+            session=session
+        )
+    except ValueError as ve:
+        return JSONResponse(status_code=400, content={'success': False, 'error': str(ve)})
     except Exception as e:
+        session.rollback()
         return JSONResponse(status_code=500, content={'success': False, 'error': str(e)})
     finally:
         session.close()

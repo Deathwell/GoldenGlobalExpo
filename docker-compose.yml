@@ -19,6 +19,7 @@ services:
       - DATABASE_URL=sqlite:///./data/enterprise.db
     volumes:
       - ./data:/app/data
+      - ./uploads:/app/uploads
     ports:
       - "8000:8000"
     healthcheck:

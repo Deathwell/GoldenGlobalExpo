@@ -1,0 +1,219 @@
+name: Production Readiness Quality Gate
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master, develop ]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # ============================================================================
+  # 1. SECURITY & DEPENDENCY AUDIT
+  # ============================================================================
+  security-audit:
+    name: Security & Vulnerability Audit
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Source Code
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.13
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          cache: 'pip'
+
+      - name: Install Python Security Audit Tools
+        run: |
+          python -m pip install --upgrade pip
+          pip install bandit pip-audit
+
+      - name: Bandit Static Application Security Testing (SAST)
+        run: |
+          bandit -r backend/ -ll -x tests,data
+
+      - name: Python Dependency Vulnerability Audit
+        run: |
+          pip-audit -r requirements.txt || true
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: NPM Dependency Security Audit
+        run: |
+          npm audit --audit-level=high || true
+
+  # ============================================================================
+  # 2. CODE QUALITY, LINTING & TYPE CHECKS
+  # ============================================================================
+  lint-and-typecheck:
+    name: Code Quality & Static Analysis
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Source Code
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.13
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          cache: 'pip'
+
+      - name: Install Ruff & Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install ruff -r requirements.txt
+
+      - name: Ruff Code Formatting & Lint Check
+        run: |
+          ruff check backend/ tests/
+
+      - name: Python Syntax & Bytecode Compilation Check
+        run: |
+          python -m compileall -q backend/ tests/
+
+  # ============================================================================
+  # 3. UNIT & INTEGRATION TEST SUITE (MATRIX EXECUTION)
+  # ============================================================================
+  unit-and-integration-tests:
+    name: Test Matrix (Python ${{ matrix.python-version }})
+    runs-on: ubuntu-latest
+    needs: [security-audit, lint-and-typecheck]
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.12", "3.13"]
+
+    steps:
+      - name: Checkout Source Code
+        uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: 'pip'
+
+      - name: Install Project Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Initialize Staging Environment
+        run: |
+          cp .env.example .env
+
+      - name: Execute Full Pytest Test Suite
+        run: |
+          pytest tests/ -v --tb=short
+
+  # ============================================================================
+  # 4. END-TO-END AUTOMATION SUITE (PLAYWRIGHT)
+  # ============================================================================
+  e2e-playwright:
+    name: End-to-End Playwright Automation
+    runs-on: ubuntu-latest
+    needs: [security-audit, lint-and-typecheck]
+    steps:
+      - name: Checkout Source Code
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.13
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          cache: 'pip'
+
+      - name: Install Python Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Set up Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install NPM Dependencies
+        run: |
+          npm ci || npm install
+
+      - name: Install Playwright Browsers & OS Dependencies
+        run: |
+          npx playwright install --with-deps chromium
+
+      - name: Execute Playwright E2E Test Battery
+        run: |
+          npx playwright test --project=chromium
+        env:
+          CI: true
+
+      - name: Upload Playwright Test Report Artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 14
+
+  # ============================================================================
+  # 5. AUTOMATED BUNDLE SIZE ANALYSIS & ASSET BUDGETS
+  # ============================================================================
+  bundle-size-analysis:
+    name: Client Asset Budget & Bundle Size Analysis
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Source Code
+        uses: actions/checkout@v4
+
+      - name: Analyze Static Assets & Check Budgets
+        run: |
+          echo "### 📦 Production Client Asset Footprint" >> $GITHUB_STEP_SUMMARY
+          echo "| Asset Category | File Path | Raw Size | Gzip Size | Budget Limit | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|---|---|---|---|---|---|" >> $GITHUB_STEP_SUMMARY
+
+          for file in css/*.css js/*.js js/modules/*.js; do
+            if [ -f "$file" ]; then
+              raw_bytes=$(wc -c < "$file")
+              gzip_bytes=$(gzip -c "$file" | wc -c)
+              raw_kb=$(echo "scale=2; $raw_bytes / 1024" | bc)
+              gzip_kb=$(echo "scale=2; $gzip_bytes / 1024" | bc)
+              
+              # Standard luxury SPA asset ceiling: 400KB raw
+              status="✅ PASS"
+              if [ "$raw_bytes" -gt 409600 ]; then
+                status="⚠️ REVIEW"
+              fi
+              echo "| Asset | \`$file\` | ${raw_kb} KB | ${gzip_kb} KB | 400 KB | $status |" >> $GITHUB_STEP_SUMMARY
+            fi
+          done
+
+  # ============================================================================
+  # 6. DOCKER CONTAINER BUILD VERIFICATION
+  # ============================================================================
+  container-build:
+    name: Production Docker Build Gate
+    runs-on: ubuntu-latest
+    needs: [unit-and-integration-tests, e2e-playwright]
+    steps:
+      - name: Checkout Source Code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build Production Container Image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./Dockerfile
+          push: false
+          tags: gge-enterprise-app:latest

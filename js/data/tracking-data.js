@@ -66,10 +66,25 @@ const defaultTrackingDatabase = {
       podShort: 'Singapore Port',
       eta: 'Discharged & Released',
       container: 'ONEU 773190-2 (20\' GP)'
+    },
+    'GGE-DOM-9042': {
+      bl: 'GGE-DOM-9042',
+      commodity: '5.0 kg Sortex Tur Dal · Domestic Premium Retail Pack',
+      status: 'In-Transit via National Highway Logistics',
+      completed: false,
+      stage: 4,
+      vessel: 'Domestic Surface Express (BlueDart / Delhivery)',
+      vesselShort: 'Surface Express',
+      pod: 'Pune Hub, Maharashtra, 411001 (India)',
+      podShort: 'Pune (Hub)',
+      eta: 'Tomorrow by 2:00 PM IST',
+      container: 'DOM-PARCEL #SURFACE-411'
     }
   };
 
 const CARRIERS = {
+    'DOM': { name: 'Domestic Surface Express (BlueDart / Delhivery)', url: () => 'https://www.bluedart.com/tracking', vessel: 'Surface Express Fleet' },
+    'SURF': { name: 'Domestic Surface Express (BlueDart / Delhivery)', url: () => 'https://www.bluedart.com/tracking', vessel: 'Surface Express Fleet' },
     'MSCU': { name: 'MSC (Mediterranean Shipping Co.)', url: (c) => `https://www.msc.com/en/track-a-shipment?reference=${c}`, vessel: 'MSC Global Fleet' },
     'MEDU': { name: 'MSC (Mediterranean Shipping Co.)', url: (c) => `https://www.msc.com/en/track-a-shipment?reference=${c}`, vessel: 'MSC Global Fleet' },
     'MAEU': { name: 'A.P. Moller - Maersk Line', url: (c) => `https://www.maersk.com/tracking/${c}`, vessel: 'Maersk Triple-E Class' },
@@ -141,7 +156,7 @@ const defaultInquiries = [
       email: 'k.mensah@afrigrain.co.ke',
       phone: '+254701234567',
       country: 'Mombasa Port (Kenya)',
-      commodities: 'Jowar (Sorghum Grain) & Jowar Flour',
+      commodities: 'Jowar (Sorghum Grain)',
       volume: '2×20\' FCL (48 MT) · 50kg PP Bags',
       status: 'new'
     }

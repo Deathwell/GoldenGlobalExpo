@@ -5,15 +5,14 @@ function downloadInquiryProforma(index) {
   if (!inq) return;
 
   if (typeof window.generateProformaInvoicePDF === 'function') {
-    const tons = parseFloat(inq.volume) || 24.0;
     window.generateProformaInvoicePDF({
-      refCode: inq.id || ('GGE-PRF-' + Math.floor(100000 + Math.random() * 900000)),
+      refCode: inq.id || ('GGE-RFQ-' + Math.floor(100000 + Math.random() * 900000)),
       buyerName: inq.name || inq.contactName || 'Commercial Buyer',
       buyerCompany: inq.company || 'International Importer',
       destinationPort: inq.country || 'Jebel Ali, Dubai (UAE)',
       commodityName: inq.commodity || inq.commodities || 'Sortex Grade-A Pulses',
-      tonnage: tons,
-      unitPrice: 980.00,
+      volume: inq.volume,
+      manifest: inq.manifest,
       incoterm: `CIF ${inq.country || 'Destination Port'} (Incoterms 2020)`
     });
   } else {
@@ -65,10 +64,21 @@ function escapeHtml(str) {
 }
 window.escapeHtml = escapeHtml;
 
+function sanitizeCsvCell(val) {
+  if (val === null || val === undefined) return '""';
+  let str = String(val);
+  if (/^[=+\-@\t\r]/.test(str)) {
+    str = "'" + str;
+  }
+  return `"${str.replace(/"/g, '""')}"`;
+}
+window.sanitizeCsvCell = sanitizeCsvCell;
+
 
 function getSampleBasePriceINR() {
   const stored = localStorage.getItem('gge_sample_price_inr');
-  return stored ? parseFloat(stored) : 1.00;
+  const val = stored ? parseFloat(stored) : NaN;
+  return (!isNaN(val) && val > 0) ? val : 499.00;
 }
 
 /**
@@ -77,27 +87,16 @@ function getSampleBasePriceINR() {
  */
 
 // --- 6-DIGIT EMAIL OTP AUTHENTICATION ENGINE ---
-const AUTHORIZED_EMAILS = ["nigadearyan@gmail.com"];
+const AUTHORIZED_EMAILS = ["admin@goldenglobalexpo.com", "nigadearyan@gmail.com"];
 let failedAttempts = 0;
 let lockUntil = 0;
 
 function getStoredOTPs() {
-  try {
-    const list = JSON.parse(localStorage.getItem('gge_active_otps') || '[]');
-    const now = Date.now();
-    // Filter out OTPs older than 15 minutes
-    return list.filter(item => item && (now - item.time < 15 * 60 * 1000));
-  } catch(e) {
-    return [];
-  }
+  return [];
 }
 
 function addStoredOTP(otp) {
-  try {
-    const list = getStoredOTPs();
-    list.unshift({ otp: otp.toString(), time: Date.now() });
-    localStorage.setItem('gge_active_otps', JSON.stringify(list));
-  } catch(e){}
+  // Deprecated: client-side OTP storage removed for enterprise security
 }
 
 function initOTPInputHandlers() {
@@ -184,9 +183,9 @@ async function sendOTP() {
     const data = await resp.json();
     if (resp.ok && data.success) {
       codeToDispatch = data.devOtp;
-    } else if (resp.status === 429) {
+    } else {
       if (errorEl) {
-        errorEl.textContent = data.error || "Rate limit reached. Please wait before retrying.";
+        errorEl.textContent = data.error || "Authentication request rejected by server.";
         errorEl.style.display = 'block';
       }
       if (sendBtn) {
@@ -197,30 +196,17 @@ async function sendOTP() {
       return;
     }
   } catch (err) {
-    console.warn("Backend auth offline, using local generator:", err);
+    if (errorEl) {
+      errorEl.textContent = "Authentication server offline or unreachable.";
+      errorEl.style.display = 'block';
+    }
+    if (sendBtn) {
+      sendBtn.innerHTML = "Send 6-Digit Security Code ➔";
+      sendBtn.disabled = false;
+    }
+    isSendingOTP = false;
+    return;
   }
-
-  if (!codeToDispatch) {
-    codeToDispatch = Math.floor(100000 + Math.random() * 900000).toString();
-  }
-
-  // Save the SINGLE authoritative OTP
-  addStoredOTP(codeToDispatch);
-
-  // Single Clean Email Dispatch via FormSubmit (prevents duplicate emails)
-  try {
-    fetch('https://formsubmit.co/ajax/272b25135588631469824873f65beca3', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-      body: JSON.stringify({
-        _subject: `🔒 Golden Global Expo — Your 6-Digit Admin Verification Code: ${codeToDispatch}`,
-        _template: 'box',
-        "Admin Account": emailInput,
-        "6-Digit Security OTP": codeToDispatch,
-        "Security Notice": "This code expires in 10 minutes. Use this code to unlock the Golden Global Expo Executive Desk."
-      })
-    }).catch(() => {});
-  } catch(e){}
 
   // Transition UI to Step 2
   setTimeout(() => {
@@ -260,7 +246,7 @@ async function verifyOTP() {
 
   const digits = Array.from(document.querySelectorAll('.otp-digit')).map(d => d.value).join('').trim();
   const errorEl = document.getElementById('otpError');
-  const email = (document.getElementById('adminEmailInput') && document.getElementById('adminEmailInput').value) || 'nigadearyan@gmail.com';
+  const email = (document.getElementById('adminEmailInput') && document.getElementById('adminEmailInput').value) || 'admin@goldenglobalexpo.com';
 
   if (digits.length < 6) {
     if (errorEl) {
@@ -273,47 +259,35 @@ async function verifyOTP() {
 
   let serverSuccess = false;
   let issuedToken = null;
+  let issuedRole = 'admin';
 
-  // Master Developer Bypass check (immediate unlock)
-  if (digits === "991448") {
-    serverSuccess = true;
-    issuedToken = 'Bearer_MASTER_' + Math.random().toString(36).substring(2) + Date.now().toString(36);
-  }
-
-  if (!serverSuccess) {
-    try {
-      const resp = await fetch('/api/auth/verify-otp', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, otp: digits })
-      });
-      const data = await resp.json();
-      if (resp.ok && data.success) {
-        serverSuccess = true;
-        issuedToken = data.token;
-      } else {
-        // Fallback: check stored client OTPs if server returned 401 or offline
-        const validList = getStoredOTPs().map(i => i.otp);
-        if (validList.includes(digits)) {
-          serverSuccess = true;
-          issuedToken = 'Bearer_' + Math.random().toString(36).substring(2) + Date.now().toString(36);
-        } else {
-          if (errorEl) {
-            errorEl.textContent = data.error || "Invalid verification code.";
-            errorEl.style.display = 'block';
-          }
-          isVerifyingOTP = false;
-          return;
-        }
+  try {
+    const resp = await fetch('/api/auth/verify-otp', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({ email, otp: digits })
+    });
+    const data = await resp.json();
+    if (resp.ok && data.success && data.token) {
+      serverSuccess = true;
+      issuedToken = data.token;
+      issuedRole = data.role || 'admin';
+    } else {
+      if (errorEl) {
+        errorEl.textContent = data.error || "Invalid verification code.";
+        errorEl.style.display = 'block';
       }
-    } catch (err) {
-      // Fallback for offline testing
-      const validList = getStoredOTPs().map(i => i.otp);
-      if (validList.includes(digits)) {
-        serverSuccess = true;
-        issuedToken = 'Bearer_' + Math.random().toString(36).substring(2) + Date.now().toString(36);
-      }
+      isVerifyingOTP = false;
+      return;
     }
+  } catch (err) {
+    if (errorEl) {
+      errorEl.textContent = "Network error communicating with authentication server.";
+      errorEl.style.display = 'block';
+    }
+    isVerifyingOTP = false;
+    return;
   }
 
   if (serverSuccess && issuedToken) {
@@ -322,12 +296,21 @@ async function verifyOTP() {
 
     sessionStorage.setItem('gge_bearer_token', issuedToken);
     sessionStorage.setItem('gge_admin_email', email);
+    sessionStorage.setItem('gge_admin_role', issuedRole);
     sessionStorage.setItem('gge_admin_session', JSON.stringify({
       authenticated: true,
       email: email,
+      role: issuedRole,
       token: issuedToken,
       expiresAt: Date.now() + 86400000
     }));
+
+    // Persistent storage for tab reopening and session continuity
+    try {
+      localStorage.setItem('gge_admin_token', issuedToken);
+      localStorage.setItem('gge_admin_email', email);
+      localStorage.setItem('gge_admin_role', issuedRole);
+    } catch(e) {}
 
     logAuditAction('ADMIN_LOGIN_SUCCESS', 'AUTH', 'UNAUTHENTICATED', `Session token issued (${issuedToken.substring(0, 12)}...)`);
 
@@ -386,27 +369,50 @@ function validateSession() {
         return true;
       }
     }
+
+    // Check for tokens issued via login.html or active session
+    const token = sessionStorage.getItem('gge_bearer_token') || localStorage.getItem('gge_admin_token');
+    if (token) {
+      const email = sessionStorage.getItem('gge_admin_email') || localStorage.getItem('gge_admin_email') || 'admin@goldenglobalexpo.com';
+      const role = sessionStorage.getItem('gge_admin_role') || localStorage.getItem('gge_admin_role') || 'admin';
+      sessionStorage.setItem('gge_bearer_token', token);
+      sessionStorage.setItem('gge_admin_email', email);
+      sessionStorage.setItem('gge_admin_role', role);
+      sessionStorage.setItem('gge_admin_session', JSON.stringify({
+        authenticated: true,
+        email: email,
+        role: role,
+        token: token,
+        expiresAt: Date.now() + 86400000
+      }));
+      const overlay = document.getElementById('authOverlay');
+      if (overlay) overlay.style.display = 'none';
+      return true;
+    }
   } catch(e){}
   return false;
 }
 
 async function logout() {
-  const token = sessionStorage.getItem('gge_bearer_token');
+  const token = sessionStorage.getItem('gge_bearer_token') || localStorage.getItem('gge_admin_token');
   logAuditAction('ADMIN_LOGOUT', 'AUTH', 'AUTHENTICATED', 'TERMINATED');
-  if (token) {
-    try {
-      await fetch('/api/auth/logout', {
-        method: 'POST',
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-    } catch (e) {}
-  }
+  try {
+    const headers = {};
+    if (token) headers['Authorization'] = `Bearer ${token}`;
+    await fetch('/api/auth/logout', {
+      method: 'POST',
+      headers: headers,
+      credentials: 'include'
+    });
+  } catch (e) {}
   localStorage.removeItem('gge_admin_token');
   localStorage.removeItem('gge_admin_email');
+  localStorage.removeItem('gge_admin_role');
   sessionStorage.removeItem('gge_bearer_token');
   sessionStorage.removeItem('gge_admin_email');
   sessionStorage.removeItem('gge_admin_session');
-  window.location.href = 'login.html';
+  sessionStorage.removeItem('gge_admin_role');
+  window.location.href = 'login.html?locked=1';
 }
 
 // --- FILE SLOT MANAGEMENT & PREVIEWS (SCOPED PER CONSIGNMENT B/L) ---
@@ -435,8 +441,8 @@ async function handleSlotFile(slotKey, event) {
   const file = input && input.files && input.files[0];
   if (!file) return;
 
-  if (file.size > 25 * 1024 * 1024) {
-    if (typeof showToast === 'function') showToast("❌ File exceeds 25MB limit.");
+  if (file.size > 15 * 1024 * 1024) {
+    if (typeof showToast === 'function') showToast("❌ File exceeds 15MB limit.");
     return;
   }
 
@@ -453,15 +459,49 @@ async function handleSlotFile(slotKey, event) {
 
     const scopedKey = getScopedSlotKey(slotKey);
     try {
+      // 1. Upload to Server Vault via FormData
+      const blInput = document.getElementById('mBlCode') || document.getElementById('mDoc_bl') || document.getElementById('mConsignBl');
+      const activeBL = currentModalBl || (blInput ? blInput.value.trim() : null) || 'GGE-JNPT-2026';
+      const cleanSlot = slotKey.replace(/^dossier_/, '').replace(/^mDoc_/, '').toLowerCase();
+      const slotMap = { 'inv': 'inv', 'invoice': 'inv', 'phyto': 'phyto', 'coa': 'coa', 'assay': 'coa', 'sgs': 'coa', 'bl': 'bl', 'bill_of_lading': 'bl' };
+      const normalizedSlot = slotMap[cleanSlot] || cleanSlot;
+
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('bl', activeBL);
+      formData.append('slot', normalizedSlot);
+
+      const token = sessionStorage.getItem('gge_bearer_token') || localStorage.getItem('gge_admin_token');
+      const uploadHeaders = {};
+      if (token) {
+        uploadHeaders['Authorization'] = `Bearer ${token}`;
+      }
+
+      const res = await fetch('/api/documents/upload', {
+        method: 'POST',
+        headers: uploadHeaders,
+        credentials: 'include',
+        body: formData
+      });
+
+      if (!res.ok) {
+        const errJson = await res.json().catch(() => ({}));
+        throw new Error(errJson.detail || errJson.error || 'Server upload failed');
+      }
+
+      // 2. Cache locally in IndexedDB for instantaneous local preview
       await saveFileToDB(scopedKey, fileRecord);
       try { localStorage.setItem(scopedKey, JSON.stringify(fileRecord)); } catch(e) {}
       await renderSlotPreview(slotKey);
       if (typeof showToast === 'function') {
-        showToast(`✅ Successfully Attached: ${file.name}`);
+        showToast(`✅ Attached & Saved to Server Vault: ${file.name}`);
       }
     } catch(err) {
-      console.error("File save error", err);
-      if (typeof showToast === 'function') showToast("❌ Failed to store file.");
+      console.error("File upload error", err);
+      // Fallback local preview
+      await saveFileToDB(scopedKey, fileRecord);
+      await renderSlotPreview(slotKey);
+      if (typeof showToast === 'function') showToast(`⚠️ Saved locally: ${err.message || file.name}`);
     }
   };
   reader.readAsDataURL(file);
@@ -469,23 +509,50 @@ async function handleSlotFile(slotKey, event) {
 
 async function renderSlotPreview(slotKey) {
   const scopedKey = getScopedSlotKey(slotKey);
-  const fileRecord = await getFileFromDB(scopedKey);
+  let fileRecord = await getFileFromDB(scopedKey);
   const container = document.getElementById(`mDoc_${slotKey}_preview`) || 
                     document.getElementById(`slotPreview_${slotKey}`) ||
                     document.getElementById(`preview_${slotKey}`);
   if (!container) return;
 
+  // Fallback: Check Server Vault if not present in IndexedDB
+  if (!fileRecord || !fileRecord.name) {
+    const blInput = document.getElementById('mBlCode') || document.getElementById('mDoc_bl') || document.getElementById('mConsignBl');
+    const bl = currentModalBl || (blInput ? blInput.value.trim() : null);
+    if (bl) {
+      const cleanBl = bl.replace(/[^a-zA-Z0-9_-]/g, '_');
+      const cleanSlot = slotKey.replace(/^dossier_/, '').replace(/^mDoc_/, '').toLowerCase();
+      const slotMap = { 'inv': 'inv', 'invoice': 'inv', 'phyto': 'phyto', 'coa': 'coa', 'assay': 'coa', 'sgs': 'coa', 'bl': 'bl' };
+      const normalizedSlot = slotMap[cleanSlot] || cleanSlot;
+      try {
+        const headRes = await fetch(`/api/documents/${encodeURIComponent(cleanBl)}/${encodeURIComponent(normalizedSlot)}`, { method: 'HEAD' });
+        if (headRes.ok) {
+          const cl = headRes.headers.get('content-length');
+          const sizeStr = cl ? `${Math.round(parseInt(cl, 10) / 1024)} KB` : 'Server Vault PDF';
+          fileRecord = {
+            name: `GGE_${normalizedSlot.toUpperCase()}_${cleanBl}.pdf`,
+            size: sizeStr,
+            isServerVault: true
+          };
+        }
+      } catch (e) {}
+    }
+  }
+
   if (fileRecord && fileRecord.name) {
+    const safeName = escapeHtml(fileRecord.name);
+    const safeSize = escapeHtml(fileRecord.size || '');
+    const cleanSlotKey = String(slotKey).replace(/[^a-zA-Z0-9_-]/g, '');
     container.innerHTML = `
       <div class="doc-attached-badge" style="display:flex;align-items:center;justify-content:space-between;background:rgba(46,125,50,0.3);border:1.5px solid #81C784;border-radius:4px;padding:6px 10px;font-size:0.72rem;font-family:var(--font-mono);color:#C8E6C9;box-shadow:0 0 14px rgba(76,175,80,0.35);">
         <div style="display:flex;align-items:center;gap:6px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
           <span style="color:#81C784;font-size:0.9rem;font-weight:bold;">✅</span>
-          <b style="color:#FFFFFF;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:130px;" title="${fileRecord.name}">${fileRecord.name}</b>
-          <span style="color:#A5D6A7;font-size:0.65rem;">(${fileRecord.size})</span>
+          <b style="color:#FFFFFF;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:130px;" title="${safeName}">${safeName}</b>
+          <span style="color:#A5D6A7;font-size:0.65rem;">(${safeSize})</span>
         </div>
         <div style="display:flex;gap:6px;align-items:center;flex-shrink:0;">
-          <button type="button" onclick="triggerDocDownload('${slotKey}')" title="Download / View Attached PDF" style="background:rgba(255,255,255,0.15);border:1px solid #81C784;border-radius:3px;color:#FFFFFF;cursor:pointer;font-size:0.75rem;padding:3px 7px;">📥</button>
-          <button type="button" onclick="clearSlotFile('${slotKey}')" title="Remove / Replace File" style="background:rgba(255,80,80,0.2);border:1px solid #FF8A80;border-radius:3px;color:#FF8A80;cursor:pointer;font-size:0.75rem;padding:3px 7px;">✕</button>
+          <button type="button" onclick="triggerDocDownload('${cleanSlotKey}')" title="Download / View Attached PDF" style="background:rgba(255,255,255,0.15);border:1px solid #81C784;border-radius:3px;color:#FFFFFF;cursor:pointer;font-size:0.75rem;padding:3px 7px;">📥</button>
+          <button type="button" onclick="clearSlotFile('${cleanSlotKey}')" title="Remove / Replace File" style="background:rgba(255,80,80,0.2);border:1px solid #FF8A80;border-radius:3px;color:#FF8A80;cursor:pointer;font-size:0.75rem;padding:3px 7px;">✕</button>
         </div>
       </div>
     `;
@@ -498,8 +565,9 @@ async function renderSlotPreview(slotKey) {
     else if (slotKey.includes('sgs')) label = 'Attach SGS (PDF)';
     else if (slotKey.includes('bl')) label = 'Attach B/L (PDF)';
 
+    const cleanSlotKey = String(slotKey).replace(/[^a-zA-Z0-9_-]/g, '');
     container.innerHTML = `
-      <button type="button" class="doc-slot-btn" onclick="triggerSlotUpload('${slotKey}')">
+      <button type="button" class="doc-slot-btn" onclick="triggerSlotUpload('${cleanSlotKey}')">
         📎 ${label}
       </button>
     `;
@@ -517,9 +585,33 @@ async function triggerDocDownload(slotKey) {
     a.click();
     document.body.removeChild(a);
     if (typeof showToast === 'function') showToast(`📥 Downloading ${fileRecord.name}...`);
-  } else {
-    if (typeof showToast === 'function') showToast("⚠️ No file found for this slot.");
+    return;
   }
+
+  // Fallback: Check Server Vault
+  const blInput = document.getElementById('mBlCode') || document.getElementById('mDoc_bl') || document.getElementById('mConsignBl');
+  const bl = currentModalBl || (blInput ? blInput.value.trim() : null);
+  if (bl) {
+    const cleanBl = bl.replace(/[^a-zA-Z0-9_-]/g, '_');
+    const cleanSlot = slotKey.replace(/^dossier_/, '').replace(/^mDoc_/, '').toLowerCase();
+    const slotMap = { 'inv': 'inv', 'invoice': 'inv', 'phyto': 'phyto', 'coa': 'coa', 'assay': 'coa', 'sgs': 'coa', 'bl': 'bl' };
+    const normalizedSlot = slotMap[cleanSlot] || cleanSlot;
+    const serverUrl = `/api/documents/${encodeURIComponent(cleanBl)}/${encodeURIComponent(normalizedSlot)}`;
+    try {
+      const headRes = await fetch(serverUrl, { method: 'HEAD' });
+      if (headRes.ok) {
+        const a = document.createElement('a');
+        a.href = serverUrl;
+        a.download = `GGE_${normalizedSlot.toUpperCase()}_${cleanBl}.pdf`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        if (typeof showToast === 'function') showToast(`📥 Downloading from Server Vault...`);
+        return;
+      }
+    } catch(e) {}
+  }
+  if (typeof showToast === 'function') showToast("⚠️ No file found for this slot.");
 }
 
 async function clearSlotFile(slotKey) {
@@ -539,9 +631,8 @@ async function clearSlotFile(slotKey) {
     else if (slotKey.includes('bl')) label = 'Attach B/L (PDF)';
     else if (slotKey.includes('cat')) label = 'Attach Catalog (PDF)';
     else if (slotKey.includes('apeda')) label = 'Attach APEDA Cert';
-    else if (slotKey.includes('specimen')) label = 'Attach Specimen Assay';
-
-    container.innerHTML = `<button type="button" class="doc-slot-btn" onclick="triggerSlotUpload('${slotKey}')">📎 ${label}</button>`;
+    const cleanSlotKey = String(slotKey).replace(/[^a-zA-Z0-9_-]/g, '');
+    container.innerHTML = `<button type="button" class="doc-slot-btn" onclick="triggerSlotUpload('${cleanSlotKey}')">📎 ${label}</button>`;
   }
 
   // Clear file input value
@@ -551,6 +642,25 @@ async function clearSlotFile(slotKey) {
   // Clear text reference input
   const refInp = document.getElementById(`mDoc_${slotKey}_ref`);
   if (refInp) refInp.value = '';
+
+  // Delete from Server Vault if BL is active
+  const blInput = document.getElementById('mBlCode') || document.getElementById('mDoc_bl') || document.getElementById('mConsignBl');
+  const activeBL = currentModalBl || (blInput ? blInput.value.trim() : null);
+  if (activeBL) {
+    const cleanSlot = slotKey.replace(/^dossier_/, '').replace(/^mDoc_/, '').toLowerCase();
+    const slotMap = { 'inv': 'inv', 'invoice': 'inv', 'phyto': 'phyto', 'coa': 'coa', 'assay': 'coa', 'sgs': 'coa', 'bl': 'bl' };
+    const normalizedSlot = slotMap[cleanSlot] || cleanSlot;
+    try {
+      const token = sessionStorage.getItem('gge_bearer_token') || localStorage.getItem('gge_admin_token');
+      const headers = {};
+      if (token) headers['Authorization'] = `Bearer ${token}`;
+      fetch(`/api/documents/${encodeURIComponent(activeBL)}/${encodeURIComponent(normalizedSlot)}`, {
+        method: 'DELETE',
+        headers: headers,
+        credentials: 'include'
+      }).catch(() => {});
+    } catch(e) {}
+  }
 
   // Aggressively delete from IndexedDB
   try {
@@ -607,16 +717,26 @@ function syncPaidSamplesToConsignments() {
     inquiries.forEach(inq => {
       const isSample = inq.type === 'SAMPLE_ORDER' || (inq.id && (inq.id.includes('SMP') || inq.id.startsWith('SAMPLE-')));
       if (isSample && inq.id) {
-        if (!consignments.some(c => c && (c.bl === inq.id || c.quotationRef === inq.id))) {
+        const inqIdUpper = inq.id.trim().toUpperCase();
+        // Case-insensitive match on bl, quotationRef, AND inquiryRef to prevent duplicates
+        const alreadyExists = consignments.some(c => {
+          if (!c) return false;
+          const cBl = (c.bl || '').trim().toUpperCase();
+          const cQRef = (c.quotationRef || '').trim().toUpperCase();
+          const cIRef = (c.inquiryRef || '').trim().toUpperCase();
+          return cBl === inqIdUpper || cQRef === inqIdUpper || cIRef === inqIdUpper;
+        });
+        if (!alreadyExists) {
           const consignRecord = {
             bl: inq.id,
             quotationRef: inq.id,
-            buyer: inq.name || 'Aryan Nigade',
-            buyerEmail: inq.email || 'nigadearyan@gmail.com',
-            buyerPhone: inq.phone || '+91 9920594424',
+            inquiryRef: inq.id,
+            buyer: inq.name || 'Trade Sample Importer',
+            buyerEmail: inq.email || '',
+            buyerPhone: inq.phone || '',
             commodity: inq.commodities || inq.lotName || 'Tur Dal 500g Assay Pouch',
             vessel: 'Air Courier (BlueDart / DHL Priority)',
-            pod: inq.address || inq.country || 'Wadala East, Mumbai',
+            pod: inq.address || inq.country || 'Consignee Delivery Port / Address',
             eta: '24-48 Hours Delivery',
             container: `AIR-POUCH #${inq.id.replace('GGE-SMP-', '')}`,
             stage: 2,
@@ -660,6 +780,48 @@ function refreshInquiriesLive(btn) {
 }
 window.refreshInquiriesLive = refreshInquiriesLive;
 
+function applyUserRoleUI() {
+  const role = sessionStorage.getItem('gge_admin_role') || localStorage.getItem('gge_admin_role') || 'admin';
+  const roleText = document.getElementById('currentRoleText');
+  const roleDot = document.getElementById('roleDot');
+  const roleBadge = document.getElementById('roleBadge');
+
+  if (role === 'logistics') {
+    if (roleText) roleText.textContent = 'LOGISTICS OPERATIONS';
+    if (roleDot) {
+      roleDot.style.background = '#64B5F6';
+      roleDot.style.boxShadow = '0 0 8px #64B5F6';
+    }
+    if (roleBadge) {
+      roleBadge.style.color = '#64B5F6';
+      roleBadge.style.borderColor = 'rgba(100,181,246,0.3)';
+      roleBadge.style.background = 'rgba(100,181,246,0.1)';
+      roleBadge.title = 'Operations Staff: Consignment tracking active; Pricing tables locked.';
+    }
+    // Disable pricing save button with visual indicator
+    const savePriceBtn = document.querySelector('button[onclick="savePrices()"]');
+    if (savePriceBtn) {
+      savePriceBtn.disabled = true;
+      savePriceBtn.style.opacity = '0.45';
+      savePriceBtn.style.cursor = 'not-allowed';
+      savePriceBtn.title = 'Commodity pricing modifications restricted to Super-Admin';
+    }
+  } else {
+    if (roleText) roleText.textContent = 'OWNER / SUPER-ADMIN';
+    if (roleDot) {
+      roleDot.style.background = 'var(--gold-bright)';
+      roleDot.style.boxShadow = '0 0 8px var(--gold-bright)';
+    }
+    if (roleBadge) {
+      roleBadge.style.color = 'var(--gold-bright)';
+      roleBadge.style.borderColor = 'rgba(217,172,82,0.3)';
+      roleBadge.style.background = 'rgba(217,172,82,0.12)';
+      roleBadge.title = 'Super-Admin: Full Access across Pricing, Forex, Vault & Audit.';
+    }
+  }
+}
+window.applyUserRoleUI = applyUserRoleUI;
+
 function initDashboard() {
   if (typeof fetchServerInquiries === 'function') fetchServerInquiries();
   if (typeof fetchServerConsignments === 'function') fetchServerConsignments();
@@ -678,6 +840,8 @@ function initDashboard() {
   renderAuditTrail();
   renderAllSlotPreviews();
   if (typeof renderAnalytics === 'function') renderAnalytics();
+  if (typeof loadCommoditiesLive === 'function') loadCommoditiesLive();
+  applyUserRoleUI();
 
   // Live APM Health & Database Latency Monitor
   function pollServerHealth() {
@@ -706,6 +870,12 @@ function initDashboard() {
       });
       sse.addEventListener('PRICE_UPDATED', () => {
         if (typeof fetchServerPrices === 'function') fetchServerPrices();
+      });
+      sse.addEventListener('COMMODITY_CATALOG_UPDATED', () => {
+        if (typeof loadCommoditiesLive === 'function') loadCommoditiesLive();
+      });
+      sse.addEventListener('FOREX_UPDATED', () => {
+        if (typeof refreshForexNow === 'function') refreshForexNow();
       });
       sse.addEventListener('PAYMENT_CONFIRMED', () => {
         if (typeof fetchServerInquiries === 'function') fetchServerInquiries();
@@ -743,6 +913,9 @@ function switchTab(tabId, btn) {
   if (tabId === 'inquiriesTab' && typeof fetchServerInquiries === 'function') {
     fetchServerInquiries();
   }
+  if (tabId === 'catalogTab' && typeof loadCommoditiesLive === 'function') {
+    loadCommoditiesLive();
+  }
   if (tabId === 'trackingTab') {
     if (typeof fetchServerConsignments === 'function') {
       fetchServerConsignments().then(() => renderConsignments());
@@ -766,7 +939,7 @@ function updateKPIs() {
   const inquiries = getInquiries();
   const consignments = getConsignments();
 
-  const elLeads = document.getElementById('kpiLeads');
+  const elLeads = document.getElementById('kpiLeads') || document.getElementById('kpiInquiries');
   if (elLeads) elLeads.textContent = `${inquiries.length} Leads`;
 
   const elConsignments = document.getElementById('kpiConsignments');
@@ -774,6 +947,17 @@ function updateKPIs() {
 }
 
 // --- INQUIRIES CRM ---
+let currentInquiryFilter = 'all';
+
+function setInquiryFilter(filter, btn) {
+  currentInquiryFilter = filter || 'all';
+  const btns = document.querySelectorAll('.inquiry-filter-bar .btn-action');
+  btns.forEach(b => b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+  renderInquiries();
+}
+window.setInquiryFilter = setInquiryFilter;
+
 function renderInquiries() {
   const rawList = getInquiries();
   const tbody = document.getElementById('inquiriesTableBody');
@@ -798,51 +982,86 @@ function renderInquiries() {
     return;
   }
 
+  const filteredList = list.filter(item => {
+    const isDom = item.type === 'DOMESTIC_ORDER' || (item.id && (item.id.includes('DOM') || item.id.startsWith('DOM-')));
+    const isSmp = !isDom && (item.type === 'SAMPLE_ORDER' || item.type === 'SAMPLE_DISPATCH_ORDER' || (item.id && (item.id.includes('SMP') || item.id.startsWith('SAMPLE-'))));
+    if (currentInquiryFilter === 'domestic') return isDom;
+    if (currentInquiryFilter === 'sample') return isSmp;
+    if (currentInquiryFilter === 'export') return !isDom && !isSmp;
+    return true;
+  });
+
+  if (filteredList.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;padding:32px;color:var(--muted);">No orders matching filter "${escapeHtml(currentInquiryFilter)}".</td></tr>`;
+    return;
+  }
+
   const consignments = getConsignments();
 
-  tbody.innerHTML = list.map((item, index) => {
-    const isSample = item.type === 'SAMPLE_ORDER' || item.type === 'SAMPLE_DISPATCH_ORDER' || (item.id && (item.id.includes('SMP') || item.id.startsWith('SAMPLE-')));
+  tbody.innerHTML = filteredList.map((item, index) => {
+    const isDomestic = item.type === 'DOMESTIC_ORDER' || (item.id && (item.id.includes('DOM') || item.id.startsWith('DOM-')));
+    const isSample = !isDomestic && (item.type === 'SAMPLE_ORDER' || item.type === 'SAMPLE_DISPATCH_ORDER' || (item.id && (item.id.includes('SMP') || item.id.startsWith('SAMPLE-'))));
     
     // Check if B/L is already issued for this inquiry (prevents multiple B/L creation on same order)
-    const cleanSuffix = (item.id || '').replace(/^RFQ-/, '').replace(/^GGE-SMP-/, '').replace(/[^A-Z0-9-]/gi, '').toUpperCase();
     const matchedConsignment = consignments.find(c => 
-      (c.inquiryRef && c.inquiryRef === item.id) || 
-      (c.quotationRef && c.quotationRef === item.id) ||
-      (cleanSuffix && c.bl && c.bl.toUpperCase().includes(cleanSuffix)) ||
-      (item.blCode && c.bl === item.blCode)
+      (c.inquiryRef && c.inquiryRef.toUpperCase() === (item.id || '').toUpperCase()) || 
+      (c.quotationRef && c.quotationRef.toUpperCase() === (item.id || '').toUpperCase()) ||
+      (item.blCode && c.bl && c.bl.toUpperCase() === item.blCode.toUpperCase())
     );
 
-    const isBlIssued = !!matchedConsignment;
+    const isBlIssued = !!(matchedConsignment && matchedConsignment.bl);
     const activeBlCode = matchedConsignment ? matchedConsignment.bl : (item.blCode || '');
 
     // Clean formatted price
-    let cleanPrice = '₹1.00 INR';
+    let cleanPrice = '₹499.00 INR';
     if (item.payable) {
       const match = item.payable.match(/(₹[0-9.,]+\s*(?:INR)?|\$[0-9.,]+\s*(?:USD)?)/i);
       if (match) cleanPrice = match[1];
-      else cleanPrice = item.payable.replace(/\(PAID & CAPTURED\)/i, '').replace(/\(PAID VIA GPAY\)/i, '').trim();
+      else cleanPrice = item.payable.replace(/\(PAID & CAPTURED\)/i, '').replace(/\(PAID VIA GPAY\)/i, '').replace(/\(PAID VIA UPI.*?\)/i, '').trim();
     }
 
-    const typeBadge = isSample
-      ? `<span style="display:inline-flex;align-items:center;gap:5px;background:rgba(46,125,50,0.15);color:#81C784;border:1px solid rgba(129,199,132,0.4);padding:3px 8px;border-radius:4px;font-size:0.65rem;font-weight:600;font-family:var(--font-mono);letter-spacing:0.5px;">🟢 PAID SAMPLE · ${cleanPrice}</span>`
-      : `<span style="display:inline-block;background:rgba(184,135,47,0.18);color:#D9AC52;border:1px solid rgba(217,172,82,0.35);padding:3px 8px;border-radius:4px;font-size:0.65rem;font-weight:600;font-family:var(--font-mono);letter-spacing:0.5px;">BULK FCL RFQ</span>`;
+    let typeBadge = '';
+    if (isDomestic) {
+      typeBadge = `<span style="display:inline-flex;align-items:center;gap:5px;background:rgba(255,153,51,0.18);color:#FFA726;border:1px solid rgba(255,153,51,0.4);padding:3px 8px;border-radius:4px;font-size:0.65rem;font-weight:600;font-family:var(--font-mono);letter-spacing:0.5px;">🇮🇳 DOMESTIC UPI · ${cleanPrice}</span>`;
+    } else if (isSample) {
+      const payUpper = (item.payable || '').toUpperCase();
+      if (payUpper.includes('FREIGHT COLLECT') || payUpper.includes('FC-')) {
+        typeBadge = `<span style="display:inline-flex;align-items:center;gap:5px;background:rgba(33,150,243,0.15);color:#64B5F6;border:1px solid rgba(100,181,246,0.4);padding:3px 8px;border-radius:4px;font-size:0.65rem;font-weight:600;font-family:var(--font-mono);letter-spacing:0.5px;">✈️ FREIGHT COLLECT · $0.00</span>`;
+      } else if (payUpper.includes('PROFORMA')) {
+        typeBadge = `<span style="display:inline-flex;align-items:center;gap:5px;background:rgba(217,172,82,0.18);color:#D9AC52;border:1px solid rgba(217,172,82,0.35);padding:3px 8px;border-radius:4px;font-size:0.65rem;font-weight:600;font-family:var(--font-mono);letter-spacing:0.5px;">📑 SAMPLE PROFORMA</span>`;
+      } else if ((item.utr && item.utr.startsWith('mock_pay_')) || (item.paymentId && item.paymentId.startsWith('mock_pay_')) || (item.payable && item.payable.includes('Simulated'))) {
+        typeBadge = `<span style="display:inline-flex;align-items:center;gap:5px;background:rgba(217,172,82,0.15);color:#D9AC52;border:1px solid rgba(217,172,82,0.4);padding:3px 8px;border-radius:4px;font-size:0.65rem;font-weight:600;font-family:var(--font-mono);letter-spacing:0.5px;">🧪 MOCK PAID · ${cleanPrice}</span>`;
+      } else {
+        typeBadge = `<span style="display:inline-flex;align-items:center;gap:5px;background:rgba(46,125,50,0.15);color:#81C784;border:1px solid rgba(129,199,132,0.4);padding:3px 8px;border-radius:4px;font-size:0.65rem;font-weight:600;font-family:var(--font-mono);letter-spacing:0.5px;">🟢 PAID SAMPLE · ${cleanPrice}</span>`;
+      }
+    } else {
+      typeBadge = `<span style="display:inline-block;background:rgba(184,135,47,0.18);color:#D9AC52;border:1px solid rgba(217,172,82,0.35);padding:3px 8px;border-radius:4px;font-size:0.65rem;font-weight:600;font-family:var(--font-mono);letter-spacing:0.5px;">BULK FCL RFQ</span>`;
+    }
 
-    const safeCountry = escapeHtml(item.country || (isSample ? 'Express Air Courier' : 'International Port'));
+    const safeCountry = escapeHtml(item.country || (isDomestic ? 'India' : (isSample ? 'Express Air Courier' : 'International Port')));
     const safeAddress = escapeHtml(item.address || '');
-    const safeAddressShort = safeAddress.length > 36 ? (safeAddress.substring(0, 36) + '...') : (safeAddress || 'Air Courier Delivery');
+    const safeAddressShort = safeAddress.length > 36 ? (safeAddress.substring(0, 36) + '...') : (safeAddress || (isDomestic ? 'Door Delivery' : 'Air Courier Delivery'));
     const safeCommodity = escapeHtml(item.commodities || item.lotName || 'Assayed Lot');
     const safeVolume = escapeHtml(item.volume || 'Containerized FCL');
     const safeName = escapeHtml(item.name || '');
-    const safeCompany = escapeHtml(item.company || 'Direct Buyer');
+    const safeCompany = escapeHtml(item.company || (isDomestic ? 'Domestic Consignee' : 'Direct Buyer'));
     const safeEmail = escapeHtml(item.email || '');
 
-    const destDisplay = isSample
-      ? `<div style="font-size:0.75rem;color:#FAF8F3;line-height:1.4;" title="${safeAddress}">📍 <b>${safeCountry}</b><br><span style="color:var(--muted);font-size:0.68rem;">${safeAddressShort}</span></div>`
-      : `<span style="font-size:0.8rem;color:#FFFFFF;">📍 ${safeCountry}</span>`;
+    const destDisplay = isDomestic
+      ? `<div style="font-size:0.75rem;color:#FAF8F3;line-height:1.4;" title="${safeAddress}">
+           🇮🇳 <b>${escapeHtml(item.city || 'India')}${item.state ? `, ${escapeHtml(item.state)}` : ''}</b><br>
+           <span style="color:var(--muted);font-size:0.68rem;">${safeAddressShort}</span>
+           ${item.pincode ? `<br><span style="color:#D9AC52;font-size:0.65rem;font-family:var(--font-mono);font-weight:600;">PIN: ${escapeHtml(item.pincode)}</span>` : ''}
+         </div>`
+      : (isSample
+        ? `<div style="font-size:0.75rem;color:#FAF8F3;line-height:1.4;" title="${safeAddress}">📍 <b>${safeCountry}</b><br><span style="color:var(--muted);font-size:0.68rem;">${safeAddressShort}</span></div>`
+        : `<span style="font-size:0.8rem;color:#FFFFFF;">📍 ${safeCountry}</span>`);
 
-    const commDisplay = isSample
-      ? `<b>${safeCommodity}</b><br><span style="color:#D9AC52;font-size:0.70rem;">500g Certified Assay Pouch</span>`
-      : `<b>${safeCommodity}</b><br><span style="color:var(--muted);font-size:0.75rem;">${safeVolume}</span>`;
+    const commDisplay = isDomestic
+      ? `<b>${safeCommodity}</b><br><span style="color:#FFA726;font-size:0.70rem;font-weight:600;">🇮🇳 National Distribution (${item.pack_size ? `${escapeHtml(item.pack_size)} × ${item.pack_quantity || 1} Units` : safeVolume})</span>`
+      : (isSample
+        ? `<b>${safeCommodity}</b><br><span style="color:#D9AC52;font-size:0.70rem;">500g Certified Assay Pouch</span>`
+        : `<b>${safeCommodity}</b><br><span style="color:var(--muted);font-size:0.75rem;">${safeVolume}</span>`);
 
     let dateFormatted = item.date || '2026-09-03';
     let timeFormatted = item.time || '';
@@ -884,51 +1103,98 @@ function renderInquiries() {
       }
     }
 
+    const cleanItemId = String(item.id || '').replace(/[^A-Za-z0-9_-]/g, '');
+    const safeItemId = escapeHtml(item.id || '');
+
     let actionButtons = '';
-    if (isSample) {
+    if (isDomestic) {
       actionButtons = `
-        <button type="button" class="btn-action" onclick="createBlFromInquiry('${item.id}')" style="${isBlIssued ? 'background:rgba(46,125,50,0.22);border:1.5px solid #81C784;color:#A5D6A7;' : 'background:linear-gradient(135deg, rgba(46,125,50,0.3) 0%, rgba(30,90,35,0.2) 100%);border:1.5px solid #81C784;color:#A5D6A7;'}font-weight:700;font-size:0.72rem;padding:6px 11px;border-radius:4px;display:inline-flex;align-items:center;gap:4px;" title="${isBlIssued ? 'Consignment Already Issued — View in Tracker' : 'Create Air AWB / Consignment for Sample'}">
-          ${isBlIssued ? `📄 View B/L (${escapeHtml(activeBlCode)}) ➔` : '📦 Create B/L ➔'}
-        </button>
-        <button type="button" class="btn-action" onclick="viewSampleInTracker('${item.id}')" style="background:rgba(255,255,255,0.06);border:1px solid rgba(217,172,82,0.3);color:var(--gold-bright);font-weight:600;font-size:0.72rem;padding:6px 9px;margin-left:4px;border-radius:4px;" title="View in Consignment Tracker">
-          🛰️ Tracker
-        </button>
-        <button type="button" class="btn-action" onclick="dispatchCustomerEmail(${index})" style="background:rgba(255,255,255,0.06);border:1px solid rgba(217,172,82,0.3);color:#FFFFFF;font-weight:600;font-size:0.72rem;padding:6px 9px;margin-left:4px;border-radius:4px;" title="Send Email Receipt / Follow-up">
-          ✉️ Email
-        </button>
-        <button type="button" class="btn-action btn-action--danger" onclick="deleteInquiry(${index})" style="padding:6px 9px;margin-left:4px;border-radius:4px;" title="Delete">✕</button>
+        <div class="inquiry-actions-wrap" style="display:flex;align-items:center;gap:5px;flex-wrap:wrap;">
+          <button type="button" class="btn-action btn-action--quote" onclick="viewDomesticInvoice('${cleanItemId}')" style="background:linear-gradient(135deg, #FFA726 0%, #E65100 100%);color:#0D0A08;border:none;font-weight:700;font-size:0.72rem;padding:6px 11px;border-radius:4px;display:inline-flex;align-items:center;gap:4px;cursor:pointer;white-space:nowrap;box-shadow:0 2px 8px rgba(255,153,51,0.3);" title="View & Print Official GST Tax Invoice">
+            🧾 GST Invoice
+          </button>
+          <button type="button" class="btn-action" onclick="generateProformaForInquiry('${cleanItemId}')" style="background:rgba(217,172,82,0.18);border:1px solid rgba(217,172,82,0.45);color:var(--gold-bright);font-weight:600;font-size:0.72rem;padding:6px 10px;border-radius:4px;display:inline-flex;align-items:center;gap:4px;cursor:pointer;white-space:nowrap;" title="Generate Server-Side Proforma Invoice (Incoterms 2020 / SWIFT)">
+            📄 Proforma Invoice (PI)
+          </button>
+          <button type="button" class="btn-action" onclick="createBlFromInquiry('${cleanItemId}')" style="${isBlIssued ? 'background:rgba(46,125,50,0.22);border:1.5px solid #81C784;color:#A5D6A7;' : 'background:rgba(255,153,51,0.12);border:1.5px solid rgba(255,153,51,0.45);color:#FFA726;'}font-weight:600;font-size:0.72rem;padding:6px 9px;border-radius:4px;display:inline-flex;align-items:center;gap:4px;cursor:pointer;white-space:nowrap;" title="${isBlIssued ? `Consignment active (${escapeHtml(activeBlCode)}) — Click to view in Tracker` : 'Issue Domestic Consignment / Parcel Note'}">
+            ${isBlIssued ? '📄 View LR ➔' : '🚚 Issue LR / AWB ➔'}
+          </button>
+          <button type="button" class="btn-action" onclick="viewSampleInTracker('${cleanItemId}')" style="background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.15);color:var(--muted);font-weight:600;font-size:0.72rem;padding:6px 8px;border-radius:4px;display:inline-flex;align-items:center;gap:3px;cursor:pointer;white-space:nowrap;" title="View Surface Express Tracking">
+            🛰️ Track
+          </button>
+          <button type="button" class="btn-action btn-action--danger" onclick="deleteInquiry('${cleanItemId}')" style="padding:6px 8px;border-radius:4px;font-size:0.72rem;cursor:pointer;" title="Delete">✕</button>
+        </div>
+      `;
+    } else if (isSample) {
+      actionButtons = `
+        <div class="inquiry-actions-wrap" style="display:flex;align-items:center;gap:5px;flex-wrap:wrap;">
+          <button type="button" class="btn-action" onclick="generateProformaForInquiry('${cleanItemId}')" style="background:rgba(217,172,82,0.18);border:1px solid rgba(217,172,82,0.45);color:var(--gold-bright);font-weight:600;font-size:0.72rem;padding:6px 10px;border-radius:4px;display:inline-flex;align-items:center;gap:4px;cursor:pointer;white-space:nowrap;" title="Generate Server-Side Proforma Invoice (Incoterms 2020 / SWIFT)">
+            📄 Proforma Invoice (PI)
+          </button>
+          <button type="button" class="btn-action btn-action--quote" onclick="dispatchCustomerEmail('${cleanItemId}')" style="background:linear-gradient(135deg, #D9AC52 0%, #B8872F 100%);color:#0D0A08;border:none;font-weight:700;font-size:0.72rem;padding:6px 11px;border-radius:4px;display:inline-flex;align-items:center;gap:4px;cursor:pointer;white-space:nowrap;box-shadow:0 2px 8px rgba(217,172,82,0.3);" title="Send Sample AWB / Courier Receipt Email">
+            ✉️ Send Email
+          </button>
+          <button type="button" class="btn-action" onclick="createBlFromInquiry('${cleanItemId}')" style="${isBlIssued ? 'background:rgba(46,125,50,0.22);border:1.5px solid #81C784;color:#A5D6A7;' : 'background:rgba(255,255,255,0.06);border:1.5px solid rgba(129,199,132,0.45);color:#81C784;'}font-weight:600;font-size:0.72rem;padding:6px 9px;border-radius:4px;display:inline-flex;align-items:center;gap:4px;cursor:pointer;white-space:nowrap;" title="${isBlIssued ? `Consignment active (${escapeHtml(activeBlCode)}) — Click to view in Tracker` : 'Create Air AWB / Consignment for Sample'}">
+            ${isBlIssued ? '📄 View B/L ➔' : '📦 Issue B/L ➔'}
+          </button>
+          <button type="button" class="btn-action" onclick="viewSampleInTracker('${cleanItemId}')" style="background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.15);color:var(--muted);font-weight:600;font-size:0.72rem;padding:6px 8px;border-radius:4px;display:inline-flex;align-items:center;gap:3px;cursor:pointer;white-space:nowrap;" title="View in Consignment Tracker">
+            🛰️ Track
+          </button>
+          <button type="button" class="btn-action btn-action--danger" onclick="deleteInquiry('${cleanItemId}')" style="padding:6px 8px;border-radius:4px;font-size:0.72rem;cursor:pointer;" title="Delete">✕</button>
+        </div>
       `;
     } else {
       actionButtons = `
-        <button type="button" class="btn-action" onclick="createBlFromInquiry('${item.id}')" style="${isBlIssued ? 'background:rgba(46,125,50,0.22);border:1.5px solid #81C784;color:#A5D6A7;' : 'background:linear-gradient(135deg, rgba(217,172,82,0.35) 0%, rgba(184,135,47,0.22) 100%);border:1.5px solid var(--gold-bright);color:var(--gold-bright);'}font-weight:700;font-size:0.74rem;padding:6px 12px;border-radius:4px;display:inline-flex;align-items:center;gap:5px;box-shadow:0 2px 8px rgba(0,0,0,0.3);cursor:pointer;" title="${isBlIssued ? `Bill of Lading already active (${escapeHtml(activeBlCode)}) — Click to view in Tracker (Duplicates blocked)` : 'Directly convert RFQ to Ocean Bill of Lading in Consignment Tracker'}">
-          ${isBlIssued ? `📄 View B/L (${escapeHtml(activeBlCode)}) ➔` : '🚢 Create B/L ➔'}
-        </button>
-        <button type="button" class="btn-action" onclick="dispatchCustomerEmail(${index})" style="background:rgba(255,255,255,0.06);border:1px solid rgba(217,172,82,0.3);color:#FFFFFF;font-weight:600;font-size:0.72rem;padding:6px 10px;margin-left:4px;border-radius:4px;" title="Send Full Proforma Quotation & Technical Dossier">
-          ✉️ Email Quotation
-        </button>
-        <button type="button" class="btn-action btn-action--danger" onclick="deleteInquiry(${index})" style="padding:6px 9px;margin-left:4px;border-radius:4px;" title="Delete Inquiry">✕</button>
+        <div class="inquiry-actions-wrap" style="display:flex;align-items:center;gap:5px;flex-wrap:wrap;">
+          <button type="button" class="btn-action" onclick="generateProformaForInquiry('${cleanItemId}')" style="background:rgba(217,172,82,0.18);border:1px solid rgba(217,172,82,0.45);color:var(--gold-bright);font-weight:600;font-size:0.72rem;padding:6px 10px;border-radius:4px;display:inline-flex;align-items:center;gap:4px;cursor:pointer;white-space:nowrap;" title="Generate Server-Side Proforma Invoice (Incoterms 2020 / SWIFT)">
+            📄 Proforma Invoice (PI)
+          </button>
+          <button type="button" class="btn-action btn-action--quote" onclick="dispatchCustomerEmail('${cleanItemId}')" style="background:linear-gradient(135deg, #D9AC52 0%, #B8872F 100%);color:#0D0A08;border:none;font-weight:700;font-size:0.72rem;padding:6px 12px;border-radius:4px;display:inline-flex;align-items:center;gap:5px;box-shadow:0 2px 8px rgba(217,172,82,0.3);cursor:pointer;white-space:nowrap;" title="Send Full Proforma Quotation & Technical Dossier">
+            ✉️ Send Quote
+          </button>
+          <button type="button" class="btn-action" onclick="createBlFromInquiry('${cleanItemId}')" style="${isBlIssued ? 'background:rgba(46,125,50,0.22);border:1.5px solid #81C784;color:#A5D6A7;' : 'background:rgba(255,255,255,0.06);border:1.5px solid rgba(217,172,82,0.4);color:var(--gold-bright);'}font-weight:600;font-size:0.72rem;padding:6px 10px;border-radius:4px;display:inline-flex;align-items:center;gap:4px;cursor:pointer;white-space:nowrap;" title="${isBlIssued ? `Bill of Lading already active (${escapeHtml(activeBlCode)}) — Click to view in Tracker` : 'Directly convert RFQ to Ocean Bill of Lading in Consignment Tracker'}">
+            ${isBlIssued ? '📄 View B/L ➔' : '🚢 Issue B/L ➔'}
+          </button>
+          <button type="button" class="btn-action btn-action--danger" onclick="deleteInquiry('${cleanItemId}')" style="padding:6px 8px;border-radius:4px;font-size:0.72rem;cursor:pointer;" title="Delete Inquiry">✕</button>
+        </div>
       `;
     }
 
     const statusBadge = isBlIssued
       ? `<span style="display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:4px;font-family:var(--font-mono);font-size:0.68rem;font-weight:700;background:rgba(46,125,50,0.22);color:#81C784;border:1px solid rgba(129,199,132,0.45);" title="Bill of Lading ${escapeHtml(activeBlCode)} has been issued">
           <span style="width:6px;height:6px;border-radius:50%;background:#81C784;"></span>
-          B/L ISSUED
+          DELIVERY ACTIVE
         </span>`
-      : (isSample
-        ? `<span style="display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:4px;font-family:var(--font-mono);font-size:0.68rem;font-weight:600;${item.awb ? 'background:rgba(46,125,50,0.3);color:#81C784;border:1px solid #81C784;' : 'background:rgba(46,125,50,0.15);color:#81C784;border:1px solid rgba(129,199,132,0.4);'}">
-          <span style="width:6px;height:6px;border-radius:50%;background:#81C784;"></span>
-          ${item.awb ? 'AWB DISPATCHED' : 'PAID · PENDING AWB'}
-        </span>`
-      : `<span style="display:inline-block;padding:3px 8px;border-radius:4px;font-family:var(--font-mono);font-size:0.70rem;font-weight:600;background:rgba(255,255,255,0.08);color:var(--ivory);">
-          ${item.status || 'New RFQ'}
-        </span>`);
+      : (isDomestic
+        ? `<div style="display:flex;flex-direction:column;gap:4px;">
+            <span style="display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:4px;font-family:var(--font-mono);font-size:0.68rem;font-weight:600;background:rgba(255,153,51,0.18);color:#FFA726;border:1px solid rgba(255,153,51,0.4);">
+              <span style="width:6px;height:6px;border-radius:50%;background:#FFA726;"></span>
+              ${escapeHtml(item.status || 'UPI PAID · HUB QUEUED')}
+            </span>
+            ${item.utr ? `<span style="font-size:0.62rem;font-family:var(--font-mono);color:#D9AC52;background:rgba(217,172,82,0.1);padding:2px 5px;border-radius:3px;border:1px solid rgba(217,172,82,0.25);" title="Bank UTR Reference">UTR: ${escapeHtml(item.utr)}</span>` : ''}
+            <select onchange="updateDomesticOrderStatus('${cleanItemId}', this.value)" style="font-size:0.65rem;padding:3px 4px;background:#1A1410;color:#FAF8F3;border:1px solid rgba(255,153,51,0.4);border-radius:3px;margin-top:2px;cursor:pointer;" title="Update Domestic Order Stage">
+              <option value="">Update Status...</option>
+              <option value="PAID · Processing" ${(item.status || '').includes('Processing') ? 'selected' : ''}>PAID · Processing</option>
+              <option value="DISPATCHED" ${(item.status || '').includes('DISPATCHED') ? 'selected' : ''}>DISPATCHED (Surface)</option>
+              <option value="OUT FOR DELIVERY" ${(item.status || '').includes('OUT FOR DELIVERY') ? 'selected' : ''}>OUT FOR DELIVERY</option>
+              <option value="DELIVERED" ${(item.status || '').includes('DELIVERED') ? 'selected' : ''}>DELIVERED</option>
+              <option value="CANCELLED" ${(item.status || '').includes('CANCELLED') ? 'selected' : ''}>CANCELLED</option>
+            </select>
+          </div>`
+        : (isSample
+          ? `<span style="display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:4px;font-family:var(--font-mono);font-size:0.68rem;font-weight:600;${item.awb ? 'background:rgba(46,125,50,0.3);color:#81C784;border:1px solid #81C784;' : 'background:rgba(46,125,50,0.15);color:#81C784;border:1px solid rgba(129,199,132,0.4);'}">
+            <span style="width:6px;height:6px;border-radius:50%;background:#81C784;"></span>
+            ${item.awb ? 'AWB DISPATCHED' : 'PAID · PENDING AWB'}
+          </span>`
+          : `<span style="display:inline-block;padding:3px 8px;border-radius:4px;font-family:var(--font-mono);font-size:0.70rem;font-weight:600;background:rgba(255,255,255,0.08);color:var(--ivory);">
+              ${escapeHtml(item.status || 'New RFQ')}
+            </span>`));
 
     return `
       <tr style="${isBlIssued ? 'background:rgba(46,125,50,0.05);' : (isSample ? 'background:rgba(46,125,50,0.04);' : '')}">
         <td style="font-family:var(--font-mono);font-size:0.75rem;color:var(--gold-bright);">
           ${typeBadge}<br>
-          <span style="font-weight:600;color:#FFFFFF;margin-top:4px;display:inline-block;">${item.id}</span><br>
+          <span style="font-weight:600;color:#FFFFFF;margin-top:4px;display:inline-block;font-size:0.72rem;word-break:break-all;" title="${safeItemId}">${safeItemId}</span><br>
           <div style="margin-top:4px;display:flex;flex-direction:column;gap:2px;">
             <span style="color:var(--muted);font-size:0.68rem;display:inline-flex;align-items:center;gap:4px;">
               📅 <span>${dateFormatted}</span>
@@ -940,11 +1206,26 @@ function renderInquiries() {
             </span>` : ''}
           </div>
         </td>
-        <td><b>${safeName}</b><br><span style="color:var(--muted);font-size:0.75rem;">${safeCompany}</span><br><a href="mailto:${safeEmail}" style="font-size:0.70rem;color:var(--gold);text-decoration:none;">${safeEmail}</a></td>
-        <td>${destDisplay}</td>
-        <td>${commDisplay}</td>
+        <td>
+          <div style="max-width:210px;word-break:break-word;line-height:1.35;">
+            <b style="color:#FFFFFF;font-size:0.82rem;">${safeName}</b><br>
+            <span style="color:var(--muted);font-size:0.74rem;">${safeCompany}</span><br>
+            <a href="mailto:${safeEmail}" style="font-size:0.70rem;color:var(--gold-bright);text-decoration:none;" title="${safeEmail}">${safeEmail}</a>
+            ${item.phone ? `<br><a href="tel:${escapeHtml(item.phone.replace(/[^0-9+]/g, ''))}" style="font-size:0.70rem;color:#81C784;text-decoration:none;display:inline-flex;align-items:center;gap:3px;margin-top:2px;" title="Call Consignee">📞 ${escapeHtml(item.phone)}</a>` : ''}
+          </div>
+        </td>
+        <td>
+          <div style="max-width:160px;word-break:break-word;line-height:1.35;">
+            ${destDisplay}
+          </div>
+        </td>
+        <td>
+          <div style="max-width:180px;word-break:break-word;line-height:1.35;">
+            ${commDisplay}
+          </div>
+        </td>
         <td>${statusBadge}</td>
-        <td style="white-space:nowrap;">
+        <td style="white-space:normal;min-width:200px;">
           ${actionButtons}
         </td>
       </tr>
@@ -952,13 +1233,95 @@ function renderInquiries() {
   }).join('');
 }
 
+async function updateDomesticOrderStatus(orderId, newStatus) {
+  if (!orderId || !newStatus) return;
+  const list = getInquiries();
+  const item = list.find(i => (i.id || '').toUpperCase() === orderId.toUpperCase());
+  if (!item) {
+    if (typeof showToast === 'function') showToast("Order not found.", "error");
+    return;
+  }
+
+  try {
+    const res = await fetch(`/api/domestic-orders/${encodeURIComponent(orderId)}/status`, {
+      method: 'PUT',
+      headers: (typeof getAuthHeaders === 'function') ? getAuthHeaders({ 'Content-Type': 'application/json' }) : { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({ status: newStatus })
+    });
+    const data = await res.json();
+    if (!res.ok || !data.success) {
+      if (typeof showToast === 'function') showToast("⚠️ Server update error: " + (data.error || "Failed to update status"), "error");
+    }
+  } catch(err) {
+    console.warn("Server status update offline/fallback:", err);
+  }
+
+  // Update local inquiry
+  item.status = newStatus;
+  saveInquiries(list);
+
+  // Update local domestic orders
+  const domOrders = (typeof getDomesticOrders === 'function') ? getDomesticOrders() : [];
+  const domItem = domOrders.find(o => (o.id || '').toUpperCase() === orderId.toUpperCase());
+  if (domItem) {
+    domItem.status = newStatus;
+    domItem.order_status = newStatus;
+    if (typeof saveDomesticOrders === 'function') saveDomesticOrders(domOrders);
+  }
+
+  // Sync consignment if exists
+  const consignments = getConsignments();
+  const matchedConsign = consignments.find(c => 
+    (c.inquiryRef && c.inquiryRef.toUpperCase() === orderId.toUpperCase()) ||
+    (c.bl && c.bl.toUpperCase() === orderId.toUpperCase())
+  );
+  if (matchedConsign) {
+    const sLow = newStatus.toLowerCase();
+    if (sLow.includes('deliver') && !sLow.includes('out for')) {
+      matchedConsign.stage = 6;
+      matchedConsign.status = 'Stage 6: Delivered to Consignee';
+    } else if (sLow.includes('out for delivery') || sLow.includes('local delivery')) {
+      matchedConsign.stage = 5;
+      matchedConsign.status = 'Stage 5: Out for Local Delivery';
+    } else if (sLow.includes('dispatch') || sLow.includes('transit') || sLow.includes('surface')) {
+      matchedConsign.stage = 4;
+      matchedConsign.status = 'Stage 4: Surface Express Transit';
+    } else if (sLow.includes('hub') || sLow.includes('allocat')) {
+      matchedConsign.stage = 3;
+      matchedConsign.status = 'Stage 3: Mumbai Hub Allocated';
+    } else if (sLow.includes('pack') || sLow.includes('sortex') || sLow.includes('fssai') || sLow.includes('processing')) {
+      matchedConsign.stage = 2;
+      matchedConsign.status = 'Stage 2: Sortex Pack & FSSAI Clear';
+    }
+    saveConsignments(consignments);
+    if (typeof renderConsignments === 'function') renderConsignments();
+  }
+
+  if (typeof showToast === 'function') {
+    showToast(`✓ Order ${orderId} status updated to: ${newStatus}`, "success");
+  }
+  renderInquiries();
+}
+window.updateDomesticOrderStatus = updateDomesticOrderStatus;
+
+function viewDomesticInvoice(orderId) {
+  if (!orderId) return;
+  const url = `/api/domestic-orders/${encodeURIComponent(orderId)}/invoice?format=html`;
+  const win = window.open(url, '_blank', 'width=880,height=920,scrollbars=yes,resizable=yes');
+  if (!win) {
+    window.location.href = url;
+  }
+}
+window.viewDomesticInvoice = viewDomesticInvoice;
+
 function createBlFromInquiry(target) {
   const list = getInquiries();
   let item = null;
   if (typeof target === 'number') {
     item = list[target];
   } else if (typeof target === 'string') {
-    item = list.find(i => i.id === target);
+    item = list.find(i => i && (i.id === target || (i.id && String(i.id).toLowerCase() === String(target).toLowerCase())));
   }
   if (!item) {
     if (typeof showToast === 'function') showToast("Inquiry not found.", "error");
@@ -967,12 +1330,12 @@ function createBlFromInquiry(target) {
 
   // STRICT RULE: Prevent duplicate B/L creation on the same order
   const consignments = getConsignments();
-  const cleanSuffix = (item.id || '').replace(/^RFQ-/, '').replace(/^GGE-SMP-/, '').replace(/[^A-Z0-9-]/gi, '').toUpperCase();
+  const isDomestic = item.type === 'DOMESTIC_ORDER' || (item.id && (item.id.includes('DOM') || item.id.startsWith('DOM-')));
+  const cleanSuffix = (item.id || '').replace(/^RFQ-/, '').replace(/^GGE-SMP-/, '').replace(/^GGE-DOM-/, '').replace(/[^A-Z0-9-]/gi, '').toUpperCase();
   const existing = consignments.find(c => 
-    (c.inquiryRef && c.inquiryRef === item.id) || 
-    (c.quotationRef && c.quotationRef === item.id) ||
-    (cleanSuffix && c.bl && c.bl.toUpperCase().includes(cleanSuffix)) ||
-    (item.blCode && c.bl === item.blCode)
+    (c.inquiryRef && c.inquiryRef.toUpperCase() === (item.id || '').toUpperCase()) || 
+    (c.quotationRef && c.quotationRef.toUpperCase() === (item.id || '').toUpperCase()) ||
+    (item.blCode && c.bl && c.bl.toUpperCase() === item.blCode.toUpperCase())
   );
 
   if (existing) {
@@ -994,8 +1357,10 @@ function createBlFromInquiry(target) {
   // 2. Open the Consignment / B/L Modal
   openConsignmentModal();
 
-  // 3. Generate a Bill of Lading (B/L) Code directly from inquiry ID without any year
-  const blCode = `GGE-BL-${cleanSuffix || Math.random().toString(36).substring(2, 6).toUpperCase()}`;
+  // 3. Generate a Bill of Lading (B/L) Code or Domestic Consignment LR
+  const blCode = isDomestic
+    ? (item.id || `GGE-DOM-${cleanSuffix || Math.random().toString(36).substring(2, 6).toUpperCase()}`)
+    : `GGE-BL-${cleanSuffix || Math.random().toString(36).substring(2, 6).toUpperCase()}`;
 
   // 4. Auto-fill all modal inputs
   const setVal = (id, val) => {
@@ -1018,13 +1383,15 @@ function createBlFromInquiry(target) {
   } else if (item.name) {
     buyerText = item.name;
   }
-  setVal('mBuyer', buyerText || 'Commercial Importer');
+  setVal('mBuyer', buyerText || (isDomestic ? 'Domestic Consignee' : 'Commercial Importer'));
   setVal('mBuyerEmail', item.email || '');
   setVal('mBuyerPhone', item.phone || '');
 
-  // Destination Port / Seaport
+  // Destination Port / Delivery Address
   let podText = item.country || 'Jebel Ali Port, Dubai (UAE)';
-  if (podText.trim().toLowerCase() === 'india') {
+  if (isDomestic) {
+    podText = item.address || `${item.country || 'India'} (Door Delivery)`;
+  } else if (podText.trim().toLowerCase() === 'india') {
     podText = 'JNPT Nhava Sheva Port, Mumbai (India)';
   } else if (!podText.toLowerCase().includes('port') && !podText.toLowerCase().includes('terminal')) {
     podText = `${podText} Seaport / Destination Port`;
@@ -1037,28 +1404,40 @@ function createBlFromInquiry(target) {
   const commodityAndVolume = `${commodityName} · Volume: ${quantityVolume}`;
   setVal('mCommodity', commodityAndVolume);
 
-  // Container Number: Leave EMPTY at the start because container has not been allocated yet by carrier!
-  setVal('mContainer', '');
   const cntInput = document.getElementById('mContainer');
-  if (cntInput) {
-    cntInput.placeholder = 'PENDING ALLOCATION (Enter once carrier allocates box)';
-  }
-
-  // Carrier Vessel Name: Leave EMPTY at start because booking note is pending
-  setVal('mVessel', '');
   const vslInput = document.getElementById('mVessel');
-  if (vslInput) {
-    vslInput.placeholder = 'Pending Vessel Booking (e.g. MSC VALERIA)';
-  }
 
-  // Set default Stage to Stage 1 (Mandi Sourced & Grading) and Pending ETA
-  setVal('mEta', 'Pending Ocean Schedule');
-  setVal('mStage', 1);
+  if (isDomestic) {
+    setVal('mContainer', `DOM-PARCEL #${cleanSuffix || 'PKG'}`);
+    setVal('mVessel', 'Domestic Surface Express (BlueDart / Delhivery)');
+    setVal('mEta', '2–4 Business Days Door Delivery');
+    setVal('mStage', 2);
+  } else {
+    // Container Number: Leave EMPTY at the start because container has not been allocated yet by carrier!
+    setVal('mContainer', '');
+    if (cntInput) {
+      cntInput.placeholder = 'PENDING ALLOCATION (Enter once carrier allocates box)';
+    }
+
+    // Carrier Vessel Name: Leave EMPTY at start because booking note is pending
+    setVal('mVessel', '');
+    if (vslInput) {
+      vslInput.placeholder = 'Pending Vessel Booking (e.g. MSC VALERIA)';
+    }
+
+    // Set default Stage to Stage 1 (Mandi Sourced & Grading) and Pending ETA
+    setVal('mEta', 'Pending Ocean Schedule');
+    setVal('mStage', 1);
+  }
 
   // Update modal title to show link to inquiry
   const title = document.getElementById('consignModalTitle');
   if (title) {
-    title.innerHTML = `Create Ocean Consignment &amp; Bill of Lading (B/L)<br><small style="font-size:0.72rem;color:var(--gold-bright);font-family:var(--font-mono);display:inline-block;margin-top:3px;">AUTO-FILLED FROM BUYER RFQ: ${escapeHtml(item.id)}</small>`;
+    if (isDomestic) {
+      title.innerHTML = `Issue Domestic Consignment Note (Lorry Receipt / Parcel AWB)<br><small style="font-size:0.72rem;color:#FFA726;font-family:var(--font-mono);display:inline-block;margin-top:3px;">AUTO-FILLED FROM DOMESTIC ORDER: ${escapeHtml(item.id)}</small>`;
+    } else {
+      title.innerHTML = `Create Ocean Consignment &amp; Bill of Lading (B/L)<br><small style="font-size:0.72rem;color:var(--gold-bright);font-family:var(--font-mono);display:inline-block;margin-top:3px;">AUTO-FILLED FROM BUYER RFQ: ${escapeHtml(item.id)}</small>`;
+    }
   }
 
   // Subtle golden highlight animation on B/L Code and Quantity inputs
@@ -1087,6 +1466,9 @@ function updateInquiryStatus(index, status) {
   if (list[index]) {
     list[index].status = status;
     saveInquiries(list);
+    if (typeof addInquiryToServer === 'function') {
+      addInquiryToServer(list[index]);
+    }
     renderInquiries();
     if (typeof showToast === 'function') showToast("Status updated.");
   }
@@ -1106,11 +1488,55 @@ function viewSampleInTracker(sampleId) {
   }
 }
 
-function deleteInquiry(index) {
+function deleteInquiry(identifier) {
   if (confirm("Delete this inquiry from CRM?")) {
     const list = getInquiries();
-    list.splice(index, 1);
-    saveInquiries(list);
+    let targetIndex = -1;
+    let inqId = null;
+
+    if (typeof identifier === 'string') {
+      targetIndex = list.findIndex(i => i && (i.id === identifier || String(i.id).toLowerCase() === identifier.toLowerCase()));
+      inqId = identifier;
+    } else if (typeof identifier === 'number') {
+      targetIndex = identifier;
+      inqId = list[targetIndex] && list[targetIndex].id;
+    }
+
+    if (targetIndex !== -1 && targetIndex < list.length) {
+      const removed = list.splice(targetIndex, 1)[0];
+      if (!inqId && removed) inqId = removed.id;
+      saveInquiries(list, true);
+    }
+
+    if (inqId) {
+      // Also clean from domestic orders array in localStorage
+      try {
+        const domList = (typeof getDomesticOrders === 'function') ? getDomesticOrders() : [];
+        const filteredDom = domList.filter(o => o && o.id !== inqId && String(o.id).toLowerCase() !== inqId.toLowerCase());
+        localStorage.setItem('gge_domestic_orders', JSON.stringify(filteredDom));
+      } catch(e) {}
+
+      try {
+        const token = sessionStorage.getItem('gge_bearer_token') || localStorage.getItem('gge_admin_token');
+        const headers = {};
+        if (token) headers['Authorization'] = `Bearer ${token}`;
+
+        // Cascade delete on domestic orders endpoint if domestic
+        if (inqId.toUpperCase().includes('DOM') || inqId.toUpperCase().startsWith('GGE-DOM-')) {
+          fetch(`/api/domestic-orders/${encodeURIComponent(inqId)}`, {
+            method: 'DELETE',
+            headers: headers,
+            credentials: 'include'
+          }).catch(() => {});
+        }
+
+        fetch(`/api/inquiries/${encodeURIComponent(inqId)}`, {
+          method: 'DELETE',
+          headers: headers,
+          credentials: 'include'
+        }).catch(() => {});
+      } catch(e) {}
+    }
     renderInquiries();
     updateKPIs();
     if (typeof showToast === 'function') showToast("Inquiry deleted.");
@@ -1118,7 +1544,7 @@ function deleteInquiry(index) {
 }
 
 function openAddLeadModal() {
-  const modal = document.getElementById('addLeadModal');
+  const modal = document.getElementById('addLeadModal') || document.getElementById('leadModal');
   if (modal) modal.style.display = 'flex';
 }
 
@@ -1130,21 +1556,61 @@ function saveLeadForm() {
   const country = document.getElementById('lCountry').value;
   const commodities = document.getElementById('lCommodities').value;
   const volume = document.getElementById('lVolume').value;
+  const leadTypeEl = document.getElementById('lType');
+  const leadType = leadTypeEl ? leadTypeEl.value : 'BULK_INQUIRY';
 
   const now = new Date();
+  let newLeadId = `RFQ-${Math.floor(Math.random() * 900 + 100)}`;
+  let defaultStatus = 'New RFQ';
+  let defaultIncoterms = 'CIF';
+  let defaultPayable = 'T/T against B/L';
+
+  if (leadType === 'DOMESTIC_ORDER') {
+    newLeadId = `GGE-DOM-${Math.floor(1000 + Math.random() * 9000)}`;
+    defaultStatus = 'Payment Pending · Order Created';
+    defaultIncoterms = 'DOOR_DELIVERY';
+    defaultPayable = '₹ UPI Instant Settlement';
+  } else if (leadType === 'SAMPLE_ORDER') {
+    newLeadId = `GGE-SMP-${Math.floor(1000 + Math.random() * 9000)}`;
+    defaultStatus = 'Sample Sourced · Packaging';
+    defaultIncoterms = 'COURIER_DOOR';
+    defaultPayable = '₹499.00 INR (PAID)';
+  }
+
   const newLead = {
-    id: `RFQ-${Math.floor(Math.random() * 900 + 100)}`,
+    id: newLeadId,
+    type: leadType,
     date: now.toISOString().split('T')[0],
     time: now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true }),
     createdAt: now.getTime() / 1000,
-    name, company, email, phone, country, commodities, volume, status: 'new'
+    name,
+    company: company || (leadType === 'DOMESTIC_ORDER' ? 'Domestic Consignee' : 'Commercial Buyer'),
+    email,
+    phone,
+    country: country || (leadType === 'DOMESTIC_ORDER' ? 'India' : 'International Port'),
+    commodities,
+    volume: volume || (leadType === 'DOMESTIC_ORDER' ? '1kg × 1 Unit' : '2×20\' FCL'),
+    status: defaultStatus,
+    incoterms: defaultIncoterms,
+    payable: defaultPayable
   };
 
   const list = getInquiries();
   list.unshift(newLead);
   saveInquiries(list);
 
+  if (leadType === 'DOMESTIC_ORDER') {
+    const domOrders = (typeof getDomesticOrders === 'function') ? getDomesticOrders() : [];
+    domOrders.unshift(newLead);
+    if (typeof saveDomesticOrders === 'function') saveDomesticOrders(domOrders);
+  }
+
+  if (typeof addInquiryToServer === 'function') {
+    addInquiryToServer(newLead);
+  }
+
   closeModal('addLeadModal');
+  closeModal('leadModal');
   renderInquiries();
   updateKPIs();
   if (typeof showToast === 'function') showToast("New lead recorded in CRM.");
@@ -1158,7 +1624,19 @@ function exportToCSV() {
     if (!t && i.createdAt) {
       t = new Date(i.createdAt * 1000).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true });
     }
-    return `"${i.id}","${i.date}","${t}","${i.name}","${i.company}","${i.email}","${i.phone}","${i.country}","${i.commodities}","${i.volume}","${i.status}"`;
+    return [
+      sanitizeCsvCell(i.id),
+      sanitizeCsvCell(i.date),
+      sanitizeCsvCell(t),
+      sanitizeCsvCell(i.name),
+      sanitizeCsvCell(i.company),
+      sanitizeCsvCell(i.email),
+      sanitizeCsvCell(i.phone),
+      sanitizeCsvCell(i.country),
+      sanitizeCsvCell(i.commodities),
+      sanitizeCsvCell(i.volume),
+      sanitizeCsvCell(i.status)
+    ].join(',');
   }).join('\n');
   const blob = new Blob([headers + rows], { type: 'text/csv;charset=utf-8;' });
   const url = URL.createObjectURL(blob);
@@ -1269,82 +1747,259 @@ function applyLotPresetToDossier(lotId) {
   compileLiveDossierLetterhead();
 }
 
-async function compileLiveDossierLetterhead() {
-  const inq = (currentInquiryIndex !== null && getInquiries()[currentInquiryIndex]) ? getInquiries()[currentInquiryIndex] : {
-    name: 'Valued Buyer',
-    company: 'International Trading House',
-    email: 'buyer@company.com',
-    country: 'International Port',
-    id: 'GGE-QT-2026'
-  };
+function buildFormalQuotationHtml(data) {
+  const {
+    inq, spec, refCode, subject, hsVal, purityVal, moistureVal, packVal,
+    tonnageVal, priceVal, loadingPortVal, termsVal, totalValText,
+    catRef, apedaRef, specimenRef, todayStr
+  } = data;
 
-  const lotSelect = document.getElementById('dosLotSelect');
-  const lotKey = lotSelect ? lotSelect.value : 'p1';
-  const spec = LOT_SPECS[lotKey] || LOT_SPECS['p1'];
+  const esc = (s) => (typeof escapeHtml === 'function' ? escapeHtml(s || '') : String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'));
 
-  const hsVal = (document.getElementById('dosHs') ? document.getElementById('dosHs').value : '') || spec.hs;
-  const purityVal = (document.getElementById('dosPurity') ? document.getElementById('dosPurity').value : '') || spec.purity;
-  const moistureVal = (document.getElementById('dosMoisture') ? document.getElementById('dosMoisture').value : '') || spec.moisture;
-  const tonnageVal = (document.getElementById('dosTonnage') ? document.getElementById('dosTonnage').value : '') || '24.0 MT (20\' FCL)';
-  const priceVal = (document.getElementById('dosPrice') ? document.getElementById('dosPrice').value : '') || spec.price;
-  const loadingPortVal = (document.getElementById('dosLoadingPort') ? document.getElementById('dosLoadingPort').value : '') || 'JNPT Nhava Sheva (INNSA1)';
-  const termsVal = (document.getElementById('dosTerms') ? document.getElementById('dosTerms').value : '') || '100% L/C at Sight OR 30/70 T/T';
-  const packVal = spec.packaging;
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>${esc(subject)}</title>
+</head>
+<body style="margin:0; padding:24px 0; background-color:#F3F4F6; font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color:#1F2937;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+    <tr>
+      <td align="center" style="padding:0 12px;">
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:640px; background-color:#FFFFFF; border-radius:8px; overflow:hidden; border:1px solid #E5E7EB; box-shadow:0 4px 24px rgba(0,0,0,0.06);">
+          <tr>
+            <td style="background-color:#0E0C0A; padding:26px 32px; text-align:center; border-bottom:3px solid #D9AC52;">
+              <div style="color:#D9AC52; font-size:20px; font-weight:700; letter-spacing:2px; text-transform:uppercase; margin-bottom:4px;">
+                GOLDEN GLOBAL EXPO
+              </div>
+              <div style="color:#9CA3AF; font-size:10.5px; font-weight:600; letter-spacing:1.5px; text-transform:uppercase;">
+                Govt. of India Recognized Merchant Exporter · APEDA &amp; Spices Board Member
+              </div>
+            </td>
+          </tr>
+          <tr>
+            <td style="background-color:#FAF7F0; padding:12px 32px; border-bottom:1px solid #EAE0CD; font-size:12px; color:#6B7280;">
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+                <tr>
+                  <td align="left" style="font-weight:600; color:#4B5563;">
+                    Date: <span style="color:#1F2937;">${esc(todayStr)}</span>
+                  </td>
+                  <td align="right">
+                    <span style="background-color:#FAF5EA; border:1px solid #D9AC52; color:#855C1B; font-family:monospace; font-weight:700; padding:3px 8px; border-radius:4px; font-size:11.5px;">
+                      REF: ${esc(refCode)}
+                    </span>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:32px 32px 24px;">
+              <div style="background-color:#F9FAFB; border:1px solid #E5E7EB; border-radius:6px; padding:16px 18px; margin-bottom:22px;">
+                <div style="font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:1px; color:#855C1B; margin-bottom:8px;">
+                  Commercial Consignment Recipient
+                </div>
+                <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="font-size:13px; line-height:1.6;">
+                  <tr>
+                    <td style="width:45%; color:#6B7280;">Attention / Buyer:</td>
+                    <td style="font-weight:700; color:#111827;">${esc(inq.name)}</td>
+                  </tr>
+                  <tr>
+                    <td style="color:#6B7280;">Company / Entity:</td>
+                    <td style="font-weight:600; color:#1F2937;">${esc(inq.company || 'Commercial Buyer')}</td>
+                  </tr>
+                  <tr>
+                    <td style="color:#6B7280;">Destination Port / Country:</td>
+                    <td style="font-weight:600; color:#1F2937;">${esc(inq.country || 'International Destination')}</td>
+                  </tr>
+                  <tr>
+                    <td style="color:#6B7280;">Contracted Volume:</td>
+                    <td style="font-weight:700; color:#B8872F;">${esc(tonnageVal)}</td>
+                  </tr>
+                </table>
+              </div>
+              <p style="margin:0 0 16px; font-size:14px; line-height:1.6; color:#374151;">
+                Dear ${esc(inq.name)},<br><br>
+                Thank you for your formal trade inquiry with <strong>Golden Global Expo</strong> (Mumbai, India). We are pleased to issue our indicative commercial proforma offer and technical specification dossier for your requested consignment:
+              </p>
+              <div style="margin:24px 0 12px;">
+                <div style="font-size:12px; font-weight:700; letter-spacing:1px; text-transform:uppercase; color:#855C1B; margin-bottom:8px;">
+                  1. Commodity Technical Numbers, Codes &amp; Specifications
+                </div>
+                <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse; border:1px solid #E5E7EB; border-radius:6px; overflow:hidden; font-size:13px;">
+                  <tr style="background-color:#F9FAFB; border-bottom:1px solid #E5E7EB;">
+                    <td style="padding:9px 12px; font-weight:600; color:#4B5563; width:44%;">Commodity Lot</td>
+                    <td style="padding:9px 12px; font-weight:700; color:#1F2937;">${esc(spec.name)} (${esc(spec.lot || 'Export Lot')})</td>
+                  </tr>
+                  <tr style="background-color:#FFFFFF; border-bottom:1px solid #E5E7EB;">
+                    <td style="padding:9px 12px; font-weight:600; color:#4B5563;">Botanical Nomenclature</td>
+                    <td style="padding:9px 12px; font-style:italic; color:#1F2937;">${esc(spec.botanical || 'Agricultural Specimen')}</td>
+                  </tr>
+                  <tr style="background-color:#F9FAFB; border-bottom:1px solid #E5E7EB;">
+                    <td style="padding:9px 12px; font-weight:600; color:#4B5563;">HS Tariff Code</td>
+                    <td style="padding:9px 12px; font-family:monospace; font-weight:700; color:#1F2937;">${esc(hsVal)}</td>
+                  </tr>
+                  <tr style="background-color:#FFFFFF; border-bottom:1px solid #E5E7EB;">
+                    <td style="padding:9px 12px; font-weight:600; color:#4B5563;">Country of Origin</td>
+                    <td style="padding:9px 12px; color:#1F2937;">${esc(spec.origin || 'Maharashtra / Karnataka, India')}</td>
+                  </tr>
+                  <tr style="background-color:#F9FAFB; border-bottom:1px solid #E5E7EB;">
+                    <td style="padding:9px 12px; font-weight:600; color:#4B5563;">Optical Sortex Purity</td>
+                    <td style="padding:9px 12px; font-weight:600; color:#1F2937;">${esc(purityVal)}</td>
+                  </tr>
+                  <tr style="background-color:#FFFFFF; border-bottom:1px solid #E5E7EB;">
+                    <td style="padding:9px 12px; font-weight:600; color:#4B5563;">Moisture &amp; Admixture Limits</td>
+                    <td style="padding:9px 12px; color:#1F2937;">${esc(moistureVal)}</td>
+                  </tr>
+                  <tr style="background-color:#F9FAFB; border-bottom:1px solid #E5E7EB;">
+                    <td style="padding:9px 12px; font-weight:600; color:#4B5563;">Export Packaging Standard</td>
+                    <td style="padding:9px 12px; color:#1F2937;">${esc(packVal)}</td>
+                  </tr>
+                  <tr style="background-color:#FFFFFF; border-bottom:1px solid #E5E7EB;">
+                    <td style="padding:9px 12px; font-weight:600; color:#4B5563;">Consignment Loadability</td>
+                    <td style="padding:9px 12px; font-weight:600; color:#1F2937;">${esc(tonnageVal)}</td>
+                  </tr>
+                  <tr style="background-color:#F9FAFB; border-bottom:1px solid #E5E7EB;">
+                    <td style="padding:9px 12px; font-weight:600; color:#4B5563;">Unit Benchmark Price</td>
+                    <td style="padding:9px 12px; font-weight:700; color:#047857;">$${esc(priceVal)} USD / Metric Ton</td>
+                  </tr>
+                  <tr style="background-color:#FFFFFF; border-bottom:1px solid #E5E7EB;">
+                    <td style="padding:9px 12px; font-weight:600; color:#4B5563;">Port of Loading &amp; Incoterms</td>
+                    <td style="padding:9px 12px; color:#1F2937;">${esc(loadingPortVal)}</td>
+                  </tr>
+                  <tr style="background-color:#F9FAFB; border-bottom:1px solid #E5E7EB;">
+                    <td style="padding:9px 12px; font-weight:600; color:#4B5563;">Commercial Settlement Terms</td>
+                    <td style="padding:9px 12px; color:#1F2937;">${esc(termsVal)}</td>
+                  </tr>
+                </table>
+              </div>
+              <div style="background-color:#FAF5EA; border:2px solid #D9AC52; border-radius:6px; padding:16px 20px; margin:22px 0; text-align:center;">
+                <div style="font-size:11.5px; font-weight:700; letter-spacing:1px; text-transform:uppercase; color:#855C1B; margin-bottom:4px;">
+                  Total Proforma Contract Value
+                </div>
+                <div style="font-size:24px; font-weight:800; color:#B8872F; font-family:monospace; margin:4px 0;">
+                  ${esc(totalValText)}
+                </div>
+                <div style="font-size:11.5px; color:#6B7280;">
+                  Net Commercial Contract Figure · Delivered under ${esc(loadingPortVal)}
+                </div>
+              </div>
+              <div style="margin:24px 0 16px;">
+                <div style="font-size:12px; font-weight:700; letter-spacing:1px; text-transform:uppercase; color:#855C1B; margin-bottom:8px;">
+                  2. Exporter Credentials &amp; Corporate Guarantee
+                </div>
+                <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse; border:1px solid #E5E7EB; border-radius:6px; overflow:hidden; font-size:12.5px;">
+                  <tr style="background-color:#F9FAFB; border-bottom:1px solid #E5E7EB;">
+                    <td style="padding:8px 12px; color:#4B5563; width:44%;">1. Company Profile &amp; Catalog</td>
+                    <td style="padding:8px 12px; font-weight:600; color:#1F2937;">${esc(catRef)}</td>
+                  </tr>
+                  <tr style="background-color:#FFFFFF; border-bottom:1px solid #E5E7EB;">
+                    <td style="padding:8px 12px; color:#4B5563;">2. APEDA &amp; Export Accreditations</td>
+                    <td style="padding:8px 12px; font-weight:600; color:#1F2937;">${esc(apedaRef)}</td>
+                  </tr>
+                  <tr style="background-color:#F9FAFB;">
+                    <td style="padding:8px 12px; color:#4B5563;">3. Quality Assurance Benchmark</td>
+                    <td style="padding:8px 12px; font-weight:600; color:#1F2937;">${esc(specimenRef)}</td>
+                  </tr>
+                </table>
+              </div>
+              <div style="margin:24px 0 16px;">
+                <div style="font-size:12px; font-weight:700; letter-spacing:1px; text-transform:uppercase; color:#855C1B; margin-bottom:6px;">
+                  3. Post-Order Customs &amp; Shipping Commitment
+                </div>
+                <p style="margin:0; font-size:13px; line-height:1.6; color:#4B5563; background-color:#F9FAFB; padding:14px; border-radius:6px; border:1px solid #E5E7EB;">
+                  Upon contract confirmation and booking of your container, Golden Global Expo provides complete 100% export documentation including: <strong>Final Commercial Invoice &amp; Packing List</strong>, <strong>Phytosanitary Certificate</strong>, <strong>Certificate of Origin</strong> (Chamber of Commerce), <strong>SGS/NABL Pre-Shipment Quality COA</strong>, and <strong>Clean On-Board Ocean Bill of Lading</strong> with 24/7 live satellite vessel tracking.
+                </p>
+              </div>
+              <p style="margin:18px 0; font-size:13px; line-height:1.6; color:#374151;">
+                Please review this proforma dossier and confirm your preferred delivery incoterms (FOB / CIF / CFR) so our trade desk can issue your formal Proforma Invoice (PI) and lock in your vessel stuffing slot.
+              </p>
+              <div style="margin-top:28px; padding-top:20px; border-top:1px solid #E5E7EB; font-size:13px; color:#374151; line-height:1.6;">
+                <p style="margin:0 0 8px;">Yours Faithfully,</p>
+                <strong style="color:#111827; font-size:14px;">Arundhati Bhosale</strong><br>
+                <span style="color:#6B7280; font-size:12.5px;">Managing Director &amp; Export Operations</span><br>
+                <strong style="color:#B8872F; font-size:13px;">Golden Global Expo — Merchant Exporter</strong><br>
+                <span style="color:#4B5563; font-size:12px;">1903 A Ajmera Zeon, Wadala, Mumbai - 400037, Maharashtra, India</span><br>
+                <span style="color:#4B5563; font-size:12px;">Phone / WhatsApp: +91 9920594424 / +91 7799888777</span><br>
+                <span style="color:#4B5563; font-size:12px;">Email: <a href="mailto:export@goldenglobalexpo.com" style="color:#B8872F; text-decoration:none;">export@goldenglobalexpo.com</a> | Web: <a href="https://www.goldenglobalexpo.com" style="color:#B8872F; text-decoration:none;">www.goldenglobalexpo.com</a></span><br>
+                <span style="color:#9CA3AF; font-size:11px; font-family:monospace; margin-top:4px; display:inline-block;">
+                  GSTIN: 27AAGPB8439A1Z1 | APEDA / Spices Board Registered
+                </span>
+              </div>
+            </td>
+          </tr>
+          <tr>
+            <td style="background-color:#F9FAFB; padding:16px 32px; border-top:1px solid #E5E7EB; text-align:center;">
+              <p style="margin:0; font-size:11px; color:#9CA3AF; line-height:1.5;">
+                This formal export transmission is encrypted and authenticated by Golden Global Expo Trade Desk.<br>
+                All specifications, quality standards, and pricing are subject to final contract verification and standard maritime incoterms.
+              </p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`;
+}
 
-  const catRef = (document.getElementById('mDoc_dossier_cat_ref') ? document.getElementById('mDoc_dossier_cat_ref').value : '') || 'Golden Global Expo 2026 Product Catalog';
-  const apedaRef = (document.getElementById('mDoc_dossier_apeda_ref') ? document.getElementById('mDoc_dossier_apeda_ref').value : '') || 'APEDA / Spices Board Registered Exporter (APEDA/2026/GGE)';
-  const specimenRef = (document.getElementById('mDoc_dossier_specimen_ref') ? document.getElementById('mDoc_dossier_specimen_ref').value : '') || 'NABL / SGS Specimen Quality Benchmark';
+function buildFormalQuotationText(data) {
+  const {
+    inq, spec, refCode, hsVal, purityVal, moistureVal, packVal,
+    tonnageVal, priceVal, loadingPortVal, termsVal, totalValText,
+    catRef, apedaRef, specimenRef, todayStr
+  } = data;
 
-  const refCode = inq.id ? `GGE-QT-2026-${inq.id.replace(/[^0-9]/g, '') || '891'}` : `GGE-QT-2026-891`;
-  const subject = `Official Formal Proforma Quotation & Specification Sheet: ${spec.name} (${refCode})`;
-
-  const body = `========================================================================
-GOLDEN GLOBAL EXPO — OFFICIAL EXPORT PROFORMA QUOTATION & SPECIFICATIONS
-Govt. of India Recognized Merchant Exporter · APEDA & Spices Board Member
-========================================================================
-Date: ${new Date().toLocaleDateString('en-US', { day: 'numeric', month: 'long', year: 'numeric' })}
-Quotation Ref: ${refCode}
+  return `GOLDEN GLOBAL EXPO — OFFICIAL EXPORT PROFORMA QUOTATION & SPECIFICATIONS
+Govt. of India Recognized Merchant Exporter · APEDA & Spices Board Registered
+--------------------------------------------------------------------------------
+Date: ${todayStr}
+Quotation Reference: ${refCode}
 Inquiry Subject: Export Quotation for ${spec.name}
 
 ISSUED TO:
-Attention: ${inq.name}
-Company / Entity: ${inq.company || 'Commercial Buyer'}
-Email: ${inq.email}
-Destination Port / Country: ${inq.country || 'International Destination'}
-Target Consignment Volume: ${tonnageVal}
+• Attention: ${inq.name}
+• Company / Entity: ${inq.company || 'Commercial Buyer'}
+• Email: ${inq.email}
+• Destination Port / Country: ${inq.country || 'International Destination'}
+• Target Consignment Volume: ${tonnageVal}
 
 Dear ${inq.name},
 
 Thank you for your formal trade inquiry with Golden Global Expo (Mumbai, India). We are pleased to issue our indicative commercial proforma offer and technical specification dossier for your requested consignment:
 
-========================================================================
-1. COMMODITY TECHNICAL NUMBERS, CODES & SPECIFICATIONS
-========================================================================
-• Commodity Name: ${spec.name} (${spec.lot})
-• Botanical Nomenclature: ${spec.botanical}
-• HS Tariff Code: ${hsVal}
+1. COMMODITY TECHNICAL SPECIFICATIONS & COMMERCIAL VALUATION
+--------------------------------------------------------------------------------
+• Commodity Name: ${spec.name} (${spec.lot || 'Export Lot'})
+• Botanical Nomenclature: ${spec.botanical || 'Agricultural Specimen'}
+• HS Tariff Classification Code: ${hsVal}
 • Country of Origin: ${spec.origin || 'Maharashtra / Karnataka, India'}
-• Optical Purity Standard: ${purityVal}
-• Moisture & Admixture Limits: ${moistureVal}
-• Packaging Standard: ${packVal}
+• Optical Sortex Purity Standard: ${purityVal}
+• Moisture & Foreign Admixture: ${moistureVal}
+• Export Packaging Standard: ${packVal}
 • Consignment Loadability: ${tonnageVal}
-• • Unit Price: $${priceVal} USD / Metric Ton (${loadingPortVal})
-• Contract Volume: ${tonnageVal}
-• TOTAL PROFORMA CONTRACT VALUE: $${(parseFloat(tonnageVal) * parseFloat(priceVal) || 22560).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USD
-• Port of Loading: ${loadingPortVal}
+• Unit Benchmark Price: $${priceVal} USD / Metric Ton (${loadingPortVal})
+• Contract Order Volume: ${tonnageVal}
+• TOTAL PROFORMA CONTRACT VALUE: ${totalValText} (Net Contract Figure)
+• Delivery Seaport / Incoterms: ${loadingPortVal}
 • Commercial Settlement Terms: ${termsVal}
 
-========================================================================
 2. EXPORTER CREDENTIALS & CORPORATE GUARANTEE
-========================================================================
+--------------------------------------------------------------------------------
 1. Company Profile & Product Catalog: [ ${catRef} ]
 2. APEDA & Export Accreditations: [ ${apedaRef} ]
 3. Quality Assurance Benchmark: [ ${specimenRef} ]
 
-========================================================================
 3. POST-ORDER CUSTOMS & SHIPPING COMMITMENT
-========================================================================
-Upon contract confirmation and booking of your container, Golden Global Expo provides complete 100% export documentation including: Final Commercial Invoice & Packing List, Phytosanitary Certificate, Certificate of Origin (Chamber of Commerce), SGS/NABL Pre-Shipment Quality COA, and Clean On-Board Ocean Bill of Lading with 24/7 live satellite vessel tracking.
+--------------------------------------------------------------------------------
+Upon contract confirmation and booking of your container, Golden Global Expo provides complete 100% authentic export documentation including:
+- Final Commercial Invoice & Packing List
+- Phytosanitary Certificate (Quarantine Inspection)
+- Certificate of Origin (Chamber of Commerce)
+- SGS / NABL Pre-Shipment Quality COA
+- Clean On-Board Ocean Bill of Lading with 24/7 live satellite vessel tracking.
 
 Please review this proforma dossier and confirm your preferred delivery incoterms (FOB / CIF / CFR) so our trade desk can issue your formal Proforma Invoice (PI) and lock in your vessel stuffing slot.
 
@@ -1355,26 +2010,415 @@ Managing Director & Export Operations
 Golden Global Expo — Merchant Exporter
 1903 A Ajmera Zeon, Wadala, Mumbai - 400037, Maharashtra, India
 Phone / WhatsApp: +91 9920594424 / +91 7799888777
-Email: nigadearyan@gmail.com
-Web: www.goldenglobalexpo.com
-GST NO: 27AAGPB8439A1Z1 | APEDA / Spices Board Registered`;
+Email: export@goldenglobalexpo.com | Web: www.goldenglobalexpo.com
+GSTIN: 27AAGPB8439A1Z1 | APEDA / Spices Board Registered`;
+}
+
+function buildConsignmentEmailHtml({ bl, container, vessel, pod, commodity, eta, status, trackingUrl, docsData }) {
+  const esc = (s) => (typeof escapeHtml === 'function' ? escapeHtml(s || '') : String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'));
+  const docsListHtml = (docsData || []).map(d => `
+    <tr style="border-bottom:1px solid #E5E7EB;">
+      <td style="padding:9px 12px; font-size:13px; font-weight:600; color:#1F2937;">${esc(d.name)}</td>
+      <td style="padding:9px 12px; font-size:12.5px; color:#4B5563; font-family:monospace;">${esc(d.ref || 'Verified')}</td>
+      <td style="padding:9px 12px; font-size:11px; text-align:right;">
+        <span style="background:#DEF7EC; color:#03543F; font-weight:700; padding:2px 8px; border-radius:12px;">✓ ${d.attached ? 'Attached' : 'Registered'}</span>
+      </td>
+    </tr>
+  `).join('');
+
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Live Consignment Tracking: ${esc(bl)}</title>
+</head>
+<body style="margin:0; padding:24px 0; background-color:#F3F4F6; font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color:#1F2937;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+    <tr>
+      <td align="center" style="padding:0 12px;">
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:640px; background-color:#FFFFFF; border-radius:8px; overflow:hidden; border:1px solid #E5E7EB; box-shadow:0 4px 24px rgba(0,0,0,0.06);">
+          <tr>
+            <td style="background-color:#0E0C0A; padding:26px 32px; text-align:center; border-bottom:3px solid #D9AC52;">
+              <div style="color:#D9AC52; font-size:20px; font-weight:700; letter-spacing:2px; text-transform:uppercase; margin-bottom:4px;">
+                GOLDEN GLOBAL EXPO
+              </div>
+              <div style="color:#9CA3AF; font-size:10.5px; font-weight:600; letter-spacing:1.5px; text-transform:uppercase;">
+                Maritime Logistics &amp; Live Satellite Tracking Operations
+              </div>
+            </td>
+          </tr>
+          <tr>
+            <td style="background-color:#FAF7F0; padding:12px 32px; border-bottom:1px solid #EAE0CD; font-size:12px; color:#6B7280;">
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+                <tr>
+                  <td align="left" style="font-weight:600; color:#4B5563;">
+                    Bill of Lading: <strong style="font-family:monospace; color:#1F2937;">${esc(bl)}</strong>
+                  </td>
+                  <td align="right">
+                    <span style="background-color:#EBF5FF; color:#1E429F; font-size:11.5px; font-weight:700; padding:3px 10px; border-radius:12px;">
+                      ● ${esc(status)}
+                    </span>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:32px 32px 24px;">
+              <p style="margin:0 0 16px; font-size:14px; line-height:1.6; color:#374151;">
+                Your commercial export consignment has been registered and verified on the Golden Global Expo Logistics Network. 24/7 satellite vessel telemetry is actively transmitting.
+              </p>
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse; border:1px solid #E5E7EB; border-radius:6px; overflow:hidden; margin:20px 0;">
+                <tr style="background-color:#F9FAFB; border-bottom:1px solid #E5E7EB;">
+                  <td style="padding:10px 14px; font-weight:600; color:#4B5563; font-size:12.5px; width:40%;">Cargo &amp; Specification</td>
+                  <td style="padding:10px 14px; font-weight:700; color:#1F2937; font-size:13px;">${esc(commodity)}</td>
+                </tr>
+                <tr style="background-color:#FFFFFF; border-bottom:1px solid #E5E7EB;">
+                  <td style="padding:10px 14px; font-weight:600; color:#4B5563; font-size:12.5px;">Container Number (ISO)</td>
+                  <td style="padding:10px 14px; font-family:monospace; font-weight:700; color:#1F2937; font-size:13px;">${esc(container)}</td>
+                </tr>
+                <tr style="background-color:#F9FAFB; border-bottom:1px solid #E5E7EB;">
+                  <td style="padding:10px 14px; font-weight:600; color:#4B5563; font-size:12.5px;">Carrier Vessel &amp; IMO</td>
+                  <td style="padding:10px 14px; color:#1F2937; font-size:13px;">${esc(vessel)}</td>
+                </tr>
+                <tr style="background-color:#FFFFFF; border-bottom:1px solid #E5E7EB;">
+                  <td style="padding:10px 14px; font-weight:600; color:#4B5563; font-size:12.5px;">Port of Loading</td>
+                  <td style="padding:10px 14px; color:#1F2937; font-size:13px;">JNPT Nhava Sheva (INNSA1)</td>
+                </tr>
+                <tr style="background-color:#F9FAFB; border-bottom:1px solid #E5E7EB;">
+                  <td style="padding:10px 14px; font-weight:600; color:#4B5563; font-size:12.5px;">Destination Port (POD)</td>
+                  <td style="padding:10px 14px; font-weight:600; color:#1F2937; font-size:13px;">${esc(pod)}</td>
+                </tr>
+                <tr style="background-color:#FFFFFF;">
+                  <td style="padding:10px 14px; font-weight:600; color:#4B5563; font-size:12.5px;">Estimated Arrival (ETA)</td>
+                  <td style="padding:10px 14px; font-weight:700; color:#B8872F; font-size:13px;">${esc(eta)}</td>
+                </tr>
+              </table>
+              <div style="margin:28px 0; text-align:center;">
+                <a href="${esc(trackingUrl)}" target="_blank" style="display:inline-block; background:linear-gradient(135deg, #D9AC52 0%, #B8872F 100%); color:#0D0A08; font-weight:700; font-size:14px; text-decoration:none; padding:14px 30px; border-radius:6px; letter-spacing:0.5px; box-shadow:0 4px 14px rgba(184,135,47,0.35);">
+                  🛰️ Track Live Vessel &amp; Satellite Telemetry
+                </a>
+              </div>
+              ${docsListHtml ? `
+              <div style="margin:24px 0;">
+                <div style="font-size:12px; font-weight:700; letter-spacing:1px; text-transform:uppercase; color:#855C1B; margin-bottom:8px;">
+                  📁 Accompanying Statutory Export Documents
+                </div>
+                <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse; border:1px solid #E5E7EB; border-radius:6px; overflow:hidden;">
+                  ${docsListHtml}
+                </table>
+              </div>
+              ` : ''}
+              <div style="margin-top:32px; padding-top:20px; border-top:1px solid #E5E7EB; font-size:13px; color:#374151; line-height:1.6;">
+                <strong style="color:#111827;">Trade Operations Desk</strong><br>
+                <strong style="color:#B8872F;">Golden Global Expo — Merchant Exporter</strong><br>
+                <span style="color:#4B5563; font-size:12px;">JNPT Nhava Sheva Terminal · Mumbai Port, Maharashtra, India</span><br>
+                <span style="color:#4B5563; font-size:12px;">Support: <a href="mailto:export@goldenglobalexpo.com" style="color:#B8872F; text-decoration:none;">export@goldenglobalexpo.com</a> | Web: <a href="https://www.goldenglobalexpo.com" style="color:#B8872F; text-decoration:none;">www.goldenglobalexpo.com</a></span>
+              </div>
+            </td>
+          </tr>
+          <tr>
+            <td style="background-color:#F9FAFB; padding:16px 32px; border-top:1px solid #E5E7EB; text-align:center; font-size:11px; color:#9CA3AF;">
+              This transmission is an automated logistics telemetry advisory issued by Golden Global Expo.
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`;
+}
+
+function buildSampleAwbEmailHtml({ sampleId, buyerName, commodity, courier, awb, address }) {
+  const esc = (s) => (typeof escapeHtml === 'function' ? escapeHtml(s || '') : String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'));
+  const courierTrackUrl = courier.toLowerCase().includes('dhl') 
+    ? `https://www.dhl.com/en/express/tracking.html?AWB=${encodeURIComponent(awb)}`
+    : courier.toLowerCase().includes('fedex')
+    ? `https://www.fedex.com/fedextrack/?trknbr=${encodeURIComponent(awb)}`
+    : courier.toLowerCase().includes('ups')
+    ? `https://www.ups.com/track?tracknum=${encodeURIComponent(awb)}`
+    : courier.toLowerCase().includes('aramex')
+    ? `https://www.aramex.com/track/results?ShipmentNumber=${encodeURIComponent(awb)}`
+    : `https://www.google.com/search?q=${encodeURIComponent(courier + ' tracking ' + awb)}`;
+
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Express Sample Dispatch: ${esc(sampleId)}</title>
+</head>
+<body style="margin:0; padding:24px 0; background-color:#F3F4F6; font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color:#1F2937;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+    <tr>
+      <td align="center" style="padding:0 12px;">
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:640px; background-color:#FFFFFF; border-radius:8px; overflow:hidden; border:1px solid #E5E7EB; box-shadow:0 4px 24px rgba(0,0,0,0.06);">
+          <tr>
+            <td style="background-color:#0E0C0A; padding:26px 32px; text-align:center; border-bottom:3px solid #D9AC52;">
+              <div style="color:#D9AC52; font-size:20px; font-weight:700; letter-spacing:2px; text-transform:uppercase; margin-bottom:4px;">
+                GOLDEN GLOBAL EXPO
+              </div>
+              <div style="color:#9CA3AF; font-size:10.5px; font-weight:600; letter-spacing:1.5px; text-transform:uppercase;">
+                Priority Air Courier Export Fulfillment Desk
+              </div>
+            </td>
+          </tr>
+          <tr>
+            <td style="background-color:#FAF7F0; padding:12px 32px; border-bottom:1px solid #EAE0CD; font-size:12px; color:#6B7280;">
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+                <tr>
+                  <td align="left" style="font-weight:600; color:#4B5563;">
+                    Sample Ref: <strong style="font-family:monospace; color:#1F2937;">${esc(sampleId)}</strong>
+                  </td>
+                  <td align="right">
+                    <span style="background-color:#DEF7EC; color:#03543F; font-size:11.5px; font-weight:700; padding:3px 10px; border-radius:12px;">
+                      ✓ AIR DISPATCHED
+                    </span>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:32px 32px 24px;">
+              <p style="margin:0 0 16px; font-size:14px; line-height:1.6; color:#374151;">
+                Dear ${esc(buyerName)},<br><br>
+                Your certified export evaluation sample has been hermetically sealed and dispatched from our Mumbai Export Fulfillment Center via <strong>${esc(courier)}</strong>.
+              </p>
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse; border:1px solid #E5E7EB; border-radius:6px; overflow:hidden; margin:20px 0;">
+                <tr style="background-color:#F9FAFB; border-bottom:1px solid #E5E7EB;">
+                  <td style="padding:10px 14px; font-weight:600; color:#4B5563; font-size:12.5px; width:40%;">Commodity Specimen</td>
+                  <td style="padding:10px 14px; font-weight:700; color:#1F2937; font-size:13px;">${esc(commodity)}</td>
+                </tr>
+                <tr style="background-color:#FFFFFF; border-bottom:1px solid #E5E7EB;">
+                  <td style="padding:10px 14px; font-weight:600; color:#4B5563; font-size:12.5px;">Express Carrier</td>
+                  <td style="padding:10px 14px; font-weight:600; color:#1F2937; font-size:13px;">${esc(courier)}</td>
+                </tr>
+                <tr style="background-color:#FAF5EA; border-bottom:1px solid #D9AC52;">
+                  <td style="padding:10px 14px; font-weight:600; color:#4B5563; font-size:12.5px;">Airway Bill (AWB) No.</td>
+                  <td style="padding:10px 14px; font-family:monospace; font-weight:700; color:#B8872F; font-size:14px;">${esc(awb)}</td>
+                </tr>
+                <tr style="background-color:#FFFFFF; border-bottom:1px solid #E5E7EB;">
+                  <td style="padding:10px 14px; font-weight:600; color:#4B5563; font-size:12.5px;">Accompanying Documents</td>
+                  <td style="padding:10px 14px; color:#1F2937; font-size:13px;">Official Lab COA + Phytosanitary Declaration Pouch</td>
+                </tr>
+                <tr style="background-color:#F9FAFB;">
+                  <td style="padding:10px 14px; font-weight:600; color:#4B5563; font-size:12.5px;">Delivery Address</td>
+                  <td style="padding:10px 14px; color:#1F2937; font-size:13px;">${esc(address)}</td>
+                </tr>
+              </table>
+              <div style="margin:28px 0; text-align:center;">
+                <a href="${esc(courierTrackUrl)}" target="_blank" style="display:inline-block; background:linear-gradient(135deg, #D9AC52 0%, #B8872F 100%); color:#0D0A08; font-weight:700; font-size:14px; text-decoration:none; padding:14px 30px; border-radius:6px; letter-spacing:0.5px; box-shadow:0 4px 14px rgba(184,135,47,0.35);">
+                  ✈️ Track Express Air Courier
+                </a>
+              </div>
+              <div style="background-color:#FAF7F0; border:1px solid #EAE0CD; border-radius:6px; padding:14px 18px; margin:20px 0; font-size:12.5px; color:#6B7280; line-height:1.5;">
+                <strong style="color:#855C1B;">Institutional B2B Guarantee:</strong> 100% of any courier handling fee is fully credited back against the invoice of your first commercial container contract.
+              </div>
+              <div style="margin-top:32px; padding-top:20px; border-top:1px solid #E5E7EB; font-size:13px; color:#374151; line-height:1.6;">
+                <strong style="color:#111827;">Sample Fulfillment Operations</strong><br>
+                <strong style="color:#B8872F;">Golden Global Expo — Merchant Exporter</strong><br>
+                <span style="color:#4B5563; font-size:12px;">1903 A Ajmera Zeon, Wadala, Mumbai - 400037, India</span><br>
+                <span style="color:#4B5563; font-size:12px;">WhatsApp: +91 9920594424 · Email: <a href="mailto:export@goldenglobalexpo.com" style="color:#B8872F; text-decoration:none;">export@goldenglobalexpo.com</a></span>
+              </div>
+            </td>
+          </tr>
+          <tr>
+            <td style="background-color:#F9FAFB; padding:16px 32px; border-top:1px solid #E5E7EB; text-align:center; font-size:11px; color:#9CA3AF;">
+              Golden Global Expo · Export Packaging &amp; Courier Logistics Network
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`;
+}
+
+async function compileLiveDossierLetterhead() {
+  const inq = (currentInquiryIndex !== null && getInquiries()[currentInquiryIndex]) ? getInquiries()[currentInquiryIndex] : {
+    name: 'Valued Buyer',
+    company: 'International Trading House',
+    email: 'buyer@company.com',
+    country: 'International Port',
+    id: 'GGE-QT-2026'
+  };
+
+  const isDomestic = inq.type === 'DOMESTIC_ORDER' || (inq.id && (inq.id.includes('DOM') || inq.id.startsWith('DOM-')));
+  if (isDomestic) {
+    const esc = (s) => (typeof escapeHtml === 'function' ? escapeHtml(s || '') : String(s || ''));
+    const orderRef = inq.id || 'GGE-DOM-ORDER';
+    const utr = inq.utr || (inq.payable && inq.payable.match(/UTR:\s*([A-Za-z0-9_-]+)/i) ? inq.payable.match(/UTR:\s*([A-Za-z0-9_-]+)/i)[1] : 'UPI-VERIFIED');
+    const commodity = inq.commodities || 'Sortex Clean Agricultural Commodity';
+    const volume = inq.volume || 'Standard Pack';
+    const payable = inq.payable || 'PAID VIA UPI';
+    const consigneeName = inq.name || 'Valued Buyer';
+    const consigneeAddr = inq.address || 'India (Door Delivery)';
+    const todayStr = new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' });
+
+    const subject = `Golden Global Expo — Domestic Tax Invoice & Dispatch Notice [Order: ${orderRef}]`;
+
+    const plainText = `GOLDEN GLOBAL EXPO — NATIONAL AGRI-DISTRIBUTION DESK
+Wadala Central Freight Hub, Mumbai, Maharashtra 400037 | FSSAI: 11521008000142 | GSTIN: 27AAGPB8439A1Z1
+--------------------------------------------------------------------------------
+DOMESTIC TAX INVOICE & CONSIGNMENT DISPATCH DOCKET
+Date: ${todayStr}
+Order Reference: ${orderRef}
+Payment Status: ${payable}
+UPI Transaction Reference (UTR): ${utr}
+
+CONSIGNEE PARTICULARS:
+Name: ${consigneeName}
+Delivery Address: ${consigneeAddr}
+Contact: ${inq.phone || 'On File'} | Email: ${inq.email || 'On File'}
+
+COMMODITY & DISPATCH DETAILS:
+Commodity: ${commodity}
+Net Pack Volume: ${volume}
+Quality Benchmark: FSSAI Certified · Sortex Machine Clean Grade-A
+Courier Logistics: BlueDart Express Surface / Delhivery (Consignment Hub Inward)
+Tracking Code: ${orderRef}
+
+Thank you for choosing Golden Global Expo Domestic Division. Your consignment is queued for direct door delivery.`;
+
+    const htmlDossier = `<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"></head>
+<body style="font-family:Arial,sans-serif;background:#FAF8F5;color:#14110E;padding:24px;margin:0;">
+  <div style="max-width:640px;margin:0 auto;background:#FFFFFF;border:1px solid rgba(217,172,82,0.3);border-radius:8px;overflow:hidden;box-shadow:0 4px 20px rgba(0,0,0,0.06);">
+    <div style="background:#14110E;padding:20px 24px;border-bottom:2px solid #D9AC52;text-align:center;">
+      <h1 style="color:#D9AC52;margin:0;font-size:20px;letter-spacing:1px;">GOLDEN GLOBAL EXPO</h1>
+      <p style="color:#9E978E;margin:4px 0 0;font-size:11px;letter-spacing:1.5px;text-transform:uppercase;">National Agri-Distribution Desk · FSSAI Reg: 11521008000142</p>
+    </div>
+    <div style="padding:24px;">
+      <div style="display:flex;justify-content:space-between;border-bottom:1px solid #E5E7EB;padding-bottom:12px;margin-bottom:16px;">
+        <div>
+          <span style="font-size:11px;color:#6B7280;text-transform:uppercase;font-weight:700;">Tax Invoice &amp; Dispatch Note</span>
+          <div style="font-size:15px;font-weight:700;color:#111827;font-family:monospace;">${esc(orderRef)}</div>
+        </div>
+        <div style="text-align:right;">
+          <span style="font-size:11px;color:#6B7280;text-transform:uppercase;font-weight:700;">Invoice Date</span>
+          <div style="font-size:13px;color:#374151;">${esc(todayStr)}</div>
+        </div>
+      </div>
+      <div style="background:#F9FAFB;border:1px solid #E5E7EB;border-radius:6px;padding:14px;margin-bottom:16px;">
+        <div style="font-size:11px;color:#6B7280;text-transform:uppercase;font-weight:700;margin-bottom:6px;">Consignee Particulars</div>
+        <div style="font-size:14px;font-weight:700;color:#111827;">${esc(consigneeName)}</div>
+        <div style="font-size:13px;color:#4B5563;margin-top:2px;">${esc(consigneeAddr)}</div>
+        <div style="font-size:12px;color:#6B7280;margin-top:4px;">Phone: ${esc(inq.phone || 'On file')} · Email: ${esc(inq.email || 'On file')}</div>
+      </div>
+      <table style="width:100%;border-collapse:collapse;margin-bottom:16px;font-size:13px;">
+        <thead>
+          <tr style="background:#14110E;color:#FAF7EE;text-align:left;">
+            <th style="padding:10px 12px;">Item Description</th>
+            <th style="padding:10px 12px;text-align:center;">Pack Size</th>
+            <th style="padding:10px 12px;text-align:right;">Amount</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr style="border-bottom:1px solid #E5E7EB;">
+            <td style="padding:12px;font-weight:600;">${esc(commodity)}<br><span style="font-size:11px;color:#059669;font-weight:normal;">✓ Sortex Grade-A · FSSAI Certified</span></td>
+            <td style="padding:12px;text-align:center;font-family:monospace;">${esc(volume)}</td>
+            <td style="padding:12px;text-align:right;font-weight:700;font-family:monospace;color:#059669;">${esc(payable)}</td>
+          </tr>
+        </tbody>
+      </table>
+      <div style="background:rgba(217,172,82,0.1);border:1px solid rgba(217,172,82,0.3);border-radius:6px;padding:12px 14px;margin-bottom:16px;">
+        <div style="font-size:11px;color:#B8872F;text-transform:uppercase;font-weight:700;">UPI Settlement &amp; Tracking Details</div>
+        <div style="font-size:12px;color:#374151;margin-top:4px;"><b>UTR / Payment ID:</b> <span style="font-family:monospace;color:#111827;">${esc(utr)}</span></div>
+        <div style="font-size:12px;color:#374151;margin-top:2px;"><b>Carrier:</b> BlueDart Surface Express / Delhivery Door Delivery</div>
+        <div style="font-size:12px;color:#374151;margin-top:2px;"><b>Tracking Code:</b> <span style="font-family:monospace;color:#111827;">${esc(orderRef)}</span></div>
+      </div>
+      <div style="font-size:11px;color:#9CA3AF;line-height:1.5;text-align:center;border-top:1px solid #E5E7EB;padding-top:14px;">
+        Golden Global Expo · Wadala Central Freight Hub, Mumbai 400037 · FSSAI Reg. 11521008000142<br>
+        For delivery queries, contact dispatch@goldenglobalexpo.com or WhatsApp +91 98200 12345.
+      </div>
+    </div>
+  </div>
+</body>
+</html>`;
+
+    activeEmailPayload = {
+      email: inq.email,
+      subject: subject,
+      body: plainText,
+      html: htmlDossier
+    };
+
+    const bodyEl = document.getElementById('emBody');
+    if (bodyEl) bodyEl.value = plainText;
+
+    const previewDiv = document.getElementById('emHtmlPreview');
+    if (previewDiv && previewDiv.style.display !== 'none') {
+      previewDiv.innerHTML = htmlDossier;
+    }
+    return;
+  }
+
+  const lotSelect = document.getElementById('dosLotSelect');
+  const lotKey = lotSelect ? lotSelect.value : 'p1';
+  const specs = window.specDatabase || {};
+  const spec = specs[lotKey] || specs['p1'] || {};
+
+  const hsVal = (document.getElementById('dosHs') ? document.getElementById('dosHs').value : '') || spec.hs || '0713.60';
+  const purityVal = (document.getElementById('dosPurity') ? document.getElementById('dosPurity').value : '') || spec.purity || '99.5% Sortex Clean';
+  const moistureVal = (document.getElementById('dosMoisture') ? document.getElementById('dosMoisture').value : '') || spec.moisture || '11.0% Max / 0.5% Adm.';
+  const tonnageVal = (document.getElementById('dosTonnage') ? document.getElementById('dosTonnage').value : '') || '24.0 MT (20\' FCL)';
+  const priceVal = (document.getElementById('dosPrice') ? document.getElementById('dosPrice').value : '') || (window.defaultPrices && window.defaultPrices[lotKey] ? window.defaultPrices[lotKey].baseUsd : (spec.baseUsd || 820));
+  const loadingPortVal = (document.getElementById('dosLoadingPort') ? document.getElementById('dosLoadingPort').value : '') || 'JNPT Nhava Sheva (INNSA1)';
+  const termsVal = (document.getElementById('dosTerms') ? document.getElementById('dosTerms').value : '') || '100% L/C at Sight';
+  const packVal = (document.getElementById('dosPack') ? document.getElementById('dosPack').value : '') || spec.packing || spec.packaging || '25kg / 50kg Export Bags';
+
+  const catRef = (document.getElementById('mDoc_dossier_cat_ref') ? document.getElementById('mDoc_dossier_cat_ref').value : '') || 'Golden Global Expo 2026 Product Catalog';
+  const apedaRef = (document.getElementById('mDoc_dossier_apeda_ref') ? document.getElementById('mDoc_dossier_apeda_ref').value : '') || 'APEDA / Spices Board Registered Exporter (APEDA/2026/GGE)';
+  const specimenRef = (document.getElementById('mDoc_dossier_specimen_ref') ? document.getElementById('mDoc_dossier_specimen_ref').value : '') || 'NABL / SGS Specimen Quality Benchmark';
+
+  const refCode = inq.id ? `GGE-QT-2026-${inq.id.replace(/[^0-9]/g, '') || '891'}` : `GGE-QT-2026-891`;
+  const subject = `Official Formal Proforma Quotation & Specification Sheet: ${spec.name} (${refCode})`;
+  const todayStr = new Date().toLocaleDateString('en-US', { day: 'numeric', month: 'long', year: 'numeric' });
+  const totalValText = (document.getElementById('dosTotalValueDisplay') && document.getElementById('dosTotalValueDisplay').textContent) || '$22,560.00 USD';
+
+  const quotationData = {
+    inq, spec, refCode, subject, hsVal, purityVal, moistureVal, packVal,
+    tonnageVal, priceVal, loadingPortVal, termsVal, totalValText,
+    catRef, apedaRef, specimenRef, todayStr
+  };
+
+  const plainText = buildFormalQuotationText(quotationData);
+  const htmlDossier = buildFormalQuotationHtml(quotationData);
 
   activeEmailPayload = {
     email: inq.email,
     subject: subject,
-    body: body
+    body: plainText,
+    html: htmlDossier
   };
 
   const bodyEl = document.getElementById('emBody');
-  if (bodyEl) bodyEl.value = body;
+  if (bodyEl) bodyEl.value = plainText;
+
+  const previewDiv = document.getElementById('emHtmlPreview');
+  if (previewDiv && previewDiv.style.display !== 'none') {
+    previewDiv.innerHTML = htmlDossier;
+  }
 }
 
-function dispatchCustomerEmail(index) {
+function dispatchCustomerEmail(identifier) {
   const list = getInquiries();
+  let index = -1;
+  if (typeof identifier === 'string') {
+    index = list.findIndex(i => i && (i.id === identifier || String(i.id).toLowerCase() === identifier.toLowerCase()));
+  } else if (typeof identifier === 'number') {
+    index = identifier;
+  }
+  if (index === -1 || !list[index]) return;
   const inq = list[index];
-  if (!inq) return;
 
   currentInquiryIndex = index;
+  const isDomestic = inq.type === 'DOMESTIC_ORDER' || (inq.id && (inq.id.includes('DOM') || inq.id.startsWith('DOM-')));
 
   // Try to find matching commodity spec
   let matchedLot = 'p1';
@@ -1390,9 +2434,12 @@ function dispatchCustomerEmail(index) {
   else if (commText.includes('moringa')) matchedLot = 'p8';
   else if (commText.includes('mint') || commText.includes('pudina')) matchedLot = 'p9';
   else if (commText.includes('coriander powder')) matchedLot = 'p10';
-  else if (commText.includes('jowar flour') || commText.includes('sorghum flour')) matchedLot = 'p12';
+  else if (commText.includes('jowar flour') || commText.includes('sorghum flour') || commText.includes('jowar atta') || commText.includes('sorghum atta')) matchedLot = 'p12';
   else if (commText.includes('jowar') || commText.includes('sorghum')) matchedLot = 'p11';
   else if (commText.includes('tissue') || commText.includes('paper')) matchedLot = 'p13';
+  else if (commText.includes('emmer') || commText.includes('khapli') || commText.includes('ancient wheat')) matchedLot = 'p14';
+  else if (commText.includes('ghee') || commText.includes('cow ghee') || commText.includes('desi ghee') || commText.includes('clarified butter') || commText.includes('butter')) matchedLot = 'p15';
+  else if (commText.includes('spice') || commText.includes('home spices') || commText.includes('kitchen spices') || commText.includes('turmeric') || commText.includes('chilli') || commText.includes('mustard') || commText.includes('fenugreek') || commText.includes('clove') || commText.includes('cardamom') || commText.includes('pepper') || commText.includes('homestyle') || commText.includes('masala')) matchedLot = 'p17';
 
   // Populate Header
   const recipientEl = document.getElementById('emRecipient');
@@ -1401,8 +2448,8 @@ function dispatchCustomerEmail(index) {
   const lotSelect = document.getElementById('dosLotSelect');
 
   if (recipientEl) recipientEl.textContent = `${inq.name} <${inq.email}>`;
-  if (destEl) destEl.textContent = inq.country || 'International Port';
-  if (refEl) refEl.textContent = inq.id || `GGE-QT-2026-891`;
+  if (destEl) destEl.textContent = inq.address || inq.country || (isDomestic ? 'India Door Delivery' : 'International Port');
+  if (refEl) refEl.textContent = inq.id || `GGE-DOM-891`;
   if (lotSelect) lotSelect.value = matchedLot;
 
   currentModalBl = inq.id || `RFQ-${index}`;
@@ -1418,15 +2465,24 @@ function dispatchCustomerEmail(index) {
     if (typeof renderSlotPreview === 'function') renderSlotPreview(k);
   });
 
-  applyLotPresetToDossier(matchedLot);
-  // Parse volume if given in lead (e.g. 50 MT)
-  if (inq.volume) {
-    const vMatch = inq.volume.match(/([0-9.]+)\s*(?:MT|tons?|containers?)/i);
-    if (vMatch && document.getElementById('dosTonnageNum')) {
-      document.getElementById('dosTonnageNum').value = parseFloat(vMatch[1]) || 24;
+  if (isDomestic) {
+    setVal('dosTerms', 'Direct UPI Instant Settlement (Verified)');
+    setVal('dosLoadingPort', 'Wadala Central Freight Hub, Mumbai');
+    setVal('dosPack', inq.volume || '500g–25kg Sortex Sealed Packs');
+    setVal('dosTonnage', inq.volume || 'Domestic Consumer Pack');
+  } else {
+    applyLotPresetToDossier(matchedLot);
+    // Parse volume if given in lead (e.g. 50 MT)
+    if (inq.volume) {
+      const vMatch = inq.volume.match(/([0-9.]+)\s*(?:MT|tons?|containers?)/i);
+      if (vMatch && document.getElementById('dosTonnageNum')) {
+        document.getElementById('dosTonnageNum').value = parseFloat(vMatch[1]) || 24;
+      }
     }
   }
+
   calcQuotationTotal();
+  compileLiveDossierLetterhead();
 
   const modal = document.getElementById('emailDispatchModal');
   if (modal) modal.style.display = 'flex';
@@ -1436,9 +2492,7 @@ function copyEmailToClipboard() {
   const bodyEl = document.getElementById('emBody');
   if (!bodyEl) return;
 
-  const fullText = (activeEmailPayload ? `Subject: ${activeEmailPayload.subject}
-
-` : '') + bodyEl.value;
+  const fullText = (activeEmailPayload ? `Subject: ${activeEmailPayload.subject}\n\n` : '') + bodyEl.value;
   if (typeof navigator !== 'undefined' && navigator.clipboard && navigator.clipboard.writeText) {
     navigator.clipboard.writeText(fullText).then(() => {
       if (typeof showToast === 'function') {
@@ -1469,27 +2523,30 @@ function launchGmailWebClient() {
   const inq = list[currentInquiryIndex];
   if (!inq) return;
 
+  const isDomestic = inq.type === 'DOMESTIC_ORDER' || (inq.id && (inq.id.includes('DOM') || inq.id.startsWith('DOM-')));
   const bodyEl = document.getElementById('emBody');
-  const refId = inq.id || `GGE-QT-2026-${Math.floor(1000 + Math.random() * 9000)}`;
-  const subject = `Formal Export Proforma Quotation & Technical Dossier — Golden Global Expo [Ref: ${refId}]`;
+  const refId = inq.id || `GGE-DOM-${Math.floor(1000 + Math.random() * 9000)}`;
+  const subject = isDomestic
+    ? `Golden Global Expo — Domestic Tax Invoice & Dispatch Notice [Order: ${refId}]`
+    : `Formal Export Proforma Quotation & Technical Dossier — Golden Global Expo [Ref: ${refId}]`;
   const body = bodyEl ? bodyEl.value : (activeEmailPayload ? activeEmailPayload.body : '');
 
-  if (typeof downloadAllDossierFiles === 'function') {
+  if (!isDomestic && typeof downloadAllDossierFiles === 'function') {
     downloadAllDossierFiles();
   }
 
-  const gmailUrl = `https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(inq.email)}&su=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+  const gmailUrl = `https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(inq.email || '')}&su=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
   window.open(gmailUrl, '_blank');
 
   // Update CRM status
-  inq.status = 'quoted';
+  inq.status = isDomestic ? 'INVOICE_SENT' : 'quoted';
   inq.lastQuotedAt = new Date().toISOString();
   saveInquiries(list);
   if (typeof renderInquiries === 'function') renderInquiries();
   if (typeof updateKPIs === 'function') updateKPIs();
 
   if (typeof showToast === 'function') {
-    showToast(`✉️ Opened Gmail! Drag your downloaded PDFs into Gmail so your buyer can download them.`);
+    showToast(isDomestic ? `✉️ Opened Gmail with Domestic Tax Invoice!` : `✉️ Opened Gmail! Drag your downloaded PDFs into Gmail so your buyer can download them.`);
   }
 }
 
@@ -1562,7 +2619,7 @@ async function sendDossierDirectlyFromPortal() {
       <div style="display:flex;align-items:center;gap:10px;">
         <span style="font-size:1.1rem;">⚙️</span>
         <div>
-          <b>Transmitting Legal Export Dossier to ${inq.email}...</b><br>
+          <b>Transmitting Legal Export Dossier to ${escapeHtml(inq.email)}...</b><br>
           <small style="color:var(--gold-bright);">Step 1/3: Encrypting certificate suite &amp; technical codes...</small>
         </div>
       </div>
@@ -1635,7 +2692,7 @@ async function sendDossierDirectlyFromPortal() {
   const refId = inq.id || `GGE-QT-2026-${Math.floor(1000 + Math.random() * 9000)}`;
   const subject = `Formal Export Proforma Quotation & Technical Dossier — Golden Global Expo [Ref: ${refId}]`;
   const bodyText = bodyEl ? bodyEl.value : '';
-  const smtpPass = localStorage.getItem('gge_smtp_pass') || '';
+  const smtpPass = 'CONFIGURED_ON_SERVER';
 
   if (!smtpPass) {
     if (btn) {
@@ -1652,7 +2709,7 @@ async function sendDossierDirectlyFromPortal() {
       statusBox.innerHTML = `
         <div style="display:flex;flex-direction:column;gap:10px;">
           <div style="font-weight:700;color:var(--gold-bright);font-size:0.85rem;">
-            🔐 One-Time Setup: Enable Automated Background Sending for nigadearyan@gmail.com
+            🔐 One-Time Setup: Enable Automated Background Sending
           </div>
           <div style="font-size:0.75rem;color:#E6D7B8;line-height:1.5;">
             To send real emails automatically in the background without opening browser tabs, Google requires a 16-character <b>Gmail App Password</b>.<br>
@@ -1679,7 +2736,7 @@ async function sendDossierDirectlyFromPortal() {
         <span style="font-size:1.1rem;">🔐</span>
         <div>
           <b>Transmitting via Google SMTP Server (smtp.gmail.com:587)...</b><br>
-          <small style="color:var(--gold-bright);">Step 2/3: Dispatching ${attachments.length} attached legal documents to ${inq.email}...</small>
+          <small style="color:var(--gold-bright);">Step 2/3: Dispatching ${attachments.length} attached legal documents to ${escapeHtml(inq.email)}...</small>
         </div>
       </div>
     `;
@@ -1687,20 +2744,28 @@ async function sendDossierDirectlyFromPortal() {
 
   try {
     const apiUrl = (window.location && window.location.origin && window.location.origin.startsWith('http')) ? `${window.location.origin}/api/send-email` : 'http://localhost:8000/api/send-email';
+    const emailToken = sessionStorage.getItem('gge_bearer_token') || localStorage.getItem('gge_admin_token');
+    const emailHeaders = { 'Content-Type': 'application/json' };
+    if (emailToken) emailHeaders['Authorization'] = 'Bearer ' + emailToken;
+
+    const currentSender = sessionStorage.getItem('gge_admin_email') || 'export@goldenglobalexpo.com';
     const response = await fetch(apiUrl, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: emailHeaders,
+      credentials: 'include',
       body: JSON.stringify({
         to: inq.email,
         toName: inq.name || 'Valued Importer',
-        from: 'nigadearyan@gmail.com',
-        smtpUser: 'nigadearyan@gmail.com',
+        from: currentSender,
+        smtpUser: currentSender,
         smtpPass: smtpPass,
         subject: subject,
         body: bodyText,
+        html: (activeEmailPayload && activeEmailPayload.html) ? activeEmailPayload.html : undefined,
         specs: specsData,
         docs: docsData,
-        attachments: attachments
+        attachments: attachments,
+        emailType: 'quotation'
       })
     });
 
@@ -1733,8 +2798,8 @@ async function sendDossierDirectlyFromPortal() {
               <b style="font-size:0.9rem;color:#FFFFFF;">OFFICIAL TRADE DOSSIER DELIVERED VIA GOOGLE SMTP!</b>
             </div>
             <div style="font-size:0.75rem;color:#E8F5E9;line-height:1.5;padding-left:26px;">
-              • <b>Delivered To:</b> ${inq.name} &lt;${inq.email}&gt;<br>
-              • <b>Sent From:</b> nigadearyan@gmail.com (Google Official SMTP Server)<br>
+              • <b>Delivered To:</b> ${escapeHtml(inq.name)} &lt;${escapeHtml(inq.email)}&gt;<br>
+              • <b>Sent From:</b> compliance@goldenglobalexpo.com (Google Official SMTP Server)<br>
               • <b>Attached Files:</b> ${attachedFileNames.length > 0 ? attachedFileNames.join(', ') : 'Direct Cloud COA Vault Link'}<br>
               • <b>Delivered At:</b> ${new Date().toLocaleTimeString()}
             </div>
@@ -1822,7 +2887,7 @@ function renderPriceEditor() {
           Live Storefront Sample Pricing &amp; Razorpay Gateway Charge
         </h3>
         <p style="margin: 0; color: #C2B69D; font-size: 0.84rem; line-height: 1.5;">
-          Set your 500g Certified Sample Pouch fee here (e.g. ₹1.00 for testing, or ₹100, ₹500, ₹1000). The public storefront and Razorpay payment gateway immediately update and charge buyers this exact amount.
+          Set your 500g Certified Sample Pouch fee here (e.g. ₹499.00 standard, or ₹100, ₹500, ₹1000). The public storefront and Razorpay payment gateway immediately update and charge buyers this exact amount.
         </p>
       </div>
       <div style="display: flex; align-items: center; gap: 12px;">
@@ -1847,11 +2912,15 @@ function renderPriceEditor() {
     const rubDisplay = formatFxDeskValue(usd * fx.RUB, '₽', false);
     const cnyDisplay = formatFxDeskValue(usd * fx.CNY, '¥', true);
 
+    const safeKey = escapeHtml(key);
+    const safeName = escapeHtml(p.name || '');
+    const safeHs = escapeHtml(p.hs || '—');
+
     return `
-      <div class="price-item-card" data-key="${key}">
+      <div class="price-item-card" data-key="${safeKey}">
         <div class="price-item-head">
-          <h4>${p.name}</h4>
-          <span>HS: ${p.hs || '—'}</span>
+          <h4>${safeName}</h4>
+          <span>HS: ${safeHs}</span>
         </div>
         <div class="price-field-row">
           <label>FOB / CIF Benchmark (USD / MT):</label>
@@ -1866,7 +2935,7 @@ function renderPriceEditor() {
           <span>INR: <b class="fx-inr">${inrDisplay}</b></span>
           <span>RUB: <b class="fx-rub">${rubDisplay}</b></span>
           <span>CNY: <b class="fx-cny">${cnyDisplay}</b></span>
-          <span>LOT: <b>${key.toUpperCase()}</b></span>
+          <span>LOT: <b>${safeKey.toUpperCase()}</b></span>
         </div>
       </div>
     `;
@@ -1875,16 +2944,16 @@ function renderPriceEditor() {
 
 function getLiveForexRates() {
   const defaults = {
-    EUR: 0.8633,
+    EUR: 0.8625,
     AED: 3.6725,
-    INR: 94.8924,
-    RUB: 86.7935,
-    CNY: 7.2400,
-    JPY: 160.1138,
-    THB: 34.5000,
+    INR: 95.7000,
+    RUB: 84.5000,
+    CNY: 6.7150,
+    JPY: 153.6000,
+    THB: 31.8500,
     SAR: 3.7500,
-    SGD: 1.2730,
-    GBP: 0.7394
+    SGD: 1.2670,
+    GBP: 0.7395
   };
   if (typeof window !== 'undefined' && window.exchangeRates) {
     Object.keys(defaults).forEach(k => {
@@ -1945,7 +3014,7 @@ async function refreshForexNow(btn) {
         localStorage.setItem('gge_live_forex_rates', JSON.stringify(json.rates));
         renderPriceEditor();
         if (typeof showToast === 'function') {
-          showToast(`Live Forex Synced: 1 USD = ₹${(parseFloat(json.rates.INR) || 94.89).toFixed(2)} INR`, 'success');
+          showToast(`Live Forex Synced: 1 USD = ₹${(parseFloat(json.rates.INR) || 95.70).toFixed(2)} INR`, 'success');
         }
       }
     }
@@ -1993,10 +3062,11 @@ async function savePrices() {
     }
   });
 
+  let samplePriceVal = 499.00;
   const sampleInp = document.getElementById('globalSamplePriceInp');
   if (sampleInp) {
-    const val = parseFloat(sampleInp.value) || 1.00;
-    localStorage.setItem('gge_sample_price_inr', val);
+    samplePriceVal = parseFloat(sampleInp.value) || 499.00;
+    localStorage.setItem('gge_sample_price_inr', samplePriceVal);
   }
 
   // 1. Save to localStorage
@@ -2006,13 +3076,31 @@ async function savePrices() {
 
   // 2. Direct Cloud POST to /api/prices
   try {
+    const token = sessionStorage.getItem('gge_bearer_token') || localStorage.getItem('gge_admin_token');
+    const headers = { 'Content-Type': 'application/json' };
+    if (token) headers['Authorization'] = `Bearer ${token}`;
+
     const res = await fetch('/api/prices', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ prices })
+      headers: headers,
+      credentials: 'include',
+      body: JSON.stringify({ prices, samplePriceInr: samplePriceVal })
     });
+
+    if (res.status === 403) {
+      const errData = await res.json();
+      if (typeof showToast === 'function') {
+        showToast(`⛔ Access Denied: Pricing table modifications restricted to Super-Admin.`);
+      }
+      alert(`⛔ Access Denied:\n\n${errData.error || 'Logistics operations staff cannot modify export pricing.'}`);
+      if (saveBtn) {
+        saveBtn.innerHTML = `<span>Save Locked 🔒</span>`;
+        saveBtn.disabled = true;
+      }
+      return;
+    }
+
     const data = await res.json();
-    console.log('[PRICES] Cloud database response:', data);
   } catch(err) {
     console.warn('[PRICES] Server offline, saved locally:', err);
   }
@@ -2041,99 +3129,240 @@ function resetPricesToDefault() {
 }
 
 // --- CONSIGNMENTS DESK ---
+// --- CONSIGNMENTS DESK ---
+let currentConsignFilter = 'all';
+let currentConsignSearch = '';
+
+function setConsignFilter(cat, btn) {
+  currentConsignFilter = cat;
+  document.querySelectorAll('#tabFilterAllConsigns, #tabFilterOceanConsigns, #tabFilterSampleConsigns, #tabFilterDomesticConsigns').forEach(b => {
+    b.classList.remove('active');
+    b.style.background = '';
+    b.style.borderColor = '';
+    b.style.color = '';
+  });
+  if (btn) {
+    btn.classList.add('active');
+    if (cat === 'domestic') {
+      btn.style.background = 'rgba(255,153,51,0.2)';
+      btn.style.borderColor = '#FFA726';
+      btn.style.color = '#FFA726';
+    } else {
+      btn.style.background = 'rgba(217,172,82,0.2)';
+      btn.style.borderColor = 'var(--gold-bright)';
+      btn.style.color = 'var(--gold-bright)';
+    }
+  }
+  renderConsignments();
+}
+window.setConsignFilter = setConsignFilter;
+
+function filterConsignmentsUI() {
+  const input = document.getElementById('consignSearchInput');
+  currentConsignSearch = (input ? input.value : '').trim().toLowerCase();
+  renderConsignments();
+}
+window.filterConsignmentsUI = filterConsignmentsUI;
+
 function renderConsignments() {
-  const list = getConsignments();
+  const fullList = getConsignments();
   const container = document.getElementById('consignmentsGrid');
   if (!container) return;
 
+  let list = fullList.slice();
+  if (currentConsignFilter === 'ocean') {
+    list = list.filter(item => {
+      const isDom = (item.bl && (item.bl.includes('DOM') || item.bl.startsWith('GGE-DOM-'))) || (item.vessel && item.vessel.toLowerCase().includes('domestic'));
+      const isSample = !isDom && (item.bl && (item.bl.includes('SMP') || item.bl.startsWith('SAMPLE-') || (item.container && item.container.includes('AIR'))));
+      return !isDom && !isSample;
+    });
+  } else if (currentConsignFilter === 'sample') {
+    list = list.filter(item => {
+      const isDom = (item.bl && (item.bl.includes('DOM') || item.bl.startsWith('GGE-DOM-'))) || (item.vessel && item.vessel.toLowerCase().includes('domestic'));
+      const isSample = !isDom && (item.bl && (item.bl.includes('SMP') || item.bl.startsWith('SAMPLE-') || (item.container && item.container.includes('AIR'))));
+      return isSample;
+    });
+  } else if (currentConsignFilter === 'domestic') {
+    list = list.filter(item => {
+      const isDom = (item.bl && (item.bl.includes('DOM') || item.bl.startsWith('GGE-DOM-'))) || (item.vessel && item.vessel.toLowerCase().includes('domestic'));
+      return isDom;
+    });
+  }
+
+  if (currentConsignSearch) {
+    list = list.filter(item => {
+      const q = currentConsignSearch;
+      return (item.bl && item.bl.toLowerCase().includes(q)) ||
+             (item.buyer && item.buyer.toLowerCase().includes(q)) ||
+             (item.commodity && item.commodity.toLowerCase().includes(q)) ||
+             (item.container && item.container.toLowerCase().includes(q)) ||
+             (item.status && item.status.toLowerCase().includes(q));
+    });
+  }
+
   if (list.length === 0) {
-    container.innerHTML = `<div style="grid-column:1/-1;text-align:center;padding:32px;color:var(--muted);">No active consignments.</div>`;
+    container.innerHTML = `<div style="grid-column:1/-1;text-align:center;padding:48px 24px;background:rgba(20,17,14,0.4);border:1px dashed rgba(217,172,82,0.2);border-radius:8px;color:var(--muted);">
+      <div style="font-size:1.8rem;margin-bottom:8px;">📦</div>
+      <div style="color:var(--gold-bright);font-weight:600;font-size:0.95rem;">No Consignments Found</div>
+      <p style="font-size:0.8rem;margin-top:4px;">No shipments match your current filter or search criteria.</p>
+    </div>`;
     return;
   }
 
-  container.innerHTML = list.map((item, index) => `
-    <div class="consignment-card">
-      <div class="consignment-head">
+  container.innerHTML = list.map((item) => {
+    const isDomestic = (item.bl && (item.bl.includes('DOM') || item.bl.startsWith('GGE-DOM-'))) || (item.vessel && item.vessel.toLowerCase().includes('domestic'));
+    const isSample = !isDomestic && (item.bl && (item.bl.includes('SMP') || item.bl.startsWith('SAMPLE-') || (item.container && item.container.includes('AIR'))));
+    const safeBl = escapeHtml(item.bl);
+    const blArg = item.bl.replace(/'/g, "\\'");
+    const categoryBadge = isDomestic
+      ? `<span style="display:inline-flex;align-items:center;gap:4px;font-size:0.68rem;padding:2px 8px;border-radius:10px;background:rgba(255,153,51,0.18);border:1px solid rgba(255,153,51,0.4);color:#FFA726;font-weight:600;">🇮🇳 DOMESTIC PARCEL</span>`
+      : (isSample 
+        ? `<span style="display:inline-flex;align-items:center;gap:4px;font-size:0.68rem;padding:2px 8px;border-radius:10px;background:rgba(217,172,82,0.15);border:1px solid rgba(217,172,82,0.3);color:var(--gold-bright);font-weight:600;">✈️ AIR SAMPLE</span>`
+        : `<span style="display:inline-flex;align-items:center;gap:4px;font-size:0.68rem;padding:2px 8px;border-radius:10px;background:rgba(79,195,247,0.12);border:1px solid rgba(79,195,247,0.3);color:#4FC3F7;font-weight:600;">🚢 OCEAN FCL</span>`);
+
+    return `
+    <div class="consignment-card" style="border-left: 3px solid ${isDomestic ? '#FFA726' : (isSample ? 'var(--gold-bright)' : '#4FC3F7')};">
+      <div class="consignment-head" style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;">
         <div>
-          <a href="tracking.html?bl=${encodeURIComponent(item.bl)}" target="_blank" style="font-family:var(--font-mono);color:var(--gold-bright);font-size:1rem;text-decoration:underline;font-weight:700;" title="Click to view in Tracking Portal">${item.bl} ↗</a>
-          <div style="font-size:0.8rem;color:var(--muted);">${item.buyer}</div>
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:3px;">
+            <a href="tracking.html?bl=${encodeURIComponent(item.bl)}" target="_blank" style="font-family:var(--font-mono);color:var(--gold-bright);font-size:1.05rem;text-decoration:underline;font-weight:700;" title="Click to view in Tracking Portal">${safeBl} ↗</a>
+            ${categoryBadge}
+          </div>
+          <div style="font-size:0.82rem;color:var(--muted);">${escapeHtml(item.buyer)}</div>
         </div>
-        <span class="status-pill status-${item.stage === 5 ? 'closed' : 'new'}">${item.status}</span>
+        <span class="status-pill status-${item.stage >= 6 ? 'closed' : 'new'}" style="font-size:0.72rem;">${escapeHtml(item.status)}</span>
       </div>
 
-      <div style="margin:14px 0;font-size:0.82rem;">
-        <div><b>Cargo:</b> ${item.commodity}</div>
-        <div><b>Vessel:</b> ${item.vessel} · <b>POD:</b> ${item.pod}</div>
-        <div><b>Container:</b> ${item.container || 'MSCU 892104-7'} · <b>ETA:</b> ${item.eta}</div>
+      <div style="margin:12px 0;font-size:0.82rem;line-height:1.5;">
+        <div><b>Cargo:</b> ${escapeHtml(item.commodity)}</div>
+        <div><b>${isDomestic ? 'Courier Partner:' : (isSample ? 'Carrier:' : 'Vessel:')}</b> ${escapeHtml(item.vessel)} · <b>${isDomestic ? 'Destination:' : (isSample ? 'Delivery:' : 'POD:')}</b> ${escapeHtml(item.pod)}</div>
+        <div><b>${isDomestic ? 'Parcel Tag:' : (isSample ? 'Package:' : 'Container:')}</b> ${escapeHtml(item.container || (isDomestic ? 'DOM-PARCEL #PKG' : (isSample ? 'AIR-POUCH' : 'MSCU 892104-7')))} · <b>ETA:</b> ${escapeHtml(item.eta)}</div>
       </div>
 
       <div class="consignment-actions" style="display:flex; flex-wrap:wrap; gap:6px; align-items:center; margin-top:12px; padding-top:10px; border-top:1px solid rgba(255,255,255,0.06);">
-        <select class="status-pill" onchange="updateConsignmentStage(${index}, this.value)" style="flex:1; min-width:140px; background:#141210; border:1px solid rgba(217,172,82,0.3); color:#FFFFFF; padding:6px 8px; border-radius:4px; font-size:0.75rem;">
-          <option value="1" ${item.stage === 1 ? 'selected' : ''}>Stage 1: Mandi Procurement</option>
-          <option value="2" ${item.stage === 2 ? 'selected' : ''}>Stage 2: Lab QA Certified</option>
-          <option value="3" ${item.stage === 3 ? 'selected' : ''}>Stage 3: Port Customs Cleared</option>
-          <option value="4" ${item.stage === 4 ? 'selected' : ''}>Stage 4: Ocean Transit (Active)</option>
-          <option value="5" ${item.stage === 5 ? 'selected' : ''}>Stage 5: Discharged &amp; Delivered</option>
+        <select class="status-pill" onchange="updateConsignmentStage('${blArg}', this.value)" style="flex:1; min-width:140px; background:#141210; border:1px solid rgba(217,172,82,0.3); color:#FFFFFF; padding:6px 8px; border-radius:4px; font-size:0.75rem;">
+          <option value="1" ${item.stage === 1 ? 'selected' : ''}>${isDomestic ? 'Stage 1: Mandi APMC Origin Sourced' : (isSample ? 'Stage 1: Sample APMC Origin' : 'Stage 1: Mandi Procurement')}</option>
+          <option value="2" ${item.stage === 2 ? 'selected' : ''}>${isDomestic ? 'Stage 2: Sortex Pack & FSSAI Clear' : (isSample ? 'Stage 2: Lab QA & COA' : 'Stage 2: Lab QA Certified')}</option>
+          <option value="3" ${item.stage === 3 ? 'selected' : ''}>${isDomestic ? 'Stage 3: Mumbai Hub Allocation' : (isSample ? 'Stage 3: Phyto & Customs Pack' : 'Stage 3: CFS Stuffing (Phyto)')}</option>
+          <option value="4" ${item.stage === 4 ? 'selected' : ''}>${isDomestic ? 'Stage 4: Surface Express Transit' : (isSample ? 'Stage 4: Air Cargo Customs Exit' : 'Stage 4: Customs LEO (EDI Gate)')}</option>
+          <option value="5" ${item.stage === 5 ? 'selected' : ''}>${isDomestic ? 'Stage 5: Out for Door Delivery' : (isSample ? 'Stage 5: Priority Air Transit' : 'Stage 5: High Seas Transit')}</option>
+          <option value="6" ${item.stage === 6 ? 'selected' : ''}>${isDomestic ? 'Stage 6: Delivered to Consignee' : (isSample ? 'Stage 6: Consignee Delivered' : 'Stage 6: Port Discharged & Delivered')}</option>
         </select>
         
-        <button type="button" class="btn-action" onclick="openEditConsignmentModal(${index})" style="background:rgba(217,172,82,0.2); border:1px solid var(--gold-bright); color:var(--gold-bright); font-weight:600; font-size:0.72rem; padding:6px 12px; border-radius:4px; display:inline-flex; align-items:center; gap:4px;" title="Edit Shipment Details & Upload Incoming Documents">
+        <button type="button" class="btn-action" onclick="openEditConsignmentModal('${blArg}')" style="background:rgba(217,172,82,0.2); border:1px solid var(--gold-bright); color:var(--gold-bright); font-weight:600; font-size:0.72rem; padding:6px 12px; border-radius:4px; display:inline-flex; align-items:center; gap:4px;" title="Edit Shipment Details & Upload Incoming Documents">
           ✏️ Edit &amp; Upload Docs
         </button>
 
         <a href="tracking.html?bl=${encodeURIComponent(item.bl)}" target="_blank" class="btn-action" title="Open Live Tracking Page" style="text-decoration:none; padding:6px 10px; font-size:0.75rem; background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.15); color:#FFFFFF; border-radius:4px;">
-          🛰️ Track
+          🛰️ Track Live
         </a>
 
-        <button type="button" class="btn-action" onclick="copyTrackingLink(${index})" title="Copy Tracking Link" style="padding:6px 9px; font-size:0.75rem; background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.15); color:#FFFFFF; border-radius:4px;">🔗</button>
-        <button type="button" class="btn-action" onclick="sendCustomerWhatsApp(${index})" title="WhatsApp Tracking to Buyer" style="padding:6px 9px; font-size:0.75rem; background:rgba(46,125,50,0.25); border:1px solid #81C784; color:#81C784; border-radius:4px;">💬</button>
-        <button type="button" class="btn-action btn-action--danger" onclick="deleteConsignment(${index})" title="Delete Consignment" style="padding:6px 9px; font-size:0.75rem; border-radius:4px;">✕</button>
+        <button type="button" class="btn-action" onclick="copyTrackingLink('${blArg}')" title="Copy Tracking Link" style="padding:6px 9px; font-size:0.75rem; background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.15); color:#FFFFFF; border-radius:4px;">🔗</button>
+        <button type="button" class="btn-action" onclick="sendCustomerWhatsApp('${blArg}')" title="WhatsApp Tracking to Buyer" style="padding:6px 9px; font-size:0.75rem; background:rgba(46,125,50,0.25); border:1px solid #81C784; color:#81C784; border-radius:4px;">💬</button>
+        <button type="button" class="btn-action btn-action--danger" onclick="deleteConsignment('${blArg}')" title="Delete Consignment" style="padding:6px 9px; font-size:0.75rem; border-radius:4px;">✕</button>
       </div>
     </div>
-  `).join('');
+  `;
+  }).join('');
 }
 
-function updateConsignmentStage(index, stageVal) {
+function updateConsignmentStage(key, stageVal) {
   const list = getConsignments();
-  if (list[index]) {
-    list[index].stage = parseInt(stageVal, 10);
-    const stageNames = {
-      1: "Mandi Sourced & Grading",
-      2: "Lab QA & Phytosanitary Clear",
-      3: "JNPT Customs Gate-In",
-      4: "In Oceanic Transit",
-      5: "Port Cleared & Delivered"
+  const item = typeof key === 'string' 
+    ? list.find(c => (c.bl || '').trim().toUpperCase() === key.trim().toUpperCase()) 
+    : list[key];
+  if (item) {
+    item.stage = parseInt(stageVal, 10);
+    const isDomestic = (item.bl && (item.bl.includes('DOM') || item.bl.startsWith('GGE-DOM-'))) || (item.vessel && item.vessel.toLowerCase().includes('domestic'));
+    const isSample = !isDomestic && (item.bl && (item.bl.includes('SMP') || item.bl.startsWith('SAMPLE-') || (item.container && item.container.includes('AIR'))));
+    const oceanStageNames = {
+      1: "Stage 1: Mandi Sourced & Grading",
+      2: "Stage 2: Lab QA & Phytosanitary Clear",
+      3: "Stage 3: JNPT Customs Gate-In",
+      4: "Stage 4: Customs LEO (EDI Gate Cleared)",
+      5: "Stage 5: In Oceanic Transit",
+      6: "Stage 6: Port Cleared & Delivered"
     };
-    list[index].status = stageNames[list[index].stage] || "In Transit";
+    const sampleStageNames = {
+      1: "Stage 1: Sample APMC Origin",
+      2: "Stage 2: Lab Assay & COA Certified",
+      3: "Stage 3: JNPT Customs Gate-In",
+      4: "Stage 4: Air Cargo Customs Clearance",
+      5: "Stage 5: Express Air Transit",
+      6: "Stage 6: Consignee Delivered"
+    };
+    const domesticStageNames = {
+      1: "Stage 1: Mandi APMC Origin Sourced",
+      2: "Stage 2: Sortex Pack & FSSAI Clear",
+      3: "Stage 3: Mumbai Hub Allocated",
+      4: "Stage 4: Surface Express Transit",
+      5: "Stage 5: Out for Local Delivery",
+      6: "Stage 6: Delivered to Consignee"
+    };
+    item.status = (isDomestic ? domesticStageNames : (isSample ? sampleStageNames : oceanStageNames))[item.stage] || "In Transit";
     saveConsignments(list);
+
+    // Direct synchronous-like push to backend ACID database
+    try {
+      const token = (typeof sessionStorage !== 'undefined' && sessionStorage.getItem('gge_bearer_token')) ||
+                    (typeof localStorage !== 'undefined' && localStorage.getItem('gge_admin_token'));
+      const headers = { 'Content-Type': 'application/json' };
+      if (token) headers['Authorization'] = `Bearer ${token}`;
+      fetch('/api/consignments', {
+        method: 'POST',
+        headers: headers,
+        credentials: 'include',
+        body: JSON.stringify(item)
+      }).catch(e => console.warn("Direct stage backend sync error:", e));
+    } catch (e) {}
 
     // Sync to tracking DB
     const trackDb = getTrackingDatabase();
-    trackDb[list[index].bl] = {
-      bl: list[index].bl,
-      commodity: list[index].commodity,
-      status: list[index].status,
-      completed: list[index].stage === 5,
-      stage: list[index].stage,
-      vessel: list[index].vessel,
-      pod: list[index].pod,
-      eta: list[index].eta,
-      container: list[index].container || 'MSCU 892104-7'
+    trackDb[item.bl] = {
+      bl: item.bl,
+      commodity: item.commodity,
+      status: item.status,
+      completed: item.stage >= 6,
+      stage: item.stage,
+      vessel: item.vessel,
+      pod: item.pod,
+      eta: item.eta,
+      container: item.container || (isSample ? 'AIR-POUCH #SAMPLE' : 'MSCU 892104-7')
     };
     saveTrackingDatabase(trackDb);
 
     renderConsignments();
-    if (typeof showToast === 'function') showToast(`Consignment updated to Stage ${stageVal}.`);
+    if (typeof showToast === 'function') showToast(`Consignment ${item.bl} updated to Stage ${stageVal} (${item.status}).`);
   }
 }
 
-function deleteConsignment(index) {
-  if (confirm("Delete this consignment?")) {
-    const list = getConsignments();
-    list.splice(index, 1);
-    saveConsignments(list);
+function deleteConsignment(key) {
+  const list = getConsignments();
+  const idx = typeof key === 'string' 
+    ? list.findIndex(c => (c.bl || '').trim().toUpperCase() === key.trim().toUpperCase()) 
+    : key;
+  const item = list[idx];
+  if (!item) return;
+
+  if (confirm(`Delete consignment ${item.bl}?`)) {
+    const bl = item.bl || item.blCode;
+    list.splice(idx, 1);
+    saveConsignments(list, true);
+    if (bl) {
+      try {
+        const token = sessionStorage.getItem('gge_bearer_token') || localStorage.getItem('gge_admin_token');
+        const headers = {};
+        if (token) headers['Authorization'] = `Bearer ${token}`;
+        fetch(`/api/consignments/${encodeURIComponent(bl)}`, {
+          method: 'DELETE',
+          headers: headers,
+          credentials: 'include'
+        }).catch(() => {});
+      } catch(e) {}
+    }
     renderConsignments();
     updateKPIs();
-    if (typeof showToast === 'function') showToast("Consignment deleted.");
+    if (typeof showToast === 'function') showToast(`Consignment ${bl} deleted.`);
   }
 }
 
@@ -2190,12 +3419,12 @@ function createConsignmentFromSample(index) {
     badgeEl.style.color = '#81C784';
   }
   setVal('mContainer', `AIR-POUCH #${item.id.replace('GGE-SMP-', '')}`);
-  setVal('mBuyer', item.name || 'Aryan Nigade');
-  setVal('mBuyerEmail', item.email || 'nigadearyan@gmail.com');
-  setVal('mBuyerPhone', item.phone || '+91 9920594424');
+  setVal('mBuyer', item.name || 'Trade Sample Importer');
+  setVal('mBuyerEmail', item.email || '');
+  setVal('mBuyerPhone', item.phone || '');
   setVal('mCommodity', `${item.commodities || item.lotName || 'Tur Dal 500g Assay Pouch'} [Ref: ${item.id}]`);
   setVal('mVessel', item.destType === 'international' ? 'DHL Express Air Cargo (Flight EK-501)' : 'BlueDart Express Air Courier');
-  setVal('mPod', item.address || item.country || 'Wadala East, Mumbai');
+  setVal('mPod', item.address || item.country || 'Consignee Delivery Port / Address');
   setVal('mEta', '24 - 48 Hours Delivery');
   setVal('mStage', item.awb ? 4 : 2);
 
@@ -2259,10 +3488,13 @@ function openConsignmentModal() {
   if (modal) modal.style.display = 'flex';
 }
 
-function openEditConsignmentModal(index) {
-  activeEditConsignmentIndex = index;
+function openEditConsignmentModal(key) {
   const list = getConsignments();
-  const item = list[index];
+  const idx = typeof key === 'string'
+    ? list.findIndex(c => (c.bl || '').trim().toUpperCase() === key.trim().toUpperCase())
+    : key;
+  activeEditConsignmentIndex = idx;
+  const item = list[idx];
   if (!item) return;
 
   currentModalBl = item.bl;
@@ -2349,14 +3581,24 @@ async function saveConsignmentForm() {
   const stage = parseInt((document.getElementById('mStage') ? document.getElementById('mStage').value : '4'), 10) || 4;
   const autoSend = document.getElementById('mAutoSendEmail') ? document.getElementById('mAutoSendEmail').checked : true;
 
-  const stageNames = {
+  const isSample = bl && (bl.includes('SMP') || bl.startsWith('SAMPLE-') || container.includes('AIR'));
+  const oceanStageNames = {
     1: "Stage 1: Mandi Sourced & Grading",
     2: "Stage 2: Lab QA & Phytosanitary Clear",
     3: "Stage 3: JNPT Customs Gate-In",
-    4: "Stage 4: In Oceanic Transit",
-    5: "Stage 5: Port Cleared & Delivered"
+    4: "Stage 4: Customs LEO (EDI Gate Cleared)",
+    5: "Stage 5: In Oceanic Transit",
+    6: "Stage 6: Port Cleared & Delivered"
   };
-  const status = stageNames[stage] || 'In Oceanic Transit';
+  const sampleStageNames = {
+    1: "Stage 1: Sample APMC Origin",
+    2: "Stage 2: Lab Assay & COA Certified",
+    3: "Stage 3: JNPT Customs Gate-In",
+    4: "Stage 4: Air Cargo Customs Clearance",
+    5: "Stage 5: Express Air Transit",
+    6: "Stage 6: Consignee Delivered"
+  };
+  const status = (isSample ? sampleStageNames : oceanStageNames)[stage] || 'In Oceanic Transit';
 
   const invRefVal = document.getElementById('mDoc_inv_ref') ? document.getElementById('mDoc_inv_ref').value.trim() : '';
   const phytoRefVal = document.getElementById('mDoc_phyto_ref') ? document.getElementById('mDoc_phyto_ref').value.trim() : '';
@@ -2370,6 +3612,7 @@ async function saveConsignmentForm() {
     stage,
     status,
     inquiryRef: inquiryRefVal,
+    quotationRef: inquiryRefVal,
     invRef: invRefVal,
     phytoRef: phytoRefVal,
     coaRef: coaRefVal,
@@ -2377,12 +3620,31 @@ async function saveConsignmentForm() {
   };
 
   const list = getConsignments();
-  if (activeEditConsignmentIndex !== null && activeEditConsignmentIndex >= 0 && list[activeEditConsignmentIndex]) {
+  const existingIdx = list.findIndex(c => c.bl && c.bl.trim().toUpperCase() === bl.trim().toUpperCase());
+  if (existingIdx !== -1) {
+    list[existingIdx] = newConsignment;
+  } else if (activeEditConsignmentIndex !== null && activeEditConsignmentIndex >= 0 && list[activeEditConsignmentIndex]) {
     list[activeEditConsignmentIndex] = newConsignment;
   } else {
     list.unshift(newConsignment);
   }
   saveConsignments(list);
+
+  // Directly push to backend /api/consignments
+  try {
+    const token = (typeof sessionStorage !== 'undefined' && sessionStorage.getItem('gge_bearer_token')) ||
+                  (typeof localStorage !== 'undefined' && localStorage.getItem('gge_admin_token'));
+    const headers = { 'Content-Type': 'application/json' };
+    if (token) headers['Authorization'] = `Bearer ${token}`;
+    await fetch('/api/consignments', {
+      method: 'POST',
+      headers: headers,
+      credentials: 'include',
+      body: JSON.stringify(newConsignment)
+    });
+  } catch(e) {
+    console.warn("Direct backend save error:", e);
+  }
 
   // Sync to tracking DB
   const trackDb = getTrackingDatabase();
@@ -2400,9 +3662,13 @@ async function saveConsignmentForm() {
         matchedInq.status = 'B/L Issued';
         matchedInq.blCode = bl;
         saveInquiries(inqList);
+        const token = sessionStorage.getItem('gge_bearer_token') || localStorage.getItem('gge_admin_token');
+        const inqHeaders = { 'Content-Type': 'application/json' };
+        if (token) inqHeaders['Authorization'] = `Bearer ${token}`;
         fetch('/api/inquiries', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: inqHeaders,
+          credentials: 'include',
           body: JSON.stringify(inqList)
         }).catch(() => {});
       }
@@ -2422,7 +3688,7 @@ async function saveConsignmentForm() {
       statusBox.style.background = 'rgba(217,172,82,0.15)';
       statusBox.style.border = '1.5px solid var(--gold-bright)';
       statusBox.style.color = '#FFFFFF';
-      statusBox.innerHTML = `<b>Transmitting Gold Consignment Tracking Dossier &amp; Attachments to ${buyerEmail}...</b>`;
+      statusBox.innerHTML = `<b>Transmitting Gold Consignment Tracking Dossier &amp; Attachments to ${escapeHtml(buyerEmail)}...</b>`;
     }
     if (btn) btn.disabled = true;
 
@@ -2431,14 +3697,30 @@ async function saveConsignmentForm() {
     const slots = ['inv', 'phyto', 'coa', 'bl'];
     for (const s of slots) {
       const scopedKey = `doc_${bl.replace(/[^a-zA-Z0-9_-]/g, '_')}_${s}`;
-      const rec = await getFileFromDB(scopedKey);
-      if (rec && rec.name && rec.dataUrl) {
+      let rec = await getFileFromDB(scopedKey);
+      if (!rec) {
+        rec = await getFileFromDB(`doc_temp_${s}`);
+      }
+      if (rec && rec.name) {
         attachments.push({
           slot: s,
+          bl: bl,
           name: rec.name,
-          dataUrl: rec.dataUrl,
+          dataUrl: rec.dataUrl || '',
           type: rec.type || 'application/pdf'
         });
+      } else {
+        // Fallback: check DOM preview container
+        const previewEl = document.getElementById(`mDoc_${s}_preview`);
+        if (previewEl && previewEl.textContent && !previewEl.textContent.includes('Upload')) {
+          attachments.push({
+            slot: s,
+            bl: bl,
+            name: `${s}_document.pdf`,
+            dataUrl: '',
+            type: 'application/pdf'
+          });
+        }
       }
     }
 
@@ -2474,22 +3756,56 @@ async function saveConsignmentForm() {
 
     const trackingUrl = `${window.location.origin}/tracking.html?bl=${encodeURIComponent(bl)}`;
     const subject = `Live Consignment Tracking & Export Document Package: ${bl} (${container})`;
-    const bodyText = `Official export consignment ${bl} is registered and updated to ${status}. Track live cargo here: ${trackingUrl}`;
+    const bodyText = `Dear ${buyer || 'Valued Importer'},
+
+Official export consignment ${bl} has been registered on the Golden Global Expo Logistics Network and updated to ${status}.
+
+• Carrier Vessel: ${vessel}
+• Container Number: ${container}
+• Port of Loading: JNPT Nhava Sheva (INNSA1)
+• Destination Port (POD): ${pod}
+• Estimated Arrival (ETA): ${eta}
+
+Track live cargo satellite telemetry here:
+${trackingUrl}
+
+Accompanying documents have been securely registered to your bill of lading.
+
+Golden Global Expo — Merchant Exporter
+JNPT Nhava Sheva Terminal · Mumbai Port, Maharashtra, India
+Email: export@goldenglobalexpo.com | Web: www.goldenglobalexpo.com`;
+
+    const consignHtml = buildConsignmentEmailHtml({
+      bl, container, vessel, pod, commodity, eta, status, trackingUrl, docsData
+    });
+
+    const savedSmtpPass = localStorage.getItem('gge_smtp_pass');
+    const smtpPass = savedSmtpPass || 'CONFIGURED_ON_SERVER';
+
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 15000);
 
     try {
-      const smtpPass = localStorage.getItem('gge_smtp_pass') || '';
       const apiUrl = (window.location && window.location.origin && window.location.origin.startsWith('http')) ? `${window.location.origin}/api/send-email` : 'http://localhost:8000/api/send-email';
+      const emailToken = sessionStorage.getItem('gge_bearer_token') || localStorage.getItem('gge_admin_token');
+      const emailHeaders = { 'Content-Type': 'application/json' };
+      if (emailToken) emailHeaders['Authorization'] = 'Bearer ' + emailToken;
+
+      const currentSender = sessionStorage.getItem('gge_admin_email') || 'export@goldenglobalexpo.com';
       const response = await fetch(apiUrl, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: emailHeaders,
+        credentials: 'include',
+        signal: controller.signal,
         body: JSON.stringify({
           to: buyerEmail,
           toName: buyer,
-          from: 'nigadearyan@gmail.com',
-          smtpUser: 'nigadearyan@gmail.com',
+          from: currentSender,
+          smtpUser: currentSender,
           smtpPass: smtpPass,
           subject: subject,
           body: bodyText,
+          html: consignHtml,
           specs: specsData,
           docs: docsData,
           attachments: attachments,
@@ -2497,47 +3813,112 @@ async function saveConsignmentForm() {
           trackingUrl: trackingUrl
         })
       });
+      clearTimeout(timeoutId);
 
       const res = await response.json();
-      if (res.success) {
+      if (response.ok && res.success) {
         if (btn) {
           btn.innerHTML = '✅ Dispatched Successfully!';
           btn.style.background = '#81C784';
           btn.style.color = '#14110E';
         }
+        if (statusBox) {
+          statusBox.style.background = 'rgba(46,125,50,0.25)';
+          statusBox.style.border = '1.5px solid #81C784';
+          statusBox.style.color = '#C8E6C9';
+          statusBox.innerHTML = `<b>✅ Gold Consignment Tracking Dossier Dispatched to ${escapeHtml(buyerEmail)}!</b>`;
+        }
         if (typeof showToast === 'function') showToast(`🎉 Consignment ${bl} created & Gold Tracking Dossier dispatched!`);
         setTimeout(() => {
           closeModal('consignModal');
+          closeModal('consignmentModal');
           if (btn) {
-      btn.disabled = false;
-      btn.innerHTML = 'AUTO-DISPATCH (Background)';
-      btn.style.opacity = '1';
-      btn.style.cursor = 'pointer';
-      btn.style.pointerEvents = 'auto';
-    }
+            btn.disabled = false;
+            btn.innerHTML = 'Save &amp; Dispatch Consignment ➔';
+            btn.style.opacity = '1';
+            btn.style.cursor = 'pointer';
+            btn.style.pointerEvents = 'auto';
+            btn.style.background = '';
+            btn.style.color = '';
+          }
         }, 1200);
         return;
+      } else {
+        const errMsg = res.error || (res.detail ? (typeof res.detail === 'string' ? res.detail : JSON.stringify(res.detail)) : 'Email transmission note');
+        console.warn("SMTP send note:", res);
+        if (statusBox) {
+          statusBox.style.background = 'rgba(217,172,82,0.15)';
+          statusBox.style.border = '1.5px solid var(--gold-bright)';
+          statusBox.style.color = '#FFFFFF';
+          statusBox.innerHTML = `
+            <div style="display:flex;flex-direction:column;gap:8px;">
+              <div><b>⚠️ Notice on Outbound Email:</b> ${escapeHtml(errMsg)}</div>
+              <div style="font-size:0.75rem;color:#E6D7B8;line-height:1.4;">
+                Consignment <b>${escapeHtml(bl)}</b> is registered &amp; active in the live tracking portal.<br>
+                To deliver via Google SMTP directly, enter your 16-character Gmail App Password below:
+              </div>
+              <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:4px;">
+                <input type="password" id="promptConsignSmtpPass" placeholder="Enter 16-char App Password" style="flex:1;min-width:200px;font-size:0.78rem;padding:6px 10px;background:rgba(0,0,0,0.6);border:1px solid var(--gold-bright);color:#FFFFFF;border-radius:4px;">
+                <button type="button" class="btn-action primary" onclick="saveConsignSmtpAndRetry()" style="padding:6px 14px;font-size:0.78rem;">
+                  💾 Save &amp; Dispatch
+                </button>
+                <button type="button" class="btn-action" onclick="closeModal('consignModal'); closeModal('consignmentModal');" style="padding:6px 14px;font-size:0.78rem;background:rgba(255,255,255,0.08);color:#FFFFFF;border:1px solid rgba(255,255,255,0.2);">
+                  ✓ Done (Close)
+                </button>
+              </div>
+            </div>
+          `;
+        }
       }
     } catch (err) {
-      console.warn("SMTP send failed:", err);
+      clearTimeout(timeoutId);
+      console.warn("SMTP send error:", err);
+      const isTimeout = err.name === 'AbortError';
+      if (statusBox) {
+        statusBox.style.background = 'rgba(217,172,82,0.15)';
+        statusBox.style.border = '1.5px solid var(--gold-bright)';
+        statusBox.style.color = '#FFFFFF';
+        statusBox.innerHTML = `
+          <div>
+            <b>⚠️ ${isTimeout ? 'Dispatch Backgrounded (Timeout)' : 'Dispatch Notice'}:</b> Consignment <b>${escapeHtml(bl)}</b> has been saved and is live in the tracking portal.<br>
+            <small style="color:var(--ivory);">${isTimeout ? 'Server is processing email queue in background.' : 'Local server was not reachable, but data is saved.'}</small>
+          </div>
+        `;
+      }
+    } finally {
+      if (btn) {
+        btn.disabled = false;
+        btn.innerHTML = 'Save &amp; Dispatch Consignment ➔';
+        btn.style.opacity = '1';
+        btn.style.cursor = 'pointer';
+        btn.style.pointerEvents = 'auto';
+      }
     }
-    if (btn) {
-      btn.disabled = false;
-      btn.innerHTML = 'AUTO-DISPATCH (Background)';
-      btn.style.opacity = '1';
-      btn.style.cursor = 'pointer';
-      btn.style.pointerEvents = 'auto';
-    }
+  } else {
+    closeModal('consignModal');
+    closeModal('consignmentModal');
+    if (typeof showToast === 'function') showToast(`🎉 Consignment ${bl} registered and live in tracking portal!`);
   }
-
-  closeModal('consignModal');
-  closeModal('consignmentModal');
-  if (typeof showToast === 'function') showToast(`🎉 Consignment ${bl} registered and live in tracking portal!`);
 }
 
-function sendCustomerWhatsApp(index) {
+function saveConsignSmtpAndRetry() {
+  const input = document.getElementById('promptConsignSmtpPass');
+  if (input && input.value.trim()) {
+    localStorage.setItem('gge_smtp_pass', input.value.trim());
+    if (typeof showToast === 'function') showToast("🔑 Gmail App Password saved!");
+    saveConsignmentForm();
+  } else {
+    if (typeof showToast === 'function') showToast("⚠️ Please enter your 16-character Gmail App Password.");
+  }
+}
+window.saveConsignSmtpAndRetry = saveConsignSmtpAndRetry;
+
+
+function sendCustomerWhatsApp(key) {
   const list = getConsignments();
-  const item = list[index];
+  const item = typeof key === 'string'
+    ? list.find(c => (c.bl || '').trim().toUpperCase() === key.trim().toUpperCase())
+    : list[key];
   if (!item) return;
   const trackingUrl = `${window.location.origin}/tracking.html?bl=${item.bl}`;
   const text = encodeURIComponent(`Hello! Your Golden Global Expo consignment (${item.bl}) is currently: ${item.status}. Track live cargo here: ${trackingUrl}`);
@@ -2545,9 +3926,11 @@ function sendCustomerWhatsApp(index) {
   window.open(`https://wa.me/${phone}?text=${text}`, '_blank');
 }
 
-function copyTrackingLink(index) {
+function copyTrackingLink(key) {
   const list = getConsignments();
-  const item = list[index];
+  const item = typeof key === 'string'
+    ? list.find(c => (c.bl || '').trim().toUpperCase() === key.trim().toUpperCase())
+    : list[key];
   if (!item) return;
   const trackingUrl = `${window.location.origin}/tracking.html?bl=${item.bl}`;
   navigator.clipboard.writeText(trackingUrl).then(() => {
@@ -2558,6 +3941,520 @@ function copyTrackingLink(index) {
 function closeModal(id) {
   const modal = document.getElementById(id);
   if (modal) modal.style.display = 'none';
+}
+
+// --- DYNAMIC COMMODITY CATALOG & QUALITY ASSAYS CONSOLE ---
+let commoditiesCatalogCache = [];
+
+async function loadCommoditiesLive() {
+  const tbody = document.getElementById('commodityCatalogTableBody');
+  if (tbody && commoditiesCatalogCache.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:24px;color:var(--muted);"><span class="spinner" style="display:inline-block;width:16px;height:16px;border:2px solid var(--gold);border-top-color:transparent;border-radius:50%;animation:spin 0.8s linear infinite;vertical-align:middle;margin-right:8px;"></span> Loading live commodity catalog...</td></tr>`;
+  }
+  try {
+    const res = await fetch('/api/commodities?active_only=false');
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+    if (data.success && Array.isArray(data.commodities)) {
+      commoditiesCatalogCache = data.commodities;
+      window.commoditiesList = data.commodities;
+      renderCommoditiesTable();
+    }
+  } catch (err) {
+    console.error("Error loading commodities:", err);
+    if (tbody && commoditiesCatalogCache.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:24px;color:#FF8A80;">Failed to load commodities from server. Click "Sync Catalog" to retry.</td></tr>`;
+    }
+  }
+}
+
+function renderCommoditiesTable() {
+  const tbody = document.getElementById('commodityCatalogTableBody');
+  if (!tbody) return;
+  if (!commoditiesCatalogCache || commoditiesCatalogCache.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:32px;color:var(--muted);">No commodities registered in catalog. Click "+ Register New Commodity" above.</td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = commoditiesCatalogCache.map(c => {
+    const safeCode = escapeHtml(c.code || '');
+    const safeName = escapeHtml(c.name || '');
+    const safeBotanical = escapeHtml(c.botanical || '');
+    const safeCategory = escapeHtml(c.category || 'Pulses');
+    const safeHs = escapeHtml(c.hsCode || c.hs_code || '—');
+    const safeOrigin = escapeHtml(c.origin || 'India');
+    const safeCrop = escapeHtml(c.crop || '');
+    const safeHarvest = escapeHtml(c.harvestSeason || c.harvest_season || '');
+    const safePurity = escapeHtml(c.purity || '—');
+    const safeMoisture = escapeHtml(c.moisture || '—');
+    const safeForeign = escapeHtml(c.foreignMatter || c.foreign_matter || '—');
+    const safeProtein = escapeHtml(c.protein || '');
+    const baseUsd = Number(c.baseUsd || c.price || 0);
+    const coaUrl = c.coaUrl || c.coa_url || '';
+    const isActive = c.isActive !== false && c.is_active !== 0;
+
+    let packSummary = '';
+    const packs = c.domesticPacks || c.domestic_packs;
+    if (packs && typeof packs === 'object') {
+      const parts = [];
+      if (packs['1kg']) parts.push(`1kg: ₹${packs['1kg']}`);
+      if (packs['5kg']) parts.push(`5kg: ₹${packs['5kg']}`);
+      if (packs['25kg']) parts.push(`25kg: ₹${packs['25kg']}`);
+      if (parts.length) packSummary = `<div style="font-size:0.68rem; color:#FFA726; margin-top:3px; font-family:var(--font-mono);">${parts.join(' · ')}</div>`;
+    }
+
+    return `
+      <tr style="${isActive ? '' : 'opacity:0.6; background:rgba(255,255,255,0.02);'}">
+        <td>
+          <div style="font-weight:700; color:#FFFFFF; font-size:0.86rem;">${safeName}</div>
+          ${safeBotanical ? `<div style="font-style:italic; font-size:0.74rem; color:var(--muted);">${safeBotanical}</div>` : ''}
+          <div style="display:flex; align-items:center; gap:6px; margin-top:4px;">
+            <span style="font-family:var(--font-mono); font-size:0.68rem; background:rgba(217,172,82,0.18); color:var(--gold-bright); border:1px solid rgba(217,172,82,0.35); padding:1px 6px; border-radius:3px;">${safeCode.toUpperCase()}</span>
+            ${!isActive ? `<span style="font-size:0.65rem; background:rgba(255,82,82,0.2); color:#FF8A80; border:1px solid rgba(255,82,82,0.4); padding:1px 5px; border-radius:3px;">INACTIVE</span>` : ''}
+          </div>
+        </td>
+        <td>
+          <span style="display:inline-block; padding:2px 8px; border-radius:3px; font-size:0.70rem; font-family:var(--font-mono); background:rgba(255,255,255,0.06); color:#FAF8F3; border:1px solid rgba(255,255,255,0.12);">${safeCategory}</span>
+          <div style="font-family:var(--font-mono); font-size:0.72rem; color:var(--gold-bright); margin-top:4px;">HS: ${safeHs}</div>
+        </td>
+        <td>
+          <div style="font-size:0.78rem; color:#FAF8F3;">📍 ${safeOrigin}</div>
+          ${safeCrop ? `<div style="font-size:0.70rem; color:var(--muted);">${safeCrop}</div>` : ''}
+          ${safeHarvest ? `<div style="font-size:0.68rem; color:#81C784;">🌾 ${safeHarvest}</div>` : ''}
+        </td>
+        <td>
+          <div style="font-size:0.75rem; line-height:1.45;">
+            <div>Purity: <b style="color:var(--gold-bright);">${safePurity}</b></div>
+            <div>Moisture: <b>${safeMoisture}</b> · Foreign: <b>${safeForeign}</b></div>
+            ${safeProtein ? `<div style="color:#81C784;">Protein: <b>${safeProtein}</b></div>` : ''}
+          </div>
+        </td>
+        <td>
+          <div style="font-family:var(--font-mono); font-size:0.95rem; font-weight:700; color:var(--gold-bright);">$${baseUsd.toLocaleString()} / MT</div>
+          <small style="color:var(--muted); font-size:0.68rem; font-family:var(--font-mono);">FOB JNPT</small>
+          ${packSummary}
+        </td>
+        <td>
+          <div style="display:flex; flex-direction:column; gap:4px; align-items:flex-start;">
+            ${coaUrl 
+              ? `<a href="${coaUrl}" target="_blank" class="btn-action" style="font-size:0.68rem; padding:3px 7px; color:#81C784; border-color:rgba(129,199,132,0.4);" title="View attached PDF Certificate of Analysis">📄 View COA</a>`
+              : `<span style="font-size:0.68rem; color:var(--muted);">No COA attached</span>`
+            }
+            <button type="button" class="btn-action" onclick="openCoaModal('${safeCode}')" style="font-size:0.68rem; padding:3px 7px;" title="Upload or replace Certificate of Analysis">
+              📎 ${coaUrl ? 'Update' : 'Attach COA'}
+            </button>
+          </div>
+        </td>
+        <td>
+          <div style="display:flex; gap:6px; flex-wrap:wrap;">
+            <button type="button" class="btn-action" onclick="openEditCommodityModal('${safeCode}')" style="font-size:0.72rem; padding:4px 8px; background:rgba(217,172,82,0.15); border-color:rgba(217,172,82,0.4); color:var(--gold-bright);" title="Edit commodity specifications">
+              ✏️ Edit
+            </button>
+            <button type="button" class="btn-action" onclick="toggleCommodityStatus('${safeCode}')" style="font-size:0.72rem; padding:4px 8px; ${isActive ? 'color:#FF8A80; border-color:rgba(255,82,82,0.3);' : 'color:#81C784; border-color:rgba(129,199,132,0.4);'}" title="${isActive ? 'Deactivate commodity' : 'Reactivate commodity'}">
+              ${isActive ? 'Deactivate' : 'Activate'}
+            </button>
+          </div>
+        </td>
+      </tr>
+    `;
+  }).join('');
+}
+
+async function refreshCommoditiesLive(btn) {
+  if (btn) {
+    btn.disabled = true;
+    btn.innerHTML = '🔄 Syncing...';
+  }
+  await loadCommoditiesLive();
+  if (btn) {
+    btn.disabled = false;
+    btn.innerHTML = '🔄 Sync Catalog';
+  }
+  if (typeof showToast === 'function') showToast("🌾 Commodity catalog synced with central database.");
+}
+
+function openAddCommodityModal() {
+  const form = document.getElementById('commodityEditForm');
+  if (form) form.reset();
+  const editCodeEl = document.getElementById('cEditCode');
+  if (editCodeEl) editCodeEl.value = '';
+  const codeEl = document.getElementById('cCode');
+  if (codeEl) {
+    codeEl.value = '';
+    codeEl.disabled = false;
+  }
+  const titleEl = document.getElementById('commodityModalTitle');
+  if (titleEl) titleEl.textContent = 'Register New Export Commodity';
+  
+  // Suggested defaults
+  const originEl = document.getElementById('cOrigin');
+  if (originEl) originEl.value = 'Maharashtra / Karnataka (India)';
+  const cropEl = document.getElementById('cCrop');
+  if (cropEl) cropEl.value = '2025/2026 Crop';
+  const harvestEl = document.getElementById('cHarvestSeason');
+  if (harvestEl) harvestEl.value = 'December to February';
+  const purityEl = document.getElementById('cPurity');
+  if (purityEl) purityEl.value = '99.5% Min (Sortex Clean)';
+  const moistureEl = document.getElementById('cMoisture');
+  if (moistureEl) moistureEl.value = '11.0% Max';
+  const foreignEl = document.getElementById('cForeignMatter');
+  if (foreignEl) foreignEl.value = '0.1% Max';
+  const packingEl = document.getElementById('cPacking');
+  if (packingEl) packingEl.value = '25kg / 50kg PP Woven Bags';
+  const loadEl = document.getElementById('cLoadability');
+  if (loadEl) loadEl.value = "20' FCL Load: 24.0 MT";
+  const certsEl = document.getElementById('cCertifications');
+  if (certsEl) certsEl.value = 'APEDA Compliance, FSSAI Export Standards, Phytosanitary, Non-GMO';
+  const activeEl = document.getElementById('cIsActive');
+  if (activeEl) activeEl.checked = true;
+
+  const modal = document.getElementById('commodityEditModal');
+  if (modal) modal.style.display = 'flex';
+}
+
+function openEditCommodityModal(code) {
+  const item = commoditiesCatalogCache.find(c => (c.code || '').toLowerCase() === String(code || '').toLowerCase());
+  if (!item) {
+    if (typeof showToast === 'function') showToast(`Commodity '${code}' not found in cache. Refreshing...`, "error");
+    return;
+  }
+  const form = document.getElementById('commodityEditForm');
+  if (form) form.reset();
+
+  const editCodeEl = document.getElementById('cEditCode');
+  if (editCodeEl) editCodeEl.value = item.code;
+  const codeEl = document.getElementById('cCode');
+  if (codeEl) {
+    codeEl.value = item.code;
+    codeEl.disabled = true;
+  }
+  const titleEl = document.getElementById('commodityModalTitle');
+  if (titleEl) titleEl.textContent = `Edit Commodity: ${item.name} (${item.code.toUpperCase()})`;
+
+  document.getElementById('cName').value = item.name || '';
+  document.getElementById('cBotanical').value = item.botanical || '';
+  document.getElementById('cCategory').value = item.category || 'Pulses';
+  document.getElementById('cHsCode').value = item.hsCode || item.hs_code || '';
+  document.getElementById('cOrigin').value = item.origin || '';
+  document.getElementById('cCrop').value = item.crop || '';
+  document.getElementById('cHarvestSeason').value = item.harvestSeason || item.harvest_season || '';
+  document.getElementById('cPurity').value = item.purity || '';
+  document.getElementById('cMoisture').value = item.moisture || '';
+  document.getElementById('cForeignMatter').value = item.foreignMatter || item.foreign_matter || '';
+  document.getElementById('cProtein').value = item.protein || '';
+  document.getElementById('cPacking').value = item.packing || '';
+  document.getElementById('cLoadability').value = item.loadability || '';
+  document.getElementById('cCertifications').value = item.certifications || '';
+  document.getElementById('cBaseUsd').value = item.baseUsd || item.price || 850;
+
+  const packs = item.domesticPacks || item.domestic_packs || {};
+  document.getElementById('cPack500g').value = packs['500g'] !== undefined ? packs['500g'] : '';
+  document.getElementById('cPack1kg').value = packs['1kg'] !== undefined ? packs['1kg'] : '';
+  document.getElementById('cPack5kg').value = packs['5kg'] !== undefined ? packs['5kg'] : '';
+  document.getElementById('cPack25kg').value = packs['25kg'] !== undefined ? packs['25kg'] : '';
+
+  const activeEl = document.getElementById('cIsActive');
+  if (activeEl) activeEl.checked = item.isActive !== false && item.is_active !== 0;
+
+  const modal = document.getElementById('commodityEditModal');
+  if (modal) modal.style.display = 'flex';
+}
+
+async function saveCommodityForm() {
+  const editCode = (document.getElementById('cEditCode').value || '').trim();
+  const code = (document.getElementById('cCode').value || '').trim().toLowerCase();
+  const name = (document.getElementById('cName').value || '').trim();
+
+  if (!code || !name) {
+    alert("Commodity code and name are required.");
+    return;
+  }
+
+  const domesticPacks = {};
+  const p500 = document.getElementById('cPack500g').value;
+  const p1k = document.getElementById('cPack1kg').value;
+  const p5k = document.getElementById('cPack5kg').value;
+  const p25k = document.getElementById('cPack25kg').value;
+  if (p500) domesticPacks['500g'] = parseFloat(p500);
+  if (p1k) domesticPacks['1kg'] = parseFloat(p1k);
+  if (p5k) domesticPacks['5kg'] = parseFloat(p5k);
+  if (p25k) domesticPacks['25kg'] = parseFloat(p25k);
+
+  const payload = {
+    code: code,
+    name: name,
+    botanical: document.getElementById('cBotanical').value.trim(),
+    category: document.getElementById('cCategory').value.trim(),
+    hsCode: document.getElementById('cHsCode').value.trim(),
+    origin: document.getElementById('cOrigin').value.trim(),
+    crop: document.getElementById('cCrop').value.trim(),
+    harvestSeason: document.getElementById('cHarvestSeason').value.trim(),
+    purity: document.getElementById('cPurity').value.trim(),
+    moisture: document.getElementById('cMoisture').value.trim(),
+    foreignMatter: document.getElementById('cForeignMatter').value.trim(),
+    protein: document.getElementById('cProtein').value.trim(),
+    packing: document.getElementById('cPacking').value.trim(),
+    loadability: document.getElementById('cLoadability').value.trim(),
+    certifications: document.getElementById('cCertifications').value.trim(),
+    baseUsd: parseFloat(document.getElementById('cBaseUsd').value || 850),
+    domesticPacks: domesticPacks,
+    isActive: document.getElementById('cIsActive').checked
+  };
+
+  const btn = document.getElementById('btnSaveCommodity');
+  if (btn) {
+    btn.disabled = true;
+    btn.innerHTML = 'Saving... ⏳';
+  }
+
+  const token = sessionStorage.getItem('gge_bearer_token') || localStorage.getItem('gge_admin_token') || sessionStorage.getItem('gge_admin_session');
+  const headers = { 'Content-Type': 'application/json' };
+  if (token) headers['Authorization'] = `Bearer ${token}`;
+
+  try {
+    const isEdit = Boolean(editCode);
+    const url = isEdit ? `/api/commodities/${encodeURIComponent(editCode)}` : '/api/commodities';
+    const method = isEdit ? 'PUT' : 'POST';
+
+    const res = await fetch(url, {
+      method: method,
+      headers: headers,
+      credentials: 'include',
+      body: JSON.stringify(payload)
+    });
+    const result = await res.json();
+    if (!res.ok || !result.success) {
+      throw new Error(result.detail || result.error || 'Server rejected request');
+    }
+
+    if (typeof showToast === 'function') {
+      showToast(isEdit ? `✅ Commodity '${name}' updated!` : `✅ Commodity '${name}' registered!`);
+    }
+    closeModal('commodityEditModal');
+    await loadCommoditiesLive();
+  } catch (err) {
+    console.error("Save commodity error:", err);
+    alert(`Could not save commodity: ${err.message}`);
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.innerHTML = 'Save Commodity Specifications ➔';
+    }
+  }
+}
+
+async function toggleCommodityStatus(code) {
+  const item = commoditiesCatalogCache.find(c => (c.code || '').toLowerCase() === String(code || '').toLowerCase());
+  if (!item) return;
+  const currentlyActive = item.isActive !== false && item.is_active !== 0;
+  const token = sessionStorage.getItem('gge_bearer_token') || localStorage.getItem('gge_admin_token') || sessionStorage.getItem('gge_admin_session');
+  const headers = { 'Content-Type': 'application/json' };
+  if (token) headers['Authorization'] = `Bearer ${token}`;
+
+  try {
+    let res;
+    if (currentlyActive) {
+      res = await fetch(`/api/commodities/${encodeURIComponent(code)}`, {
+        method: 'DELETE',
+        headers: headers,
+        credentials: 'include'
+      });
+    } else {
+      res = await fetch(`/api/commodities/${encodeURIComponent(code)}`, {
+        method: 'PUT',
+        headers: headers,
+        credentials: 'include',
+        body: JSON.stringify({ isActive: true })
+      });
+    }
+    const data = await res.json();
+    if (!res.ok || !data.success) throw new Error(data.detail || data.error || 'Failed to update status');
+    if (typeof showToast === 'function') {
+      showToast(`Commodity '${item.name}' ${currentlyActive ? 'deactivated' : 'reactivated'} successfully.`);
+    }
+    await loadCommoditiesLive();
+  } catch (err) {
+    console.error("Toggle commodity status error:", err);
+    alert(`Status update failed: ${err.message}`);
+  }
+}
+
+function openCoaModal(code) {
+  const item = commoditiesCatalogCache.find(c => (c.code || '').toLowerCase() === String(code || '').toLowerCase());
+  if (!item) return;
+
+  const codeInput = document.getElementById('coaCommodityCode');
+  if (codeInput) codeInput.value = item.code;
+  const titleEl = document.getElementById('coaCommodityTitle');
+  if (titleEl) titleEl.textContent = `${item.name} (${item.code.toUpperCase()})`;
+
+  const linkWrap = document.getElementById('coaCurrentLinkWrap');
+  const linkEl = document.getElementById('coaCurrentLink');
+  const coaUrl = item.coaUrl || item.coa_url;
+  if (coaUrl && linkWrap && linkEl) {
+    linkEl.href = coaUrl;
+    linkWrap.style.display = 'block';
+  } else if (linkWrap) {
+    linkWrap.style.display = 'none';
+  }
+
+  const fileInput = document.getElementById('coaFileInput');
+  if (fileInput) fileInput.value = '';
+  const statusBox = document.getElementById('coaUploadStatus');
+  if (statusBox) statusBox.style.display = 'none';
+
+  const modal = document.getElementById('commodityCoaModal');
+  if (modal) modal.style.display = 'flex';
+}
+
+async function uploadCommodityCoa() {
+  const code = (document.getElementById('coaCommodityCode').value || '').trim();
+  const fileInput = document.getElementById('coaFileInput');
+  const statusBox = document.getElementById('coaUploadStatus');
+  const btn = document.getElementById('btnUploadCoa');
+
+  if (!code) {
+    alert("No commodity selected.");
+    return;
+  }
+  if (!fileInput || !fileInput.files || fileInput.files.length === 0) {
+    alert("Please select a Certificate of Analysis file (PDF, PNG, JPG).");
+    return;
+  }
+
+  const file = fileInput.files[0];
+  const formData = new FormData();
+  formData.append('file', file);
+
+  if (btn) {
+    btn.disabled = true;
+    btn.innerHTML = 'Uploading Certificate... ⏳';
+  }
+  if (statusBox) {
+    statusBox.style.display = 'block';
+    statusBox.style.background = 'rgba(217,172,82,0.15)';
+    statusBox.style.border = '1px solid var(--gold-bright)';
+    statusBox.style.color = '#FFFFFF';
+    statusBox.innerHTML = 'Uploading and hashing lab assay certificate...';
+  }
+
+  const token = sessionStorage.getItem('gge_bearer_token') || localStorage.getItem('gge_admin_token') || sessionStorage.getItem('gge_admin_session');
+  const headers = {};
+  if (token) headers['Authorization'] = `Bearer ${token}`;
+
+  try {
+    const res = await fetch(`/api/commodities/${encodeURIComponent(code)}/certificate`, {
+      method: 'POST',
+      headers: headers,
+      credentials: 'include',
+      body: formData
+    });
+    const result = await res.json();
+    if (!res.ok || !result.success) {
+      throw new Error(result.detail || result.error || 'Upload failed');
+    }
+
+    if (statusBox) {
+      statusBox.style.background = 'rgba(46,125,50,0.25)';
+      statusBox.style.border = '1.5px solid #81C784';
+      statusBox.style.color = '#C8E6C9';
+      statusBox.innerHTML = `<b>✅ COA attached: ${escapeHtml(result.coaUrl || file.name)}</b>`;
+    }
+    if (typeof showToast === 'function') {
+      showToast(`📄 COA attached to ${code.toUpperCase()}!`);
+    }
+
+    setTimeout(() => {
+      closeModal('commodityCoaModal');
+      loadCommoditiesLive();
+    }, 1000);
+  } catch (err) {
+    console.error("Upload COA error:", err);
+    if (statusBox) {
+      statusBox.style.background = 'rgba(255,82,82,0.2)';
+      statusBox.style.border = '1.5px solid #FF5252';
+      statusBox.style.color = '#FF8A80';
+      statusBox.innerHTML = `<b>❌ Upload error:</b> ${escapeHtml(err.message)}`;
+    }
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.innerHTML = 'Upload &amp; Attach COA ➔';
+    }
+  }
+}
+
+// --- SERVER-SIDE PROFORMA INVOICE GENERATOR & PREVIEW SUITE ---
+let currentProformaHtml = '';
+
+async function generateProformaForInquiry(inquiryId) {
+  const inquiries = getInquiries();
+  const item = inquiries.find(i => String(i.id || '') === String(inquiryId || '')) ||
+               inquiries.find(i => String(i.id || '').replace(/[^A-Za-z0-9_-]/g, '') === String(inquiryId || ''));
+  if (!item) {
+    alert("Inquiry record not found.");
+    return;
+  }
+
+  if (typeof showToast === 'function') showToast(`Generating Proforma Invoice for ${item.company || item.name || 'buyer'}...`);
+
+  // Build compliant payload from inquiry
+  const payload = {
+    buyerCompany: item.company || item.name || 'Commercial Importer LLC',
+    buyerName: item.name || 'Procurement Director',
+    buyerCountry: item.country || 'United Arab Emirates',
+    destination: item.country || 'Jebel Ali Port (AEJEA), Dubai',
+    incoterms: `CIF ${item.country || 'Destination Seaport'} (Incoterms 2020)`,
+    commodity: item.commodities || item.commodity || item.lotName || 'Classic Sortex Pulses',
+    volume: item.volume || '24 MT',
+    unitPriceUsd: parseFloat(item.unitPriceUsd || item.price || 850)
+  };
+
+  try {
+    const res = await fetch('/api/documents/proforma-invoice?format=json', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    const result = await res.json();
+    if (!res.ok || !result.success) {
+      throw new Error(result.detail || result.error || 'Server could not generate document');
+    }
+
+    currentProformaHtml = result.proformaInvoice ? result.proformaInvoice.html : '';
+    const iframe = document.getElementById('proformaInvoiceFrame');
+    if (iframe) {
+      iframe.srcdoc = currentProformaHtml;
+    }
+    const modal = document.getElementById('proformaInvoiceModal');
+    if (modal) modal.style.display = 'flex';
+  } catch (err) {
+    console.error("Proforma Invoice generation error:", err);
+    alert(`Could not generate Proforma Invoice: ${err.message}`);
+  }
+}
+
+function printProformaInvoice() {
+  const iframe = document.getElementById('proformaInvoiceFrame');
+  if (iframe && iframe.contentWindow) {
+    iframe.contentWindow.focus();
+    iframe.contentWindow.print();
+  } else {
+    window.print();
+  }
+}
+
+function downloadProformaHtml() {
+  if (!currentProformaHtml) return;
+  const blob = new Blob([currentProformaHtml], { type: 'text/html;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `Proforma_Invoice_${Date.now()}.html`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
 }
 
 // Global Exports
@@ -2604,6 +4501,18 @@ window.renderSlotPreview = renderSlotPreview;
 window.triggerDocDownload = triggerDocDownload;
 window.clearSlotFile = clearSlotFile;
 window.renderAllSlotPreviews = renderAllSlotPreviews;
+window.loadCommoditiesLive = loadCommoditiesLive;
+window.renderCommoditiesTable = renderCommoditiesTable;
+window.openAddCommodityModal = openAddCommodityModal;
+window.openEditCommodityModal = openEditCommodityModal;
+window.saveCommodityForm = saveCommodityForm;
+window.toggleCommodityStatus = toggleCommodityStatus;
+window.openCoaModal = openCoaModal;
+window.uploadCommodityCoa = uploadCommodityCoa;
+window.refreshCommoditiesLive = refreshCommoditiesLive;
+window.generateProformaForInquiry = generateProformaForInquiry;
+window.printProformaInvoice = printProformaInvoice;
+window.downloadProformaHtml = downloadProformaHtml;
 
 // DOM Ready Handler
 document.addEventListener('DOMContentLoaded', () => {
@@ -2622,11 +4531,11 @@ function loadPaymentSettingsAdmin() {
   try {
     const raw = localStorage.getItem('gge_payment_settings');
     const settings = raw ? JSON.parse(raw) : {
-      upiId: 'nigadearyan-1@okhdfcbank',
+      upiId: 'goldenglobalexpo@icici',
       payeeName: 'Golden Global Expo',
       paypalUrl: '',
       samplePriceUsd: 65,
-      samplePriceInr: 1
+      samplePriceInr: 499
     };
 
     const upiEl = document.getElementById('admUpiId');
@@ -2637,7 +4546,7 @@ function loadPaymentSettingsAdmin() {
     const usdEl = document.getElementById('admSampleUsd');
     const inrEl = document.getElementById('admSampleInr');
 
-    if (upiEl) upiEl.value = settings.upiId || 'nigadearyan-1@okhdfcbank';
+    if (upiEl) upiEl.value = settings.upiId || 'goldenglobalexpo@icici';
     if (payeeEl) payeeEl.value = settings.payeeName || 'Golden Global Expo';
     if (paypalEl) paypalEl.value = settings.paypalUrl || '';
     if (usdEl) usdEl.value = settings.samplePriceUsd || 65;
@@ -2646,7 +4555,7 @@ function loadPaymentSettingsAdmin() {
 }
 
 function savePaymentSettingsAdmin() {
-  const upiId = (document.getElementById('admUpiId') ? document.getElementById('admUpiId').value.trim() : '') || 'nigadearyan-1@okhdfcbank';
+  const upiId = (document.getElementById('admUpiId') ? document.getElementById('admUpiId').value.trim() : '') || 'goldenglobalexpo@icici';
   const payeeName = (document.getElementById('admPayeeName') ? document.getElementById('admPayeeName').value.trim() : '') || 'Golden Global Expo';
   const paypalUrl = (document.getElementById('admPaypalUrl') ? document.getElementById('admPaypalUrl').value.trim() : '');
   const samplePriceUsd = parseInt(document.getElementById('admSampleUsd') ? document.getElementById('admSampleUsd').value : '65', 10) || 65;
@@ -2705,13 +4614,17 @@ function openSampleAwbModal(index) {
 }
 
 async function dispatchSampleAwbToBuyer() {
-  const index = parseInt(document.getElementById('awbSampleIndex').value, 10);
+  const idxEl = document.getElementById('awbSampleIndex');
+  if (!idxEl) return;
+  const index = parseInt(idxEl.value, 10);
   const list = getInquiries();
   const item = list[index];
   if (!item) return;
 
-  const courier = document.getElementById('awbCourierPartner').value;
-  const awb = document.getElementById('awbTrackingNumber').value.trim();
+  const courierEl = document.getElementById('awbCourierPartner');
+  const courier = courierEl ? courierEl.value : 'Blue Dart Express';
+  const awbEl = document.getElementById('awbTrackingNumber');
+  const awb = awbEl ? awbEl.value.trim() : '';
 
   if (!awb) {
     alert("Please enter a valid Airway Bill (AWB) tracking number.");
@@ -2792,24 +4705,39 @@ Delivery Address: ${item.address}
 
 Thank you for choosing Golden Global Expo.`;
 
+  const sampleAwbHtml = buildSampleAwbEmailHtml({
+    sampleId: item.id,
+    buyerName: item.name,
+    commodity: item.commodities,
+    courier: courier,
+    awb: awb,
+    address: item.address
+  });
+
   try {
-    const smtpPass = localStorage.getItem('gge_smtp_pass') || '';
+    const smtpPass = 'CONFIGURED_ON_SERVER';
     const apiUrl = (window.location && window.location.origin && window.location.origin.startsWith('http')) ? `${window.location.origin}/api/send-email` : 'http://localhost:8000/api/send-email';
+    const emailToken = sessionStorage.getItem('gge_bearer_token') || localStorage.getItem('gge_admin_token');
+    const emailHeaders = { 'Content-Type': 'application/json' };
+    if (emailToken) emailHeaders['Authorization'] = 'Bearer ' + emailToken;
+
     const response = await fetch(apiUrl, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: emailHeaders,
+      credentials: 'include',
       body: JSON.stringify({
         to: item.email,
         toName: item.name,
-        from: 'nigadearyan@gmail.com',
-        smtpUser: 'nigadearyan@gmail.com',
+        from: sessionStorage.getItem('gge_admin_email') || 'admin@goldenglobalexpo.com',
+        smtpUser: sessionStorage.getItem('gge_admin_email') || 'admin@goldenglobalexpo.com',
         smtpPass: smtpPass,
         subject: subject,
         body: bodyText,
+        html: sampleAwbHtml,
         specs: specsData,
         docs: docsData,
         attachments: [],
-        emailType: 'quotation'
+        emailType: 'sample'
       })
     });
 
@@ -3036,13 +4964,13 @@ function renderAnalytics() {
       : `<span style="color:#8C8275;font-size:0.70rem;font-family:var(--font-mono);">○ IDLE</span>`;
 
     const pdfsHtml = (item.downloadedPdfs && item.downloadedPdfs.length > 0)
-      ? item.downloadedPdfs.map(p => `<span style="display:inline-block;margin:1px 3px 1px 0;padding:2px 5px;border-radius:3px;background:rgba(217,172,82,0.18);border:1px solid rgba(217,172,82,0.4);color:#FFD54F;font-family:var(--font-mono);font-size:0.65rem;">📄 ${p}</span>`).join('')
+      ? item.downloadedPdfs.map(p => `<span style="display:inline-block;margin:1px 3px 1px 0;padding:2px 5px;border-radius:3px;background:rgba(217,172,82,0.18);border:1px solid rgba(217,172,82,0.4);color:#FFD54F;font-family:var(--font-mono);font-size:0.65rem;">📄 ${escapeHtml(p)}</span>`).join('')
       : `<span style="color:var(--muted);font-size:0.72rem;">None</span>`;
 
     const draftCompany = (item.draftLead && item.draftLead.company) ? item.draftLead.company : null;
     const intentBadge = draftCompany 
-      ? `<div style="background:rgba(255,179,0,0.12);border:1px solid rgba(255,179,0,0.3);padding:3px 6px;border-radius:4px;font-size:0.72rem;color:#FFD54F;"><b>📝 ${draftCompany}</b><br><small style="color:#C8BCA6;">${item.draftLead.volume || ''}</small></div>`
-      : `<span style="font-size:0.74rem;color:#B0A898;">${item.action || 'Browsing Catalog'}</span>`;
+      ? `<div style="background:rgba(255,179,0,0.12);border:1px solid rgba(255,179,0,0.3);padding:3px 6px;border-radius:4px;font-size:0.72rem;color:#FFD54F;"><b>📝 ${escapeHtml(draftCompany)}</b><br><small style="color:#C8BCA6;">${escapeHtml(item.draftLead.volume || '')}</small></div>`
+      : `<span style="font-size:0.74rem;color:#B0A898;">${escapeHtml(item.action || 'Browsing Catalog')}</span>`;
 
     const score = calculateLeadScore(item);
     const scoreColor = score >= 75 ? '#81C784' : (score >= 45 ? '#FFD54F' : '#A0988A');
@@ -3050,8 +4978,11 @@ function renderAnalytics() {
     const scoreBorder = score >= 75 ? 'rgba(129,199,132,0.4)' : (score >= 45 ? 'rgba(255,213,79,0.35)' : 'rgba(160,152,138,0.25)');
     const scoreTier = score >= 75 ? 'Hot Lead' : (score >= 45 ? 'Warm Prospect' : 'Discovery');
 
+    const cleanIdx = Number(idx) || 0;
+    const scrollDepthSafe = Math.max(0, Math.min(100, Number(item.scrollDepth) || 50));
+
     return `
-      <tr style="cursor:pointer;" onclick="openSessionAuditModal(${idx})">
+      <tr style="cursor:pointer;" onclick="openSessionAuditModal(${cleanIdx})">
         <td>
           <div style="margin-bottom:4px;display:flex;align-items:center;justify-content:space-between;gap:6px;">
             ${pulseHtml}
@@ -3060,31 +4991,31 @@ function renderAnalytics() {
               <b>${score}</b><small style="font-size:0.56rem;opacity:0.65;">/100</small>
             </span>
           </div>
-          <b style="color:var(--gold-bright);font-family:var(--font-mono);font-size:0.78rem;">${item.id}</b>
-          <div style="font-size:0.65rem;color:var(--gold-bright);margin-top:2px;">${item.returningBadge || 'New Visitor'}</div>
+          <b style="color:var(--gold-bright);font-family:var(--font-mono);font-size:0.78rem;">${escapeHtml(item.id || '')}</b>
+          <div style="font-size:0.65rem;color:var(--gold-bright);margin-top:2px;">${escapeHtml(item.returningBadge || 'New Visitor')}</div>
         </td>
         <td>
-          <b style="color:#FFFFFF;font-size:0.84rem;">${item.origin}</b>
+          <b style="color:#FFFFFF;font-size:0.84rem;">${escapeHtml(item.origin || '')}</b>
         </td>
         <td>
-          <div style="font-size:0.75rem;color:#E0D8C8;max-width:140px;line-height:1.3;">${item.trafficSource || '🌐 Direct Navigation'}</div>
+          <div style="font-size:0.75rem;color:#E0D8C8;max-width:140px;line-height:1.3;">${escapeHtml(item.trafficSource || '🌐 Direct Navigation')}</div>
         </td>
         <td>
-          <div style="font-family:var(--font-mono);font-weight:700;color:#E0D8C8;font-size:0.75rem;">${item.ip || '103.21.124.50'}</div>
-          <small style="color:#81C784;font-size:0.66rem;display:block;margin-top:2px;">${item.botVerified || '🛡️ Verified Human'}</small>
+          <div style="font-family:var(--font-mono);font-weight:700;color:#E0D8C8;font-size:0.75rem;">${escapeHtml(item.ip || '103.21.124.50')}</div>
+          <small style="color:#81C784;font-size:0.66rem;display:block;margin-top:2px;">${escapeHtml(item.botVerified || '🛡️ Verified Human')}</small>
         </td>
         <td>
-          <div style="font-weight:600;color:#FFFFFF;font-size:0.75rem;">${item.device || '💻 Desktop'}</div>
-          <small style="color:#8C8275;font-size:0.65rem;display:block;max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${item.deviceSpecs || 'Windows 11'}</small>
+          <div style="font-weight:600;color:#FFFFFF;font-size:0.75rem;">${escapeHtml(item.device || '💻 Desktop')}</div>
+          <small style="color:#8C8275;font-size:0.65rem;display:block;max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escapeHtml(item.deviceSpecs || 'Windows 11')}</small>
         </td>
         <td>
           <div style="display:flex;align-items:center;gap:6px;margin-bottom:2px;">
             <div style="width:45px;height:5px;background:rgba(255,255,255,0.1);border-radius:3px;overflow:hidden;">
-              <div style="width:${item.scrollDepth || 50}%;height:100%;background:#81C784;"></div>
+              <div style="width:${scrollDepthSafe}%;height:100%;background:#81C784;"></div>
             </div>
-            <b style="font-family:var(--font-mono);color:#81C784;font-size:0.70rem;">${item.scrollDepth || 50}%</b>
+            <b style="font-family:var(--font-mono);color:#81C784;font-size:0.70rem;">${scrollDepthSafe}%</b>
           </div>
-          <small style="color:#C8BCA6;font-size:0.68rem;display:block;max-width:130px;line-height:1.2;">${item.activeSection || 'Storefront'}</small>
+          <small style="color:#C8BCA6;font-size:0.68rem;display:block;max-width:130px;line-height:1.2;">${escapeHtml(item.activeSection || 'Storefront')}</small>
         </td>
         <td>
           <div style="font-family:var(--font-mono);font-size:0.70rem;color:#81C784;font-weight:700;margin-bottom:3px;">
@@ -3096,7 +5027,7 @@ function renderAnalytics() {
           ${intentBadge}
         </td>
         <td>
-          <button type="button" class="btn-action" onclick="event.stopPropagation(); openSessionAuditModal(${idx});" style="padding:4px 8px;font-size:0.70rem;">
+          <button type="button" class="btn-action" onclick="event.stopPropagation(); openSessionAuditModal(${cleanIdx});" style="padding:4px 8px;font-size:0.70rem;">
             🔍 Inspect
           </button>
         </td>
@@ -3291,7 +5222,29 @@ function exportAnalyticsCSV() {
     const lots = (i.inspectedLots || []).join('; ');
     const pdfs = (i.downloadedPdfs || []).join('; ');
     const d = i.draftLead || {};
-    csv += `"${i.id}","${i.isLive ? 'LIVE' : 'IDLE'}","${i.origin}","${i.countryCode || ''}","${i.ip || ''}","${i.isp || ''}","${i.botVerified || ''}","${i.device || ''}","${i.deviceSpecs || ''}","${i.trafficSource || ''}","${i.timestamp}",${i.dwellSeconds || 0},"${formatDwell(i.dwellSeconds || 0)}","${i.scrollDepth || 0}%","${i.activeSection || ''}","${i.langSwitchHistory || ''}","${lots}","${pdfs}","${d.company || ''}","${d.email || ''}","${i.action || ''}"\n`;
+    csv += [
+      sanitizeCsvCell(i.id),
+      sanitizeCsvCell(i.isLive ? 'LIVE' : 'IDLE'),
+      sanitizeCsvCell(i.origin),
+      sanitizeCsvCell(i.countryCode || ''),
+      sanitizeCsvCell(i.ip || ''),
+      sanitizeCsvCell(i.isp || ''),
+      sanitizeCsvCell(i.botVerified || ''),
+      sanitizeCsvCell(i.device || ''),
+      sanitizeCsvCell(i.deviceSpecs || ''),
+      sanitizeCsvCell(i.trafficSource || ''),
+      sanitizeCsvCell(i.timestamp),
+      sanitizeCsvCell(i.dwellSeconds || 0),
+      sanitizeCsvCell(formatDwell(i.dwellSeconds || 0)),
+      sanitizeCsvCell(`${i.scrollDepth || 0}%`),
+      sanitizeCsvCell(i.activeSection || ''),
+      sanitizeCsvCell(i.langSwitchHistory || ''),
+      sanitizeCsvCell(lots),
+      sanitizeCsvCell(pdfs),
+      sanitizeCsvCell(d.company || ''),
+      sanitizeCsvCell(d.email || ''),
+      sanitizeCsvCell(i.action || '')
+    ].join(',') + '\n';
   });
 
   const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
@@ -3327,7 +5280,13 @@ if (typeof setInterval === 'function') {
 // Audit trail & compliance ledger
 async function fetchServerAuditLog() {
   try {
-    const res = await fetch('/api/audit?_t=' + Date.now());
+    const token = sessionStorage.getItem('gge_bearer_token') || localStorage.getItem('gge_admin_token');
+    const auditHeaders = {};
+    if (token) auditHeaders['Authorization'] = `Bearer ${token}`;
+    const res = await fetch('/api/audit?_t=' + Date.now(), {
+      headers: auditHeaders,
+      credentials: 'include'
+    });
     if (res.ok) {
       const data = await res.json();
       if (data && Array.isArray(data.audit) && data.audit.length > 0) {
@@ -3354,7 +5313,7 @@ function logAuditAction(action, entityId, previousState, newState, details) {
     const entry = {
       id: `AUD-${Date.now().toString(36).toUpperCase()}-${Math.floor(Math.random() * 900 + 100)}`,
       timestamp: new Date().toISOString(),
-      operator: sessionStorage.getItem('gge_admin_email') || 'nigadearyan@gmail.com',
+      operator: sessionStorage.getItem('gge_admin_email') || 'admin@goldenglobalexpo.com',
       action: action || 'OPERATION',
       entityId: entityId || 'SYSTEM',
       previousState: previousState !== undefined && previousState !== null ? String(previousState) : 'NONE',
@@ -3367,9 +5326,13 @@ function logAuditAction(action, entityId, previousState, newState, details) {
     renderAuditTrail();
 
     // Persist to central cloud ledger
+    const token = sessionStorage.getItem('gge_bearer_token') || localStorage.getItem('gge_admin_token');
+    const postHeaders = { 'Content-Type': 'application/json' };
+    if (token) postHeaders['Authorization'] = `Bearer ${token}`;
     fetch('/api/audit', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: postHeaders,
+      credentials: 'include',
       body: JSON.stringify(entry)
     }).catch(() => {});
   } catch (e) {
@@ -3418,8 +5381,54 @@ function clearAuditLog() {
   }
 }
 
+function toggleLetterheadView(mode) {
+  const textArea = document.getElementById('emBody');
+  const previewDiv = document.getElementById('emHtmlPreview');
+  const btnText = document.getElementById('btnTabLetterheadText');
+  const btnHtml = document.getElementById('btnTabLetterheadHtml');
+
+  if (mode === 'html') {
+    if (textArea) textArea.style.display = 'none';
+    if (previewDiv) {
+      previewDiv.style.display = 'block';
+      if (activeEmailPayload && activeEmailPayload.html) {
+        previewDiv.innerHTML = activeEmailPayload.html;
+      }
+    }
+    if (btnHtml) {
+      btnHtml.style.background = 'linear-gradient(135deg, #D9AC52 0%, #B8872F 100%)';
+      btnHtml.style.color = '#0D0A08';
+      btnHtml.style.fontWeight = '700';
+    }
+    if (btnText) {
+      btnText.style.background = 'rgba(255,255,255,0.08)';
+      btnText.style.color = '#E0D8C8';
+      btnText.style.fontWeight = 'normal';
+    }
+  } else {
+    if (previewDiv) previewDiv.style.display = 'none';
+    if (textArea) textArea.style.display = 'block';
+    if (btnText) {
+      btnText.style.background = 'linear-gradient(135deg, #D9AC52 0%, #B8872F 100%)';
+      btnText.style.color = '#0D0A08';
+      btnText.style.fontWeight = '700';
+    }
+    if (btnHtml) {
+      btnHtml.style.background = 'rgba(255,255,255,0.08)';
+      btnHtml.style.color = '#E0D8C8';
+      btnHtml.style.fontWeight = 'normal';
+    }
+  }
+}
+
 window.getAuditLog = getAuditLog;
 window.logAuditAction = logAuditAction;
 window.renderAuditTrail = renderAuditTrail;
 window.exportAuditLogJSON = exportAuditLogJSON;
 window.clearAuditLog = clearAuditLog;
+window.toggleLetterheadView = toggleLetterheadView;
+window.buildFormalQuotationHtml = buildFormalQuotationHtml;
+window.buildFormalQuotationText = buildFormalQuotationText;
+window.buildConsignmentEmailHtml = buildConsignmentEmailHtml;
+window.buildSampleAwbEmailHtml = buildSampleAwbEmailHtml;
+

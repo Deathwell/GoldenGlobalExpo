@@ -1,100 +1,91 @@
 """
-Golden Global Expo — Inquiries & Lead Management Router
+Golden Global Expo — Commercial Inquiries & RFQ Router
+Thin API controller delegating to InquiryService and repositories (SRP & SoC).
 """
 import os
+import re
+import json
 import time
 import secrets
-from fastapi import APIRouter, Request
+from fastapi import APIRouter, Request, Depends
 from fastapi.responses import JSONResponse
+from sqlalchemy import func as sa_func
+
+from backend.core.auth_dependency import require_auth, get_current_user_from_request
+from backend.core.security import RATE_LIMITER, get_client_ip
 from backend.core.config import BASE_DIR
 from backend.core.atomic_io import atomic_json_write
 from backend.core.events import broadcast_sse
-from backend.db import SessionLocal, InquiryModel
+from backend.db import SessionLocal, InquiryModel, DomesticOrderModel, AuditLogModel, DATA_DIR
+from backend.services.inquiry_service import InquiryService
+from backend.repositories.audit_repo import AuditRepository, compute_entry_hash
 
 router = APIRouter(tags=["Commercial Inquiries & RFQ"])
 
 @router.get("/api/inquiries")
-async def get_inquiries():
+async def get_inquiries(user: dict = Depends(require_auth())):
     session = SessionLocal()
     try:
-        records = session.query(InquiryModel).order_by(InquiryModel.created_at.desc()).all()
-        return {'success': True, 'inquiries': [r.to_dict() for r in records]}
+        return {'success': True, 'inquiries': InquiryService.list_inquiries(session)}
     finally:
         session.close()
 
 @router.post("/api/inquiries")
 async def save_inquiries(request: Request):
+    user = get_current_user_from_request(request)
     try:
-        data = await request.json()
-        if not data or (isinstance(data, dict) and not any(data.values())):
+        if not user:
+            client_ip = get_client_ip(request)
+            allowed, retry_after = RATE_LIMITER.is_allowed("save-inquiries", client_ip, max_requests=20, window_seconds=600)
+            if not allowed:
+                return JSONResponse(
+                    status_code=429,
+                    content={
+                        "success": False,
+                        "error": f"Rate limit exceeded: Too many inquiry submissions. Please wait {retry_after} seconds.",
+                        "retryAfter": retry_after
+                    },
+                    headers={"Retry-After": str(retry_after)}
+                )
+
+        try:
+            data = await request.json()
+        except json.JSONDecodeError:
+            return JSONResponse(status_code=400, content={'success': False, 'error': 'Invalid JSON payload.'})
+
+        if not isinstance(data, (dict, list)):
+            return JSONResponse(status_code=400, content={'success': False, 'error': 'Inquiry payload must be an object or list.'})
+
+        if not data or (isinstance(data, dict) and not any(str(v).strip() for v in data.values())):
             return JSONResponse(status_code=400, content={'success': False, 'error': 'Inquiry payload cannot be empty.'})
 
-        if isinstance(data, dict) and not data.get('name') and not data.get('email') and not data.get('phone') and not data.get('commodities'):
-            return JSONResponse(status_code=400, content={'success': False, 'error': 'Inquiry requires contact information or commodity selection.'})
+        items_to_save = data if isinstance(data, list) else [data]
 
         session = SessionLocal()
         try:
-            items_to_save = data if isinstance(data, list) else [data]
-            for item in items_to_save:
-                iid = item.get('id') or f"RFQ-{secrets.token_hex(4).upper()}"
-                record = session.query(InquiryModel).filter_by(id=iid).first()
-                if record:
-                    for field in ['name', 'company', 'email', 'phone', 'country', 'address', 'commodities', 'volume', 'incoterms', 'payable', 'status', 'date']:
-                        if field in item and item[field]:
-                            setattr(record, field, item[field])
-                    if 'blCode' in item and item['blCode']:
-                        record.bl_code = item['blCode']
-                    if 'createdAt' in item and item['createdAt']:
-                        try: record.created_at = float(item['createdAt'])
-                        except Exception: pass
-                    elif 'created_at' in item and item['created_at']:
-                        try: record.created_at = float(item['created_at'])
-                        except Exception: pass
-                else:
-                    c_time = float(item.get('createdAt') or item.get('created_at') or time.time())
-                    session.add(InquiryModel(
-                        id=iid,
-                        type=item.get('type', 'BULK_INQUIRY'),
-                        name=item.get('name', ''),
-                        company=item.get('company', ''),
-                        email=item.get('email', ''),
-                        phone=item.get('phone', ''),
-                        country=item.get('country', ''),
-                        address=item.get('address', ''),
-                        commodities=item.get('commodities', item.get('lotName', '')),
-                        volume=item.get('volume', ''),
-                        incoterms=item.get('incoterms', 'CIF'),
-                        payable=item.get('payable', ''),
-                        status=item.get('status', 'New RFQ'),
-                        bl_code=item.get('blCode', ''),
-                        date=item.get('date', time.strftime('%Y-%m-%d')),
-                        created_at=c_time
-                    ))
-            session.commit()
-
-            all_inqs = [r.to_dict() for r in session.query(InquiryModel).order_by(InquiryModel.created_at.desc()).all()]
-            try:
-                atomic_json_write(os.path.join(str(BASE_DIR), 'data', 'inquiries.json'), all_inqs)
-            except Exception: pass
-
-            broadcast_sse("NEW_INQUIRY", {"total": len(all_inqs), "timestamp": time.time()})
-            return {'success': True, 'message': 'Inquiries updated in ACID database.', 'total': len(all_inqs)}
+            return InquiryService.save_inquiries(items_to_save, user, session)
+        except ValueError as ve:
+            return JSONResponse(status_code=400, content={'success': False, 'error': str(ve)})
         finally:
             session.close()
     except Exception as e:
-        return JSONResponse(status_code=500, content={'success': False, 'error': str(e)})
+        import logging
+        logging.error(f"[INQUIRY SAVE ERROR] {e}", exc_info=True)
+        return JSONResponse(status_code=500, content={'success': False, 'error': 'Internal server error while processing inquiry.'})
 
 @router.delete("/api/inquiries/{inquiry_id}")
-async def delete_inquiry(inquiry_id: str):
+async def delete_inquiry(inquiry_id: str, user: dict = Depends(require_auth(["admin"]))):
     session = SessionLocal()
     try:
-        session.query(InquiryModel).filter_by(id=inquiry_id).delete()
-        session.commit()
-        all_inqs = [r.to_dict() for r in session.query(InquiryModel).order_by(InquiryModel.created_at.desc()).all()]
-        try:
-            atomic_json_write(os.path.join(str(BASE_DIR), 'data', 'inquiries.json'), all_inqs)
-        except Exception: pass
-        broadcast_sse("NEW_INQUIRY", {"total": len(all_inqs), "timestamp": time.time()})
-        return {'success': True, 'message': f'Inquiry {inquiry_id} deleted.'}
+        return InquiryService.delete_inquiry(
+            inquiry_id=inquiry_id,
+            operator=user.get("email") or "Trade Desk Admin",
+            session=session
+        )
+    except ValueError as ve:
+        return JSONResponse(status_code=400, content={'success': False, 'error': str(ve)})
+    except Exception as e:
+        session.rollback()
+        return JSONResponse(status_code=500, content={'success': False, 'error': str(e)})
     finally:
         session.close()

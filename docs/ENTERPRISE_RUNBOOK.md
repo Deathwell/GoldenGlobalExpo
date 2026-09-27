@@ -69,14 +69,14 @@ For client demonstrations, prospective buyer presentations, and executive review
 ### How to Demonstrate the Payment-to-Shipment Flow
 1. Navigate to the storefront: `https://your-domain.com/index.html`
 2. Scroll to the **Export Commodities Matrix** and click **"Inspect Certified Lots & Specifications"** on any product (e.g., Organic Turmeric Salem, Classic Toor Dal, or Cumin Seeds).
-3. In the drawer, click **"Request 500g Certified Sample Pouch ($1.00 USD / ₹85 INR)"**.
+3. In the drawer, click **"Request 500g Certified Sample Pouch (₹499 INR)"**.
 4. The **Sample Checkout Modal** will open, pre-configured with consignee details.
 5. Click **"🚀 Run Interactive Mock Gateway Demo (No Card Needed)"**.
 6. **Watch the live simulation**:
    - The modal initiates a 3-step banking switch authorization:
      1. *Contacting Card Issuer & Banking Node...* (0.6s)
      2. *Verifying 3D-Secure 2.0 OTP Clearance...* (0.6s)
-     3. *Settlement Captured: ₹1.00 ($1.00 USD) Settled to Escrow...* (0.4s)
+     3. *Settlement Captured: ₹499.00 Settled to Escrow...* (0.4s)
 7. **Immediate Real-Time Effects**:
    - The green tickmark confirmation receipt opens showing the Order ID (e.g., `GGE-SMP-8921`).
    - The order is logged into `data/enterprise.db` via ACID transaction.

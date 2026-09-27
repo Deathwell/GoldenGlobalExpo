@@ -44,7 +44,7 @@
     padding:14px 28px;
   }
   .header-wrap{
-    max-width:1240px; margin:0 auto;
+    max-width:1400px; margin:0 auto;
     display:flex; justify-content:space-between; align-items:center; gap:20px;
   }
   .admin-brand{
@@ -98,7 +98,7 @@
   .auth-error{ color:#FF8A80; font-family:var(--font-mono); font-size:0.75rem; margin-top:10px; display:none; }
 
   /* Main Container */
-  .admin-main{ max-width:1240px; margin:0 auto; padding:32px 24px 80px; width:100%; flex:1; }
+  .admin-main{ max-width:1400px; margin:0 auto; padding:32px 24px 80px; width:100%; flex:1; }
 
   /* KPI Summary Cards */
   .kpi-grid{
@@ -158,12 +158,48 @@
   table{ width:100%; border-collapse:collapse; text-align:left; font-size:0.85rem; }
   thead{ background:rgba(0,0,0,0.35); border-bottom:1px solid var(--line); }
   th{
-    padding:14px 18px; font-family:var(--font-mono); font-size:0.72rem; font-weight:600;
+    padding:12px 14px; font-family:var(--font-mono); font-size:0.72rem; font-weight:600;
     color:var(--gold-bright); text-transform:uppercase; letter-spacing:0.06em;
   }
   tbody tr{ border-bottom:1px solid rgba(245,239,224,0.06); transition:background 0.15s ease; }
   tbody tr:hover{ background:rgba(255,255,255,0.02); }
-  td{ padding:14px 18px; vertical-align:middle; }
+  td{ padding:12px 14px; vertical-align:middle; }
+
+  /* Inquiry CRM Table Layout & Action Buttons */
+  .inquiry-table {
+    width: 100%;
+    table-layout: auto;
+    border-collapse: collapse;
+  }
+  .inquiry-table th,
+  .inquiry-table td {
+    padding: 11px 12px;
+    vertical-align: middle;
+  }
+  .inquiry-table th {
+    white-space: nowrap;
+  }
+  .inquiry-actions-wrap {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    flex-wrap: wrap;
+  }
+  .btn-action--quote {
+    background: linear-gradient(135deg, #D9AC52 0%, #B8872F 100%) !important;
+    color: #0D0A08 !important;
+    border: none !important;
+    font-weight: 700 !important;
+    box-shadow: 0 2px 8px rgba(217,172,82,0.3) !important;
+    cursor: pointer !important;
+    white-space: nowrap !important;
+    transition: transform 0.15s ease, box-shadow 0.15s ease !important;
+  }
+  .btn-action--quote:hover {
+    transform: translateY(-1px) !important;
+    box-shadow: 0 4px 14px rgba(217,172,82,0.55) !important;
+    color: #000000 !important;
+  }
 
   .badge-status{
     font-family:var(--font-mono); font-size:0.68rem; font-weight:600; padding:4px 10px; border-radius:12px;
@@ -381,31 +417,57 @@
   }
   .header-actions {
     display: flex;
-    justify-content: space-between;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
     width: 100%;
   }
+  .header-actions .btn-site,
+  .header-actions .btn-logout {
+    padding: 5px 8px !important;
+    font-size: 0.70rem !important;
+  }
+  #roleBadge, #serverHealthBadge {
+    padding: 3px 8px !important;
+    font-size: 0.68rem !important;
+  }
   
-  .desk-main {
+  .admin-main {
     padding: 16px 12px !important;
   }
   
-  .nav-tabs {
-    display: flex;
-    overflow-x: auto;
-    white-space: nowrap;
-    -webkit-overflow-scrolling: touch;
-    gap: 4px;
-    padding-bottom: 6px;
-    border-bottom: 1px solid var(--line);
-    scrollbar-width: none;
+  .admin-tabs {
+    display: flex !important;
+    overflow-x: auto !important;
+    white-space: nowrap !important;
+    -webkit-overflow-scrolling: touch !important;
+    gap: 6px !important;
+    padding-bottom: 6px !important;
+    border-bottom: 1px solid var(--line) !important;
+    scrollbar-width: none !important;
   }
-  .nav-tabs::-webkit-scrollbar {
-    display: none;
+  .admin-tabs::-webkit-scrollbar {
+    display: none !important;
   }
   .tab-btn {
-    flex-shrink: 0;
-    padding: 8px 12px;
-    font-size: 0.72rem;
+    flex-shrink: 0 !important;
+    padding: 8px 12px !important;
+    font-size: 0.72rem !important;
+  }
+
+  /* Auth Card & OTP Verification Modal */
+  .auth-card {
+    padding: 24px 14px !important;
+    max-width: 95vw !important;
+  }
+  .otp-inputs-grid {
+    gap: clamp(4px, 1.8vw, 8px) !important;
+    margin: 16px 0 12px !important;
+  }
+  .otp-digit {
+    width: clamp(36px, 11vw, 46px) !important;
+    height: clamp(44px, 13vw, 54px) !important;
+    font-size: clamp(1.2rem, 4.5vw, 1.6rem) !important;
   }
 
   .kpi-grid {
@@ -444,23 +506,41 @@
     gap: 8px !important;
   }
 
-  /* Responsive scroll for all data tables */
-  .table-responsive, .inquiries-table-wrap, .consignments-table-wrap, .audit-table-wrap {
-    width: 100%;
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
+  /* Structured Document Slots */
+  .doc-slot-card {
+    grid-template-columns: 1fr !important;
+    gap: 8px !important;
   }
-  table {
-    min-width: 600px;
+
+  /* Responsive scroll for all data tables */
+  .table-card, .table-responsive, .inquiries-table-wrap, .consignments-table-wrap, .audit-table-wrap {
+    width: 100% !important;
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+  }
+  table, .admin-table, .dossier-table {
+    min-width: 600px !important;
   }
 
   /* Modals on mobile */
-  .admin-modal-overlay > div {
+  .modal-backdrop {
+    padding: 8px !important;
+  }
+  .modal-box {
     width: 96vw !important;
     max-width: 96vw !important;
-    max-height: 94vh !important;
+    max-height: 92vh !important;
     padding: 16px 12px !important;
-    margin: 8px !important;
+    margin: 4px !important;
+  }
+  .modal-box input,
+  .modal-box select,
+  .modal-box textarea {
+    font-size: 16px !important; /* Prevents iOS auto-zoom */
+  }
+  .modal-box div[style*="grid-template-columns"] {
+    grid-template-columns: 1fr !important;
+    gap: 10px !important;
   }
 }
 

@@ -244,6 +244,46 @@
       color: var(--muted);
       line-height: 1.4;
     }
+    .otp-box {
+      width: clamp(34px, 12vw, 46px);
+      height: clamp(42px, 14vw, 52px);
+      text-align: center;
+      background: rgba(10, 8, 6, 0.7);
+      border: 1px solid rgba(217, 172, 82, 0.3);
+      border-radius: 8px;
+      font-size: clamp(1.1rem, 4.5vw, 1.5rem);
+      font-weight: 700;
+      color: #FFFFFF;
+      font-family: 'JetBrains Mono', monospace;
+      outline: none;
+      box-sizing: border-box;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    .otp-box:focus {
+      border-color: var(--border-focus);
+      box-shadow: 0 0 12px rgba(217, 172, 82, 0.35);
+      background: rgba(15, 12, 8, 0.9);
+    }
+
+    @media (max-width: 480px) {
+      .login-container {
+        padding: 12px;
+      }
+      .login-card {
+        padding: 28px 18px;
+        border-radius: 10px;
+      }
+      .form-input {
+        font-size: 16px !important;
+      }
+      .brand-title {
+        font-size: 1.5rem;
+      }
+      .footer-links {
+        flex-direction: column;
+        gap: 10px;
+      }
+    }
   </style>
 </head>
 <body>
@@ -258,52 +298,90 @@
           </svg>
         </div>
         <h1 class="brand-title">Golden Global Expo</h1>
-        <div class="brand-subtitle">Executive Command Center</div>
+        <div class="brand-subtitle">Executive Command Center · A Six Lady Farmers Initiative</div>
       </div>
 
       <div id="alertBox" class="msg-box"></div>
 
-      <form id="loginForm" onsubmit="handleAdminLogin(event)">
-        <div class="form-group">
-          <label class="form-label" for="loginEmail">Authorized Executive ID / Email</label>
-          <div class="input-wrapper">
-            <span class="input-icon">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg>
-            </span>
-            <input type="email" id="loginEmail" class="form-input" placeholder="admin@goldenglobalexpo.com" value="admin@goldenglobalexpo.com" required autocomplete="username">
+      <form id="loginForm" onsubmit="handleStep1Submit(event)">
+        <!-- STEP 1: PASSWORD CREDENTIALS -->
+        <div id="step1Credentials">
+          <div class="form-group">
+            <label class="form-label" for="loginEmail">Authorized Executive ID / Email</label>
+            <div class="input-wrapper">
+              <span class="input-icon">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg>
+              </span>
+              <input type="email" id="loginEmail" class="form-input" placeholder="name@goldenglobalexpo.com" required autocomplete="username">
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="loginPassword">Master Secret Key / Password</label>
+            <div class="input-wrapper">
+              <span class="input-icon">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+              </span>
+              <input type="password" id="loginPassword" class="form-input" placeholder="••••••••••••" required autocomplete="current-password">
+              <button type="button" class="toggle-pwd" onclick="togglePasswordVisibility()" title="Show/Hide Password">
+                <svg id="eyeIcon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+              </button>
+            </div>
+          </div>
+
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;font-size:0.75rem;">
+            <label style="display:flex;align-items:center;gap:6px;cursor:pointer;color:var(--muted);">
+              <input type="checkbox" id="rememberSession" checked style="accent-color:var(--gold);">
+              <span>Remember terminal (24h)</span>
+            </label>
+            <span style="color:var(--gold);font-size:0.72rem;font-family:'JetBrains Mono',monospace;">2FA ENABLED</span>
+          </div>
+
+          <button type="submit" id="submitBtnStep1" class="btn-login">
+            <span>Verify Credentials &amp; Request 2FA</span>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+          </button>
+
+          <div class="credentials-hint">
+            🔒 <b>Enterprise Role-Based Access (RBAC)</b>:<br>
+            Please provide your designated executive credentials. A one-time verification passcode will be dispatched to your authorized terminal email.
           </div>
         </div>
 
-        <div class="form-group">
-          <label class="form-label" for="loginPassword">Master Secret Key / Password</label>
-          <div class="input-wrapper">
-            <span class="input-icon">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
-            </span>
-            <input type="password" id="loginPassword" class="form-input" placeholder="••••••••••••" value="GoldenAdmin2026!" required autocomplete="current-password">
-            <button type="button" class="toggle-pwd" onclick="togglePasswordVisibility()" title="Show/Hide Password">
-              <svg id="eyeIcon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
-            </button>
+        <!-- STEP 2: 2FA 6-DIGIT SECURITY CODE -->
+        <div id="step2OTP" style="display:none; animation: fadeIn 0.3s ease;">
+          <div style="text-align:center;margin-bottom:18px;">
+            <div style="display:inline-flex;align-items:center;gap:6px;padding:4px 12px;background:rgba(217,172,82,0.12);border:1px solid rgba(217,172,82,0.3);border-radius:16px;color:var(--gold);font-size:0.75rem;font-weight:600;text-transform:uppercase;letter-spacing:1px;margin-bottom:10px;">
+              <span>🛡️ Step 2: Two-Factor Verification</span>
+            </div>
+            <p style="font-size:0.82rem;color:var(--muted);line-height:1.5;margin:0;">
+              Enter the 6-digit authorization code dispatched to:<br>
+              <strong id="maskedEmailTarget" style="color:var(--gold-bright);font-family:'JetBrains Mono',monospace;"></strong>
+            </p>
           </div>
-        </div>
 
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;font-size:0.75rem;">
-          <label style="display:flex;align-items:center;gap:6px;cursor:pointer;color:var(--muted);">
-            <input type="checkbox" id="rememberSession" checked style="accent-color:var(--gold);">
-            <span>Remember terminal (24h)</span>
-          </label>
-          <span style="color:var(--gold);font-size:0.72rem;font-family:'JetBrains Mono',monospace;">ACID WAL MODE</span>
-        </div>
+          <div style="display:flex;justify-content:space-between;gap:8px;margin:20px 0;">
+            <input type="text" class="otp-box" maxlength="1" inputmode="numeric" pattern="[0-9]*" autocomplete="one-time-code">
+            <input type="text" class="otp-box" maxlength="1" inputmode="numeric" pattern="[0-9]*">
+            <input type="text" class="otp-box" maxlength="1" inputmode="numeric" pattern="[0-9]*">
+            <input type="text" class="otp-box" maxlength="1" inputmode="numeric" pattern="[0-9]*">
+            <input type="text" class="otp-box" maxlength="1" inputmode="numeric" pattern="[0-9]*">
+            <input type="text" class="otp-box" maxlength="1" inputmode="numeric" pattern="[0-9]*">
+          </div>
 
-        <button type="submit" id="submitBtn" class="btn-login">
-          <span>Authenticate &amp; Open Desk</span>
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
-        </button>
+          <button type="button" id="submitBtnStep2" class="btn-login" onclick="handleStep2Submit()">
+            <span>Authorize &amp; Open Command Desk</span>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+          </button>
 
-        <div class="credentials-hint">
-          🔑 <b>Default Master Access</b>:<br>
-          Email: <code style="color:var(--gold);">admin@goldenglobalexpo.com</code><br>
-          Password: <code style="color:var(--gold);">GoldenAdmin2026!</code> (or Master Code: <code style="color:var(--gold);">991448</code>)
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-top:16px;font-size:0.75rem;">
+            <button type="button" id="resendBtn" onclick="resend2FACode()" style="background:none;border:none;color:var(--gold);cursor:pointer;padding:0;font-size:0.75rem;text-decoration:underline;">Resend Code</button>
+            <button type="button" onclick="backToStep1()" style="background:none;border:none;color:var(--muted);cursor:pointer;padding:0;font-size:0.75rem;">← Re-enter Password</button>
+          </div>
+
+          <div class="credentials-hint" style="margin-top:16px;text-align:center;">
+            🛡️ <b>Security Notice</b>: Session will be cryptographically bound to this workstation upon 2FA verification.
+          </div>
         </div>
       </form>
 
@@ -313,13 +391,76 @@
       </div>
 
       <div class="security-tag">
-        🔒 256-BIT ENCRYPTED SESSION · ZERO EXPOSURE ARCHITECTURE
+        🔒 256-BIT ENCRYPTED 2FA SESSION · ZERO EXPOSURE ARCHITECTURE
+      </div>
+      <div style="margin-top: 14px; text-align: center; font-size: 0.68rem; color: rgba(245, 239, 224, 0.35); font-family: 'JetBrains Mono', monospace;">
+        © 2026 Golden Global Expo. A division of Six Lady Farmers. All rights reserved.
       </div>
     </div>
   </div>
 
+  <style>
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(6px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .otp-box {
+      width: 48px;
+      height: 52px;
+      text-align: center;
+      font-size: 1.35rem;
+      font-weight: 700;
+      font-family: 'JetBrains Mono', monospace;
+      background: rgba(10, 8, 6, 0.7);
+      border: 1px solid rgba(217, 172, 82, 0.35);
+      border-radius: 8px;
+      color: #F5EFDF;
+      outline: none;
+      transition: all 0.2s;
+    }
+    .otp-box:focus {
+      border-color: #D9AC52;
+      box-shadow: 0 0 12px rgba(217, 172, 82, 0.4);
+      background: rgba(18, 14, 10, 0.95);
+    }
+  </style>
+
   <script>
+    let current2FAEmail = '';
+    let currentRole = 'admin';
+
+    function getSafeRedirectUrl(param) {
+      if (!param) return 'desk.html';
+      const clean = param.trim();
+      const base = clean.split('?')[0].split('#')[0].toLowerCase();
+      if (base === '/login.html' || base === '/login' || base === 'login.html' || base === 'login') {
+        return 'desk.html';
+      }
+      if (clean.startsWith('/') && !clean.startsWith('//') && !clean.startsWith('/\\') && !clean.includes('\\')) {
+        return clean;
+      }
+      const allowedPages = ['desk.html', 'index.html', 'tracking.html', 'verify.html', 'download.html'];
+      if (allowedPages.includes(base) && !clean.includes(':') && !clean.includes('//') && !clean.includes('\\')) {
+        return clean;
+      }
+      return 'desk.html';
+    }
+
+    // Check existing session or lock notice
     (async function checkExistingSession() {
+      const urlParams = new URLSearchParams(window.location.search);
+      if (urlParams.get('locked') || urlParams.get('reason') === 'expired') {
+        localStorage.removeItem('gge_admin_token');
+        localStorage.removeItem('gge_admin_email');
+        localStorage.removeItem('gge_admin_role');
+        sessionStorage.removeItem('gge_bearer_token');
+        sessionStorage.removeItem('gge_admin_email');
+        sessionStorage.removeItem('gge_admin_session');
+        sessionStorage.removeItem('gge_admin_role');
+        showAlert('🔒 Desk terminal locked for security. Please authenticate with your 2FA credentials.', 'error');
+        return;
+      }
+
       try {
         const token = localStorage.getItem('gge_admin_token');
         if (token) {
@@ -329,12 +470,53 @@
           if (res.ok) {
             const data = await res.json();
             if (data.valid) {
-              window.location.href = 'desk.html';
+              localStorage.setItem('gge_admin_role', data.role || 'admin');
+              sessionStorage.setItem('gge_admin_role', data.role || 'admin');
+              const redirectParam = urlParams.get('redirect');
+              window.location.href = getSafeRedirectUrl(redirectParam);
             }
           }
         }
       } catch (e) {}
     })();
+
+    // Initialize OTP Digit Input Handlers
+    function initOTPBoxes() {
+      const boxes = document.querySelectorAll('.otp-box');
+      boxes.forEach((box, idx) => {
+        box.addEventListener('input', (e) => {
+          box.value = box.value.replace(/[^0-9]/g, '');
+          if (box.value && idx < boxes.length - 1) {
+            boxes[idx + 1].focus();
+          }
+          const fullCode = Array.from(boxes).map(b => b.value).join('');
+          if (fullCode.length === 6) {
+            handleStep2Submit();
+          }
+        });
+
+        box.addEventListener('keydown', (e) => {
+          if (e.key === 'Backspace' && !box.value && idx > 0) {
+            boxes[idx - 1].focus();
+          }
+          if (e.key === 'Enter') {
+            handleStep2Submit();
+          }
+        });
+
+        box.addEventListener('paste', (e) => {
+          e.preventDefault();
+          const pasteData = (e.clipboardData || window.clipboardData).getData('text').trim().replace(/[^0-9]/g, '');
+          if (pasteData.length >= 6) {
+            pasteData.substring(0, 6).split('').forEach((char, i) => {
+              if (boxes[i]) boxes[i].value = char;
+            });
+            boxes[5].focus();
+            handleStep2Submit();
+          }
+        });
+      });
+    }
 
     function togglePasswordVisibility() {
       const input = document.getElementById('loginPassword');
@@ -348,11 +530,12 @@
       }
     }
 
-    async function handleAdminLogin(e) {
+    // Step 1: Password Verification ➔ Request 2FA OTP
+    async function handleStep1Submit(e) {
       e.preventDefault();
       const email = document.getElementById('loginEmail').value.trim();
       const password = document.getElementById('loginPassword').value.trim();
-      const btn = document.getElementById('submitBtn');
+      const btn = document.getElementById('submitBtnStep1');
       const alertBox = document.getElementById('alertBox');
 
       alertBox.style.display = 'none';
@@ -364,10 +547,10 @@
       }
 
       btn.disabled = true;
-      btn.innerHTML = '<span>Verifying Credentials...</span>';
+      btn.innerHTML = '<span>Verifying Password... ⏳</span>';
 
       try {
-        const res = await fetch('/api/admin/login', {
+        const res = await fetch('/api/admin/login-step1', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ email: email, password: password })
@@ -375,30 +558,149 @@
 
         const data = await res.json();
 
-        if (res.ok && data.success) {
-          showAlert('✅ Credentials verified. Launching Command Center...', 'success');
-          if (data.token) {
-            localStorage.setItem('gge_admin_token', data.token);
-            localStorage.setItem('gge_admin_email', data.email || email);
-          }
+        if (res.ok && data.success && data.requires2FA) {
+          current2FAEmail = data.email || email;
+          currentRole = data.role || 'admin';
+          document.getElementById('maskedEmailTarget').textContent = data.maskedEmail || current2FAEmail;
+
+          // Transition to Step 2
+          document.getElementById('step1Credentials').style.display = 'none';
+          document.getElementById('step2OTP').style.display = 'block';
+          showAlert('✅ Password verified. 6-digit security code sent to your registered email.', 'success');
+
+          initOTPBoxes();
           setTimeout(() => {
-            const redirectParam = new URLSearchParams(window.location.search).get('redirect') || 'desk.html';
-            window.location.href = redirectParam;
-          }, 400);
+            const firstBox = document.querySelector('.otp-box');
+            if (firstBox) firstBox.focus();
+          }, 150);
         } else {
-          showAlert(data.error || 'Authentication rejected. Check credentials.', 'error');
+          showAlert(data.error || 'Authentication rejected. Check password or access key.', 'error');
           btn.disabled = false;
-          btn.innerHTML = '<span>Authenticate &amp; Open Desk</span>';
+          btn.innerHTML = '<span>Verify Credentials &amp; Request 2FA</span>';
         }
       } catch (err) {
         showAlert('Network or server error during authentication.', 'error');
         btn.disabled = false;
-        btn.innerHTML = '<span>Authenticate &amp; Open Desk</span>';
+        btn.innerHTML = '<span>Verify Credentials &amp; Request 2FA</span>';
       }
+    }
+
+    // Step 2: Verify 6-digit OTP Code
+    async function handleStep2Submit() {
+      const boxes = document.querySelectorAll('.otp-box');
+      const code = Array.from(boxes).map(b => b.value).join('').trim();
+      const btn = document.getElementById('submitBtnStep2');
+
+      if (code.length < 6) {
+        showAlert('Please enter the complete 6-digit security passcode.', 'error');
+        return;
+      }
+
+      btn.disabled = true;
+      btn.innerHTML = '<span>Verifying 2FA Security Code... ⏳</span>';
+
+      try {
+        const res = await fetch('/api/auth/verify-otp', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({
+            email: current2FAEmail,
+            otp: code,
+            role: currentRole
+          })
+        });
+
+        const data = await res.json();
+
+        if (res.ok && data.success && data.token) {
+          showAlert('🔓 Two-Factor Authorization verified. Opening Command Desk...', 'success');
+          localStorage.setItem('gge_admin_token', data.token);
+          localStorage.setItem('gge_admin_email', data.email || current2FAEmail);
+          localStorage.setItem('gge_admin_role', data.role || currentRole);
+          sessionStorage.setItem('gge_bearer_token', data.token);
+          sessionStorage.setItem('gge_admin_email', data.email || current2FAEmail);
+          sessionStorage.setItem('gge_admin_role', data.role || currentRole);
+          sessionStorage.setItem('gge_admin_session', JSON.stringify({
+            authenticated: true,
+            email: data.email || current2FAEmail,
+            role: data.role || currentRole,
+            token: data.token,
+            expiresAt: Date.now() + 86400000
+          }));
+
+          setTimeout(() => {
+            const redirectParam = new URLSearchParams(window.location.search).get('redirect');
+            window.location.href = getSafeRedirectUrl(redirectParam);
+          }, 350);
+        } else {
+          showAlert(data.error || 'Invalid or expired 2FA code. Please re-enter.', 'error');
+          btn.disabled = false;
+          btn.innerHTML = '<span>Authorize &amp; Open Command Desk</span>';
+        }
+      } catch (err) {
+        showAlert('Network error verifying 2FA code.', 'error');
+        btn.disabled = false;
+        btn.innerHTML = '<span>Authorize &amp; Open Command Desk</span>';
+      }
+    }
+
+    async function resend2FACode() {
+      const email = document.getElementById('loginEmail').value.trim();
+      const password = document.getElementById('loginPassword').value.trim();
+      const resendBtn = document.getElementById('resendBtn');
+
+      resendBtn.disabled = true;
+      resendBtn.textContent = 'Sending...';
+
+      try {
+        const res = await fetch('/api/admin/login-step1', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: email, password: password })
+        });
+        const data = await res.json();
+        if (res.ok && data.success) {
+          showAlert('🔄 New 6-digit security code dispatched to your email.', 'success');
+          document.querySelectorAll('.otp-box').forEach(b => b.value = '');
+          const first = document.querySelector('.otp-box');
+          if (first) first.focus();
+        } else {
+          showAlert(data.error || 'Failed to resend code.', 'error');
+        }
+      } catch (e) {
+        showAlert('Network error resending code.', 'error');
+      }
+
+      let countdown = 30;
+      const timer = setInterval(() => {
+        countdown--;
+        if (countdown > 0) {
+          resendBtn.textContent = `Resend in ${countdown}s`;
+        } else {
+          clearInterval(timer);
+          resendBtn.disabled = false;
+          resendBtn.textContent = 'Resend Code';
+        }
+      }, 1000);
+    }
+
+    function backToStep1() {
+      document.getElementById('step2OTP').style.display = 'none';
+      document.getElementById('step1Credentials').style.display = 'block';
+      const btn = document.getElementById('submitBtnStep1');
+      btn.disabled = false;
+      btn.innerHTML = '<span>Verify Credentials &amp; Request 2FA</span>';
+      showAlert('', 'none');
+      document.getElementById('alertBox').style.display = 'none';
     }
 
     function showAlert(msg, type) {
       const alertBox = document.getElementById('alertBox');
+      if (type === 'none' || !msg) {
+        alertBox.style.display = 'none';
+        return;
+      }
       alertBox.textContent = msg;
       alertBox.className = 'msg-box msg-' + type;
       alertBox.style.display = 'block';

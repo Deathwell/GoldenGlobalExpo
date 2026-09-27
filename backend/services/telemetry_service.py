@@ -19,6 +19,8 @@ def get_db_latency_ms() -> float:
     try:
         session.execute(text("SELECT 1;"))
         session.commit()
+    except Exception:
+        return -1.0
     finally:
         session.close()
     return round((time.perf_counter() - start) * 1000.0, 3)

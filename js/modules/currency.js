@@ -11,29 +11,29 @@ let currentCurrency = 'USD';
 const exchangeRates = {
   // Global & Americas
   USD: { rate: 1.0, symbol: "$", code: "USD", name: "US Dollar", region: "major", format: "Approx. $%v / MT", decimals: 2 },
-  CAD: { rate: 1.36, symbol: "C$", code: "CAD", name: "Canadian Dollar", region: "major", format: "Approx. C$%v / MT", decimals: 2 },
-  EUR: { rate: 0.925, symbol: "€", code: "EUR", name: "Euro", region: "major", format: "Approx. €%v / MT", decimals: 2 },
-  GBP: { rate: 0.792, symbol: "£", code: "GBP", name: "British Pound", region: "major", format: "Approx. £%v / MT", decimals: 2 },
+  CAD: { rate: 1.386, symbol: "C$", code: "CAD", name: "Canadian Dollar", region: "major", format: "Approx. C$%v / MT", decimals: 2 },
+  EUR: { rate: 0.8625, symbol: "€", code: "EUR", name: "Euro", region: "major", format: "Approx. €%v / MT", decimals: 2 },
+  GBP: { rate: 0.7395, symbol: "£", code: "GBP", name: "British Pound", region: "major", format: "Approx. £%v / MT", decimals: 2 },
   
   // Oceania
-  AUD: { rate: 1.54, symbol: "A$", code: "AUD", name: "Australian Dollar", region: "oceania", format: "Approx. A$%v / MT", decimals: 2 },
-  NZD: { rate: 1.68, symbol: "NZ$", code: "NZD", name: "New Zealand Dollar", region: "oceania", format: "Approx. NZ$%v / MT", decimals: 2 },
+  AUD: { rate: 1.398, symbol: "A$", code: "AUD", name: "Australian Dollar", region: "oceania", format: "Approx. A$%v / MT", decimals: 2 },
+  NZD: { rate: 1.721, symbol: "NZ$", code: "NZD", name: "New Zealand Dollar", region: "oceania", format: "Approx. NZ$%v / MT", decimals: 2 },
 
   // ASEAN & Asia
-  SGD: { rate: 1.35, symbol: "S$", code: "SGD", name: "Singapore Dollar", region: "asean", format: "Approx. S$%v / MT", decimals: 2 },
-  MYR: { rate: 4.45, symbol: "RM", code: "MYR", name: "Malaysian Ringgit", region: "asean", format: "Approx. RM%v / MT", decimals: 2 },
-  THB: { rate: 34.50, symbol: "฿", code: "THB", name: "Thai Baht", region: "asean", format: "Approx. ฿%v / MT", decimals: 2 },
-  IDR: { rate: 16200, symbol: "Rp", code: "IDR", name: "Indonesian Rupiah", region: "asean", format: "Approx. Rp %v / MT", decimals: 0 },
-  VND: { rate: 25400, symbol: "₫", code: "VND", name: "Vietnamese Dong", region: "asean", format: "Approx. %v ₫ / MT", decimals: 0 },
-  CNY: { rate: 7.24, symbol: "¥", code: "CNY", name: "Chinese Yuan", region: "asean", format: "约 ¥%v / 吨", decimals: 2 },
-  INR: { rate: 95.00, symbol: "₹", code: "INR", name: "Indian Rupee", region: "asean", format: "Approx. ₹%v / MT", decimals: 2 },
-  JPY: { rate: 155.0, symbol: "¥", code: "JPY", name: "Japanese Yen", region: "east-asia", format: "約 ¥%v / MT", decimals: 0 },
-  KRW: { rate: 1380.0, symbol: "₩", code: "KRW", name: "South Korean Won", region: "east-asia", format: "약 ₩%v / MT", decimals: 0 },
+  SGD: { rate: 1.267, symbol: "S$", code: "SGD", name: "Singapore Dollar", region: "asean", format: "Approx. S$%v / MT", decimals: 2 },
+  MYR: { rate: 4.07, symbol: "RM", code: "MYR", name: "Malaysian Ringgit", region: "asean", format: "Approx. RM%v / MT", decimals: 2 },
+  THB: { rate: 31.85, symbol: "฿", code: "THB", name: "Thai Baht", region: "asean", format: "Approx. ฿%v / MT", decimals: 2 },
+  IDR: { rate: 17620, symbol: "Rp", code: "IDR", name: "Indonesian Rupiah", region: "asean", format: "Approx. Rp %v / MT", decimals: 0 },
+  VND: { rate: 25870, symbol: "₫", code: "VND", name: "Vietnamese Dong", region: "asean", format: "Approx. %v ₫ / MT", decimals: 0 },
+  CNY: { rate: 6.715, symbol: "¥", code: "CNY", name: "Chinese Yuan", region: "asean", format: "约 ¥%v / 吨", decimals: 2 },
+  INR: { rate: 95.70, symbol: "₹", code: "INR", name: "Indian Rupee", region: "asean", format: "Approx. ₹%v / MT", decimals: 2 },
+  JPY: { rate: 153.60, symbol: "¥", code: "JPY", name: "Japanese Yen", region: "east-asia", format: "約 ¥%v / MT", decimals: 0 },
+  KRW: { rate: 1342.0, symbol: "₩", code: "KRW", name: "South Korean Won", region: "east-asia", format: "약 ₩%v / MT", decimals: 0 },
 
   // Middle East & GCC
   AED: { rate: 3.6725, symbol: "AED", code: "AED", name: "UAE Dirham", region: "mena", format: "تقريباً %v AED / MT", decimals: 2 },
   SAR: { rate: 3.75, symbol: "SAR", code: "SAR", name: "Saudi Riyal", region: "mena", format: "تقريباً %v SAR / MT", decimals: 2 },
-  RUB: { rate: 92.5, symbol: "₽", code: "RUB", name: "Russian Ruble", region: "major", format: "Прибл. %v ₽ / MT", decimals: 2 },
+  RUB: { rate: 84.50, symbol: "₽", code: "RUB", name: "Russian Ruble", region: "major", format: "Прибл. %v ₽ / MT", decimals: 2 },
   QAR: { rate: 3.64, symbol: "QAR", code: "QAR", name: "Qatari Riyal", region: "mena", format: "تقريباً %v QAR / MT", decimals: 2 }
 };
 
@@ -131,7 +131,22 @@ function applyCurrency(curr) {
       const rawVal = baseUsd * cfg.rate;
       const converted = isZeroDec ? Math.round(rawVal) : Math.round(rawVal * 100) / 100;
       const formatted = formatCurrencyNumber(converted, curr);
-      el.textContent = cfg.format.replace('%v', formatted);
+      const formattedPrice = cfg.format.replace('%v', formatted);
+      if (card) {
+        card.dataset.exportPriceText = formattedPrice;
+      }
+      if (window.currentMarketSegment === 'domestic') {
+        const domCatalog = window.domesticCommodityCatalog || {};
+        if (lotId && domCatalog[lotId] && domCatalog[lotId].packs && domCatalog[lotId].packs['500g']) {
+          el.textContent = `From ₹${domCatalog[lotId].packs['500g']} / 500g`;
+          el.style.color = '#81C784';
+          el.style.borderColor = 'rgba(129,199,132,0.4)';
+        }
+      } else {
+        el.textContent = formattedPrice;
+        el.style.color = '';
+        el.style.borderColor = '';
+      }
     }
   });
 }
@@ -252,12 +267,24 @@ async function fetchLiveForexRates() {
 
 function updateForexLiveBadge(source = '') {
   if (typeof document === 'undefined') return;
+  const inrRate = exchangeRates.INR ? exchangeRates.INR.rate.toFixed(2) : '95.70';
+  const eurRate = exchangeRates.EUR ? exchangeRates.EUR.rate.toFixed(3) : '0.862';
+  const aedRate = exchangeRates.AED ? exchangeRates.AED.rate.toFixed(2) : '3.67';
+
   const badge = document.getElementById('forexLiveStatus');
-  if (badge && exchangeRates.INR && exchangeRates.EUR) {
-    const rateInr = exchangeRates.INR.rate.toFixed(2);
-    const rateEur = exchangeRates.EUR.rate.toFixed(3);
-    badge.innerHTML = `⚡ Live Forex: 1 USD = ₹${rateInr} INR · €${rateEur} EUR`;
+  if (badge) {
+    badge.innerHTML = `⚡ Live Forex: 1 USD = ₹${inrRate} INR · €${eurRate} EUR`;
     badge.title = `Real-time dynamic exchange rates active (${source})`;
+  }
+
+  const popoverSummary = document.getElementById('currLiveRateSummary');
+  if (popoverSummary) {
+    popoverSummary.textContent = `1 USD = ₹${inrRate} INR`;
+  }
+
+  const deskBadge = document.getElementById('deskForexBadge');
+  if (deskBadge) {
+    deskBadge.textContent = `⚡ Live Global Forex Active: 1 USD = ₹${inrRate} INR · €${eurRate} EUR · ${aedRate} AED`;
   }
 }
 
@@ -265,6 +292,38 @@ function updateForexLiveBadge(source = '') {
 if (typeof window !== 'undefined') {
   if (typeof setTimeout !== 'undefined') setTimeout(fetchLiveForexRates, 100);
   if (typeof setInterval !== 'undefined') setInterval(fetchLiveForexRates, 10 * 60 * 1000);
+
+  // Real-time Server-Sent Events (SSE) listener for push forex and pricing updates
+  if (typeof EventSource !== 'undefined') {
+    try {
+      const forexSse = new EventSource('/api/stream/events');
+      forexSse.addEventListener('FOREX_UPDATED', (e) => {
+        try {
+          const payload = JSON.parse(e.data);
+          if (payload && payload.rates) {
+            Object.keys(exchangeRates).forEach(code => {
+              if (payload.rates[code] !== undefined && parseFloat(payload.rates[code]) > 0) {
+                exchangeRates[code].rate = parseFloat(payload.rates[code]);
+              }
+            });
+            try {
+              localStorage.setItem('gge_live_forex_rates', JSON.stringify(payload.rates));
+            } catch (_) {}
+            updateForexLiveBadge('sse_push');
+            syncLiveProductPrices();
+            applyCurrency(currentCurrency);
+          } else {
+            fetchLiveForexRates();
+          }
+        } catch (_) {
+          fetchLiveForexRates();
+        }
+      });
+      forexSse.addEventListener('PRICE_UPDATED', () => {
+        syncLiveProductPrices();
+      });
+    } catch (_) {}
+  }
 }
 
 // Global Exports and Institutional Namespacing

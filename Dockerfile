@@ -31,8 +31,8 @@ RUN groupadd -g 10001 exportgroup && \
 # Copy application source code
 COPY . .
 
-# Ensure data and cache directories exist with correct permissions
-RUN mkdir -p /app/data && \
+# Ensure data, uploads, and cache directories exist with correct permissions
+RUN mkdir -p /app/data /app/uploads/documents && \
     chown -R exportuser:exportgroup /app
 
 # Switch to non-root security context

@@ -28,6 +28,14 @@ backups/
 Thumbs.db
 desktop.ini
 
-# Node / Scratch
+# Node / Scratch / Test Results
 node_modules/
 scratch/
+playwright-report/
+test-results/
+*.log
+data/test_env/
+uploads/
+images/products_ai_backup/
+images/staging_*/
+images/test_*

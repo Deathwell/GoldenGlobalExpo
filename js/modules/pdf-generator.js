@@ -34,7 +34,7 @@ const pdfTranslations = {
     qaSignatory: "Dr. R. K. Sharma — 品質保証および輸出コンプライアンス総責任者",
     qaSeal: "公式品質検定印",
     qaVerified: "出荷検査合格",
-    footer: "ゴールデン・グローバル・エキスポ (Golden Global Expo) · インド・ムンバイ · nigadearyan@gmail.com",
+    footer: "ゴールデン・グローバル・エキスポ (Golden Global Expo) · インド・ムンバイ · export@goldenglobalexpo.com",
     params: {
       purity: "ソーテックス光学選別純度 (Sortex Clean)",
       moisture: "水分含有量 (AOAC 925.10 減圧乾燥法)",
@@ -77,7 +77,7 @@ const pdfTranslations = {
     qaSignatory: "Dr. R. K. Sharma — 품질보증 및 수출 컴플라이언스 총괄",
     qaSeal: "공식 품질 검정 인",
     qaVerified: "시험 적합 합격",
-    footer: "골든 글로벌 엑스포 (Golden Global Expo) · 인도 뭄바이 본사 · nigadearyan@gmail.com",
+    footer: "골든 글로벌 엑스포 (Golden Global Expo) · 인도 뭄바이 본사 · export@goldenglobalexpo.com",
     params: {
       purity: "광학 소텍스 색채 선별 순도 (Sortex Clean)",
       moisture: "수분 함유량 (AOAC 925.10 진공 건조법)",
@@ -120,7 +120,7 @@ const pdfTranslations = {
     qaSignatory: "Dr. R. K. Sharma — 质量保证与出口合规总监",
     qaSeal: "官方质量认证章",
     qaVerified: "化验合格放行",
-    footer: "金色环球世博 (Golden Global Expo) · 印度孟买瓦达拉东区出口总部 · nigadearyan@gmail.com",
+    footer: "金色环球世博 (Golden Global Expo) · 印度孟买瓦达拉东区出口总部 · export@goldenglobalexpo.com",
     params: {
       purity: "色选物理纯度 (Sortex Clean)",
       moisture: "水分含量 (AOAC 925.10 真空干燥)",
@@ -163,7 +163,7 @@ const pdfTranslations = {
     qaSignatory: "د. ر. ك. شارما — رئيس قسم ضمان الجودة والامتثال التصديري",
     qaSeal: "ختم الجودة المعتمد",
     qaVerified: "مطابق للمواصفات",
-    footer: "غولدن غلوبال إكسبو (Golden Global Expo) · المقر الرئيسي مومباي، الهند · nigadearyan@gmail.com",
+    footer: "غولدن غلوبال إكسبو (Golden Global Expo) · المقر الرئيسي مومباي، الهند · export@goldenglobalexpo.com",
     params: {
       purity: "النقاوة ونظافة الفرز الليزري (Sortex)",
       moisture: "نسبة الرطوبة (AOAC 925.10)",
@@ -206,7 +206,7 @@ const pdfTranslations = {
     qaSignatory: "डॉ. आर. के. शर्मा — गुणवत्ता आश्वासन एवं निर्यात अनुपालन प्रमुख",
     qaSeal: "गुणवत्ता सील",
     qaVerified: "परीक्षण सत्यापित",
-    footer: "गोल्डन ग्लोबल एक्सपो · वडाला ईस्ट, मुंबई 400037, भारत · nigadearyan@gmail.com",
+    footer: "गोल्डन ग्लोबल एक्सपो · वडाला ईस्ट, मुंबई 400037, भारत · export@goldenglobalexpo.com",
     params: {
       purity: "सॉर्टेक्स भौतिक शुद्धता (Sortex Clean)",
       moisture: "नमी की मात्रा (AOAC 925.10)",
@@ -249,7 +249,7 @@ const pdfTranslations = {
     qaSignatory: "Dr. R. K. Sharma — Director de Calidad y Cumplimiento de Exportación",
     qaSeal: "SELLO DE CALIDAD GGE",
     qaVerified: "VERIFICADO QA",
-    footer: "Golden Global Expo · Sede Central Wadala East, Mumbai, India · nigadearyan@gmail.com",
+    footer: "Golden Global Expo · Sede Central Wadala East, Mumbai, India · export@goldenglobalexpo.com",
     params: {
       purity: "Pureza Física Óptica (Sortex)",
       moisture: "Contenido de Humedad (AOAC 925.10)",
@@ -292,7 +292,7 @@ const pdfTranslations = {
     qaSignatory: "Dr. R. K. Sharma — Responsable Assurance Qualité & Conformité Export",
     qaSeal: "SCEAU DE QUALITÉ GGE",
     qaVerified: "VÉRIFIÉ ET CONFORME",
-    footer: "Golden Global Expo · Siège Social Wadala East, Mumbai, Inde · nigadearyan@gmail.com",
+    footer: "Golden Global Expo · Siège Social Wadala East, Mumbai, Inde · export@goldenglobalexpo.com",
     params: {
       purity: "Pureté Physique (Tri Optique Sortex)",
       moisture: "Teneur en Humidité (AOAC 925.10)",
@@ -335,7 +335,7 @@ const pdfTranslations = {
     qaSignatory: "Dr. R. K. Sharma — Leiter Qualitätssicherung & Export-Compliance",
     qaSeal: "GGE QUALITÄTSSIEGEL",
     qaVerified: "GEPRÜFT & FREIGEGEBEN",
-    footer: "Golden Global Expo · Export-Zentrale Wadala East, Mumbai, Indien · nigadearyan@gmail.com",
+    footer: "Golden Global Expo · Export-Zentrale Wadala East, Mumbai, Indien · export@goldenglobalexpo.com",
     params: {
       purity: "Physikalische Sortex-Reinheit",
       moisture: "Feuchtigkeitsgehalt (AOAC 925.10)",
@@ -379,7 +379,7 @@ const pdfTranslations = {
     qaSignatory: "ดร. อาร์. เค. ชาร์มา — หัวหน้าฝ่ายควบคุมคุณภาพและมาตรฐานการส่งออก GGE",
     qaSeal: "ตราประทับคุณภาพ GGE",
     qaVerified: "ผ่านการตรวจสอบคุณภาพสมบูรณ์",
-    footer: "โกลเด้น โกลบอล เอ็กซ์โป (Golden Global Expo) · สำนักงานใหญ่ส่งออก วาดาลา อีสต์, มุมไบ, อินเดีย · nigadearyan@gmail.com",
+    footer: "โกลเด้น โกลบอล เอ็กซ์โป (Golden Global Expo) · สำนักงานใหญ่ส่งออก วาดาลา อีสต์, มุมไบ, อินเดีย · export@goldenglobalexpo.com",
     params: {
       purity: "ความบริสุทธิ์ทางกายภาพ (คัดแยก Sortex)",
       moisture: "ปริมาณความชื้นสูงสุด (AOAC 925.10)",
@@ -422,7 +422,7 @@ const pdfTranslations = {
     qaSignatory: "Dr. R. K. Sharma — Kepala Jaminan Mutu & Kepatuhan Ekspor GGE Mumbai",
     qaSeal: "SEGEL MUTU GGE",
     qaVerified: "TERUJI & MEMENUHI SYARAT",
-    footer: "Golden Global Expo — Rumah Ekspor Resmi · Wadala East, Mumbai 400037, India · nigadearyan@gmail.com",
+    footer: "Golden Global Expo — Rumah Ekspor Resmi · Wadala East, Mumbai 400037, India · export@goldenglobalexpo.com",
     params: {
       purity: "Kemurnian Fisik (Sortex Clean)",
       moisture: "Kadar Air Maksimum (AOAC 925.10)",
@@ -465,7 +465,7 @@ const pdfTranslations = {
     qaSignatory: "Dr. R. K. Sharma — Ketua Jaminan Kualiti & Pematuhan Eksport GGE Mumbai",
     qaSeal: "METERAI KUALITI GGE",
     qaVerified: "DIUJI & MEMATUHI SPESIFIKASI",
-    footer: "Golden Global Expo — Rumah Eksport Berkanun · Wadala East, Mumbai 400037, India · nigadearyan@gmail.com",
+    footer: "Golden Global Expo — Rumah Eksport Berkanun · Wadala East, Mumbai 400037, India · export@goldenglobalexpo.com",
     params: {
       purity: "Ketulenan Fizikal (Sortex Clean)",
       moisture: "Had Kelembapan (AOAC 925.10)",
@@ -508,7 +508,7 @@ const pdfTranslations = {
     qaSignatory: "Dr. R. K. Sharma — Trưởng Bộ Phận Đảm Bảo Chất Lượng & Pháp Lý Xuất Khẩu",
     qaSeal: "DẤU CHẤT LƯỢNG GGE",
     qaVerified: "ĐÃ KIỂM ĐỊNH & ĐẠT CHUẨN",
-    footer: "Golden Global Expo — Doanh Nghiệp Xuất Khẩu · Wadala East, Mumbai, Ấn Độ · nigadearyan@gmail.com",
+    footer: "Golden Global Expo — Doanh Nghiệp Xuất Khẩu · Wadala East, Mumbai, Ấn Độ · export@goldenglobalexpo.com",
     params: {
       purity: "Độ Tinh Khiết (Sortex Quang Học)",
       moisture: "Độ Ẩm Tối Đa (AOAC 925.10)",
@@ -551,7 +551,7 @@ const pdfTranslations = {
     qaSignatory: "Д-р Р. К. Шарма — Руководитель отдела контроля качества и экспортного соответствия GGE Мумбаи",
     qaSeal: "ПЕЧАТЬ КАЧЕСТВА GGE",
     qaVerified: "КОНТРОЛЬ ПРОЙДЕН · СООТВЕТСТВУЕТ",
-    footer: "Golden Global Expo — Признанный экспортный дом · Wadala East, Mumbai 400037, India · nigadearyan@gmail.com",
+    footer: "Golden Global Expo — Признанный экспортный дом · Wadala East, Mumbai 400037, India · export@goldenglobalexpo.com",
     params: {
       purity: "Физическая чистота (Очистка Sortex Clean)",
       moisture: "Содержание влаги (AOAC 925.10)",
@@ -594,7 +594,7 @@ const pdfTranslations = {
     qaSignatory: "Dr. R. K. Sharma — Head of Quality Assurance & Export Compliance, GGE Mumbai",
     qaSeal: "GGE QUALITY SEAL",
     qaVerified: "QA INSPECTED & CONFORMING",
-    footer: "Golden Global Expo — Statutory Export House · Wadala East, Mumbai 400037, India · nigadearyan@gmail.com",
+    footer: "Golden Global Expo — Statutory Export House · Wadala East, Mumbai 400037, India · export@goldenglobalexpo.com",
     params: {
       purity: "Physical Purity (Sortex Clean)",
       moisture: "Moisture Content (AOAC 925.10)",
@@ -645,7 +645,7 @@ async function downloadSpecPDF(lotId) {
     name: "Classic Toor (Tur Dal)",
     botanical: "Cajanus cajan",
     hs: "0713.60",
-    image: "images/products/toor_dal.jpg",
+    image: "images/products/toor_dal.jpg?v=6",
     purity: "99.5% Min (Sortex Clean Grade-A)",
     moisture: "10.0% – 12.0% Max",
     admixture: "0.5% Max",
@@ -807,7 +807,7 @@ async function downloadSpecPDF(lotId) {
                 </svg>
               </div>
               <div style="font-size: 10.5px; font-weight: 800; color: #14110E; line-height: 1.2;">
-                Aryan Nigade
+                Authorized Signatory
               </div>
               <div style="font-size: 8px; color: #5C5243; line-height: 1.3;">
                 Chief Commercial Officer &amp; Authorized Signatory · Trade Operations
@@ -817,18 +817,23 @@ async function downloadSpecPDF(lotId) {
               </div>
             </div>
 
-            <!-- Cryptographic Verification Hash & Clearance Stamp -->
-            <div style="flex-shrink: 0; text-align: right; background: #FFFFFF; border: 1px solid #E0D5BE; padding: 7px 11px; border-radius: 3px; max-width: 200px;">
-              <div style="display: inline-flex; align-items: center; gap: 3px; color: #1E6E28; font-size: 8px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 2px;">
-                <span>✓</span> STATUTORY CLEARANCE VALIDATED
+            <!-- Cryptographic Verification Hash & Clearance Stamp with Scannable QR -->
+            <div style="flex-shrink: 0; display: flex; align-items: center; gap: 8px; background: #FFFFFF; border: 1px solid #E0D5BE; padding: 6px 10px; border-radius: 3px;">
+              <div>
+                ${typeof generateVerificationQRSVG === 'function' ? generateVerificationQRSVG(spec.lot || 'GGE-TR-2026-A1', 64) : '<div style="width:64px;height:64px;background:#FAF7EE;border:1px solid #C4A45A;display:flex;align-items:center;justify-content:center;font-size:6.5px;color:#785514;font-weight:bold;text-align:center;">SCAN TO<br>VERIFY</div>'}
               </div>
-              <div style="font-family: monospace; font-size: 7.2px; color: #2A241C; line-height: 1.35; word-break: break-all;">
-                <b>DIGITAL SEAL SHA-256:</b><br>
-                <span style="color: #8C2A1E; font-weight: 700;">8F3B9A12-D07E-4C98-B214-E82C0194FA88</span>
-              </div>
-              <div style="font-size: 7.2px; color: #736959; margin-top: 3px; line-height: 1.25;">
-                Gateway: <b>JNPT Port Customs (INNSA1)</b><br>
-                Regulatory Filing: <b>APEDA/EXP/2026/GGE</b>
+              <div style="text-align: right; max-width: 175px;">
+                <div style="display: inline-flex; align-items: center; gap: 3px; color: #1E6E28; font-size: 7.5px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 2px;">
+                  <span>✓</span> STATUTORY CLEARANCE VALIDATED
+                </div>
+                <div style="font-family: monospace; font-size: 6.8px; color: #2A241C; line-height: 1.3; word-break: break-all;">
+                  <b>DIGITAL SEAL SHA-256:</b><br>
+                  <span style="color: #8C2A1E; font-weight: 700;">8F3B9A12-D07E-4C98-B214-E82C0194FA88</span>
+                </div>
+                <div style="font-size: 6.8px; color: #736959; margin-top: 2px; line-height: 1.2;">
+                  Scan QR for instant verification<br>
+                  Gateway: <b>JNPT Customs (INNSA1)</b>
+                </div>
               </div>
             </div>
 
@@ -901,16 +906,104 @@ function downloadMasterCatalog() {
  */
 async function generateProformaInvoicePDF(orderData) {
   orderData = orderData || {};
-  const refCode = orderData.refCode || ('GGE-PRF-' + Math.floor(100000 + Math.random() * 900000));
-  const buyerName = orderData.buyerName || 'Valued Commercial Importer';
-  const buyerCompany = orderData.buyerCompany || 'International Trading House';
-  const destinationPort = orderData.destinationPort || 'Jebel Ali, Dubai (UAE)';
-  const commodityName = orderData.commodityName || 'Sortex Grade-A Toor Dal (Pigeon Peas)';
-  const tonnage = parseFloat(orderData.tonnage) || 24.0;
-  const unitPrice = parseFloat(orderData.unitPrice) || 980.00;
-  const incoterm = orderData.incoterm || 'CIF Jebel Ali (Incoterms 2020)';
-  const totalValue = (tonnage * unitPrice).toFixed(2);
+  const refCode = orderData.refCode || ('GGE-RFQ-' + Math.floor(100000 + Math.random() * 900000));
+  const buyerName = orderData.buyerName || 'Valued Commercial Buyer';
+  const buyerCompany = orderData.buyerCompany || 'Prospective Trading Enterprise';
+  const destinationPort = orderData.destinationPort || 'International Destination Port';
+  const commodityName = orderData.commodityName || 'Sortex Grade-A Agri-Commodity';
+  const incoterm = orderData.incoterm || `CIF ${destinationPort} (Incoterms 2020)`;
   const dateStr = new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+
+  // Commodity benchmark lookup (HS code, default USD per MT)
+  function resolveCommodityAssay(name) {
+    const raw = (name || '').toLowerCase();
+    if (typeof defaultPrices !== 'undefined' && defaultPrices) {
+      for (const p of Object.values(defaultPrices)) {
+        const pName = (p.name || '').toLowerCase();
+        if (raw.includes(pName) || pName.includes(raw.split(' ')[0])) {
+          return { hs: p.hs || '0713.60.00', baseUsd: p.baseUsd || 820 };
+        }
+      }
+    }
+    if (raw.includes('toor') || raw.includes('pigeon')) return { hs: '0713.60.00', baseUsd: 820 };
+    if (raw.includes('moong') || raw.includes('mung')) return { hs: '0713.31.00', baseUsd: 840 };
+    if (raw.includes('chana') || raw.includes('bengal')) return { hs: '0713.20.00', baseUsd: 760 };
+    if (raw.includes('masoor') || raw.includes('lentil')) return { hs: '0713.40.00', baseUsd: 790 };
+    if (raw.includes('chia')) return { hs: '1207.99.00', baseUsd: 1850 };
+    if (raw.includes('coriander seed') || raw.includes('dhania')) return { hs: '0909.21.00', baseUsd: 1420 };
+    if (raw.includes('cumin') || raw.includes('jeera')) return { hs: '0909.31.00', baseUsd: 3800 };
+    if (raw.includes('moringa')) return { hs: '1211.90.00', baseUsd: 3800 };
+    if (raw.includes('mint') || raw.includes('pudina')) return { hs: '1211.90.00', baseUsd: 3200 };
+    if (raw.includes('coriander powder')) return { hs: '0909.22.00', baseUsd: 1650 };
+    if (raw.includes('sorghum') || raw.includes('jowar')) return { hs: '1007.90.00', baseUsd: 520 };
+    if (raw.includes('tissue')) return { hs: '4818.10.00', baseUsd: 1150 };
+    if (raw.includes('emmer') || raw.includes('khapli') || raw.includes('wheat')) return { hs: '1001.99.00', baseUsd: 680 };
+    if (raw.includes('ghee')) return { hs: '0405.90.00', baseUsd: 6800 };
+    if (raw.includes('spice') || raw.includes('masala')) return { hs: '0910.91.00', baseUsd: 2450 };
+    return { hs: '0713.60.00', baseUsd: 820 };
+  }
+
+  // Build line items strictly in Quintals or Kilograms (NEVER MT)
+  let lineItems = [];
+  if (orderData.manifest && Array.isArray(orderData.manifest) && orderData.manifest.length > 0) {
+    lineItems = orderData.manifest.map(row => {
+      const q = parseFloat(row.quantity) || 1;
+      const u = (row.unit || 'Quintals').trim();
+      const isKg = u.toUpperCase() === 'KG' || u.toLowerCase().includes('kilo');
+      const assay = resolveCommodityAssay(row.commodity);
+
+      // Price: baseUsd is per MT (1 MT = 10 Quintals = 1,000 KG)
+      const unitRate = isKg ? (assay.baseUsd / 1000) : (assay.baseUsd / 10);
+      const totalAmount = q * unitRate;
+
+      const qtyLabel = isKg
+        ? `${Math.round(q).toLocaleString()} KG (${(q / 100).toFixed(1)} QTL)`
+        : `${q.toFixed(1)} QTL (${Math.round(q * 100).toLocaleString()} KG)`;
+
+      const unitPriceLabel = isKg
+        ? `$${unitRate.toFixed(2)} / KG`
+        : `$${unitRate.toFixed(2)} / QTL`;
+
+      return {
+        name: row.commodity || 'Export Grade Commodity',
+        hs: assay.hs,
+        quantity: qtyLabel,
+        unitPrice: unitPriceLabel,
+        amount: totalAmount
+      };
+    });
+  } else {
+    // Fallback: parse volume string or tonnage into Quintals/KG
+    const rawVolumeStr = String(orderData.volume || '');
+    const isKg = rawVolumeStr.toUpperCase().includes('KG') && !rawVolumeStr.toUpperCase().includes('QTL') && !rawVolumeStr.toLowerCase().includes('quintal');
+    
+    let parsedQty = parseFloat(rawVolumeStr) || parseFloat(orderData.tonnage) || 10.0;
+    if (!orderData.volume && orderData.tonnage && !rawVolumeStr) {
+      parsedQty = parsedQty * 10; // Convert legacy MT parameter to Quintals
+    }
+
+    const assay = resolveCommodityAssay(commodityName);
+    const unitRate = isKg ? (assay.baseUsd / 1000) : (assay.baseUsd / 10);
+    const totalAmount = parsedQty * unitRate;
+
+    const qtyLabel = isKg
+      ? `${Math.round(parsedQty).toLocaleString()} KG (${(parsedQty / 100).toFixed(1)} QTL)`
+      : `${parsedQty.toFixed(1)} QTL (${Math.round(parsedQty * 100).toLocaleString()} KG)`;
+
+    const unitPriceLabel = isKg
+      ? `$${unitRate.toFixed(2)} / KG`
+      : `$${unitRate.toFixed(2)} / QTL`;
+
+    lineItems.push({
+      name: commodityName,
+      hs: assay.hs,
+      quantity: qtyLabel,
+      unitPrice: unitPriceLabel,
+      amount: totalAmount
+    });
+  }
+
+  const grandTotal = lineItems.reduce((acc, it) => acc + it.amount, 0).toFixed(2);
 
   const printContainer = document.createElement('div');
   printContainer.id = 'proformaPrintContainer';
@@ -940,85 +1033,104 @@ async function generateProformaInvoicePDF(orderData) {
           </div>
           <div style="font-size: 8.5px; color: #5C5243; margin-top: 4px; line-height: 1.35;">
             Corporate Office: 402, Trade Avenue, Bandra-Kurla Complex (BKC), Mumbai - 400051 (MH), India<br>
-            IEC Number: <b>0324098214</b> · APEDA Reg: <b>APEDA/W/2026/GGE</b> · GSTIN: <b>27AABCG1234F1Z8</b>
+            IEC Number: <b>AAGPB8439A</b> · APEDA Reg: <b>APEDA/W/2026/GGE</b> · GSTIN: <b>27AAGPB8439A1Z1</b>
           </div>
         </div>
 
-        <div style="text-align: right; background: #FAF7F0; border: 1px solid #E0D5BE; padding: 8px 12px; border-radius: 4px; min-width: 180px;">
-          <div style="font-size: 12px; font-weight: 900; color: #785514; letter-spacing: 1px; text-transform: uppercase;">
-            PROFORMA INVOICE
+        <div style="text-align: right; background: #FAF7F0; border: 1px solid #E0D5BE; padding: 8px 12px; border-radius: 4px; min-width: 195px;">
+          <div style="font-size: 11px; font-weight: 900; color: #785514; letter-spacing: 0.8px; text-transform: uppercase;">
+            COMMERCIAL INQUIRY &amp; ESTIMATE
+          </div>
+          <div style="font-size: 7.5px; font-weight: 700; color: #8A6D2B; text-transform: uppercase; margin-top: 1px;">
+            INDICATIVE EXPORT RFQ SUMMARY
           </div>
           <div style="font-family: monospace; font-size: 10px; font-weight: 800; color: #14110E; margin-top: 3px;">
-            ${refCode}
+            REF: ${refCode}
           </div>
-          <div style="font-size: 8.5px; color: #5C5243; margin-top: 3px;">
+          <div style="font-size: 8.5px; color: #5C5243; margin-top: 3px; line-height: 1.35;">
             Date: <b>${dateStr}</b><br>
-            Validity: <b>14 Days from Issuance</b>
+            Estimate Validity: <b>14 Days from Submission</b><br>
+            Status: <b style="color: #1E6E28;">Inquiry Received · Under Review</b>
           </div>
         </div>
       </div>
 
-      <!-- Consignee & Shipment Dispatch Metadata -->
+      <!-- Prospective Inquiring Party & Indicative Shipping Metadata -->
       <div style="display: flex; gap: 14px; margin-bottom: 14px;">
         <div style="flex: 1; background: #FDFBF7; border: 1px solid #E5E0D5; padding: 9px 12px; border-radius: 3px;">
           <div style="font-size: 8.5px; text-transform: uppercase; font-weight: 800; color: #8A6D2B; margin-bottom: 3px;">
-            CONSIGNEE / VALUED BUYER
+            PROSPECTIVE BUYER / INQUIRING PARTY
           </div>
           <div style="font-size: 11px; font-weight: 800; color: #14110E;">${buyerCompany}</div>
-          <div style="font-size: 9.5px; color: #40382E; margin-top: 2px;">Attn: ${buyerName}</div>
-          <div style="font-size: 9px; color: #5C5243; margin-top: 2px;">Destination Country: <b>${destinationPort}</b></div>
+          <div style="font-size: 9.5px; color: #40382E; margin-top: 2px;">Attn / Representative: ${buyerName}</div>
+          <div style="font-size: 9px; color: #5C5243; margin-top: 2px;">Requested Destination: <b>${destinationPort}</b></div>
         </div>
 
         <div style="flex: 1; background: #FDFBF7; border: 1px solid #E5E0D5; padding: 9px 12px; border-radius: 3px;">
           <div style="font-size: 8.5px; text-transform: uppercase; font-weight: 800; color: #8A6D2B; margin-bottom: 3px;">
-            COMMERCIAL SHIPPING TERMS
+            INDICATIVE SHIPPING &amp; LOGISTICS TERMS
           </div>
-          <div>• <b>Delivery Incoterm:</b> ${incoterm}</div>
+          <div>• <b>Requested Incoterm:</b> ${incoterm}</div>
           <div>• <b>Port of Loading:</b> JNPT (Nhava Sheva, Mumbai - INNSA1)</div>
-          <div>• <b>Port of Discharge:</b> ${destinationPort}</div>
-          <div>• <b>Shipment Mode:</b> Full Container Load (FCL) · 20' GP Box</div>
+          <div>• <b>Requested Discharge Port:</b> ${destinationPort}</div>
+          <div>• <b>Shipment Mode:</b> Containerized Consignment (FCL / LCL Batch)</div>
         </div>
       </div>
 
       <!-- Line Item Table -->
-      <table style="width: 100%; border-collapse: collapse; margin-bottom: 14px; font-size: 9.5px;">
+      <table style="width: 100%; border-collapse: collapse; margin-bottom: 6px; font-size: 9.5px;">
         <thead>
           <tr style="background: #14110E; color: #F5EFE0; text-align: left;">
             <th style="padding: 7px 10px; border: 1px solid #14110E;">ITEM DESCRIPTION</th>
             <th style="padding: 7px 10px; border: 1px solid #14110E; text-align: center;">HS CODE</th>
-            <th style="padding: 7px 10px; border: 1px solid #14110E; text-align: right;">QUANTITY</th>
-            <th style="padding: 7px 10px; border: 1px solid #14110E; text-align: right;">UNIT PRICE (USD)</th>
-            <th style="padding: 7px 10px; border: 1px solid #14110E; text-align: right;">TOTAL AMOUNT</th>
+            <th style="padding: 7px 10px; border: 1px solid #14110E; text-align: right;">REQUESTED QUANTITY</th>
+            <th style="padding: 7px 10px; border: 1px solid #14110E; text-align: right;">INDICATIVE PRICE (USD)</th>
+            <th style="padding: 7px 10px; border: 1px solid #14110E; text-align: right;">ESTIMATED TOTAL</th>
           </tr>
         </thead>
         <tbody>
-          <tr>
-            <td style="padding: 8px 10px; border: 1px solid #E5E0D5;">
-              <b>${commodityName}</b><br>
-              <span style="font-size: 8.5px; color: #5C5243;">Machine Cleaned, 100% Sortex Optical Pure, Max 12% Moisture, 50kg PP Woven Export Bags</span>
-            </td>
-            <td style="padding: 8px 10px; border: 1px solid #E5E0D5; text-align: center; font-family: monospace;">0713.60.00</td>
-            <td style="padding: 8px 10px; border: 1px solid #E5E0D5; text-align: right; font-weight: 700;">${tonnage.toFixed(1)} MT</td>
-            <td style="padding: 8px 10px; border: 1px solid #E5E0D5; text-align: right; font-family: monospace;">$${unitPrice.toFixed(2)}</td>
-            <td style="padding: 8px 10px; border: 1px solid #E5E0D5; text-align: right; font-weight: 800; color: #1E6E28; font-family: monospace;">$${totalValue}</td>
-          </tr>
+          ${lineItems.map(it => `
+            <tr>
+              <td style="padding: 8px 10px; border: 1px solid #E5E0D5;">
+                <b>${it.name}</b><br>
+                <span style="font-size: 8.5px; color: #5C5243;">Sortex Grade-A Optical Pure, Machine Cleaned &amp; Moisture Controlled, Standard Export Packaging</span>
+              </td>
+              <td style="padding: 8px 10px; border: 1px solid #E5E0D5; text-align: center; font-family: monospace;">${it.hs}</td>
+              <td style="padding: 8px 10px; border: 1px solid #E5E0D5; text-align: right; font-weight: 700; color: #14110E;">${it.quantity}</td>
+              <td style="padding: 8px 10px; border: 1px solid #E5E0D5; text-align: right; font-family: monospace;">${it.unitPrice}</td>
+              <td style="padding: 8px 10px; border: 1px solid #E5E0D5; text-align: right; font-weight: 800; color: #1E6E28; font-family: monospace;">$${it.amount.toFixed(2)}</td>
+            </tr>
+          `).join('')}
         </tbody>
         <tfoot>
           <tr style="background: #FAF7F0;">
             <td colspan="4" style="padding: 8px 10px; border: 1px solid #E5E0D5; text-align: right; font-weight: 800;">
-              TOTAL PROFORMA CONTRACT VALUE (USD):
+              TOTAL ESTIMATED INQUIRY VALUE (USD):
             </td>
             <td style="padding: 8px 10px; border: 1px solid #E5E0D5; text-align: right; font-weight: 900; font-size: 12px; color: #785514; font-family: monospace;">
-              $${totalValue}
+              $${grandTotal}
             </td>
           </tr>
         </tfoot>
       </table>
 
-      <!-- Banking Remittance Routing & SWIFT Block -->
+      <!-- Footnote explaining this is an estimate -->
+      <div style="font-size: 8px; color: #736959; margin-top: 2px; margin-bottom: 12px; font-style: italic;">
+        * Indicative price estimate based on current Mumbai APMC benchmark spot rates. Final quotation, freight routing, and dispatch schedule will be confirmed by our trade desk upon review.
+      </div>
+
+      <!-- Institutional Banking Coordinates (Clarified for Onboarding, No Immediate Payment) -->
       <div style="background: #FAF8F3; border: 1px solid #E0D5BE; padding: 10px 14px; border-radius: 4px; margin-bottom: 14px; font-size: 9px; line-height: 1.5;">
-        <div style="font-size: 8.5px; text-transform: uppercase; font-weight: 800; color: #785514; margin-bottom: 4px;">
-          🏦 OFFICIAL BANK WIRE REMITTANCE INSTRUCTIONS (USD / EUR TRADE ACCOUNT)
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+          <div style="font-size: 8.5px; text-transform: uppercase; font-weight: 800; color: #785514;">
+            🏦 TRADE SETTLEMENT BANK PARTICULARS (FOR INSTITUTIONAL VENDOR ONBOARDING)
+          </div>
+          <div style="font-size: 8px; font-weight: 700; color: #8C2A1E; background: rgba(140,42,30,0.08); padding: 2px 6px; border-radius: 2px;">
+            INQUIRY STAGE — NO PAYMENT REQUIRED
+          </div>
+        </div>
+        <div style="font-size: 8px; color: #5C5243; margin-bottom: 6px; line-height: 1.35;">
+          Our export desk will review your inquiry specifications and get back to you with formal booking confirmation. The statutory banking coordinates below are provided for corporate vendor registration and trade clearance:
         </div>
         <div style="display: flex; justify-content: space-between; gap: 12px;">
           <div>
@@ -1034,7 +1146,7 @@ async function generateProformaInvoicePDF(orderData) {
         </div>
       </div>
 
-      <!-- High-DPI Official Corporate Seal & Signatory Block -->
+      <!-- High-DPI Corporate Seal & Signatory Review Block -->
       <div style="background: #FAF7F0; border: 1.5px solid #C4A45A; border-radius: 4px; padding: 12px 16px;">
         <div style="display: flex; justify-content: space-between; align-items: center; gap: 14px;">
           
@@ -1063,10 +1175,10 @@ async function generateProformaInvoicePDF(orderData) {
             </svg>
           </div>
 
-          <!-- Authorized Executive Signature -->
+          <!-- Trade Desk Officer Signature -->
           <div style="flex: 1; padding-left: 10px; border-left: 1px solid #E0D5BE;">
             <div style="font-size: 8px; text-transform: uppercase; letter-spacing: 1px; color: #8A6D2B; font-weight: 700; margin-bottom: 2px;">
-              OFFICIALLY ENDORSED &amp; DIGITALLY SIGNED
+              COMMERCIAL TRADE DESK ACKNOWLEDGEMENT
             </div>
             <div style="margin: 1px 0;">
               <svg width="140" height="32" viewBox="0 0 170 38" fill="none" style="display: block;">
@@ -1075,36 +1187,41 @@ async function generateProformaInvoicePDF(orderData) {
               </svg>
             </div>
             <div style="font-size: 10.5px; font-weight: 800; color: #14110E; line-height: 1.2;">
-              Aryan Nigade
+              Trade Operations Desk
             </div>
             <div style="font-size: 8px; color: #5C5243; line-height: 1.3;">
-              Chief Commercial Officer &amp; Authorized Signatory · Trade Operations
+              Export Commercial Desk · Trade Operations &amp; Consignment Review
             </div>
             <div style="font-size: 7.8px; color: #8A6D2B; font-weight: 600;">
-              For &amp; on Behalf of <b>GOLDEN GLOBAL EXPO (INDIA)</b>
+              For &amp; on Behalf of <b>GOLDEN GLOBAL EXPO (MUMBAI DESK)</b>
             </div>
           </div>
 
-          <!-- Digital Cryptographic Hash -->
-          <div style="flex-shrink: 0; text-align: right; background: #FFFFFF; border: 1px solid #E0D5BE; padding: 7px 11px; border-radius: 3px; max-width: 200px;">
-            <div style="display: inline-flex; align-items: center; gap: 3px; color: #1E6E28; font-size: 8px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 2px;">
-              <span>✓</span> TRADE FINANCE SIGN-OFF
+          <!-- Digital Cryptographic Hash & Scannable QR -->
+          <div style="flex-shrink: 0; display: flex; align-items: center; gap: 8px; background: #FFFFFF; border: 1px solid #E0D5BE; padding: 6px 10px; border-radius: 3px;">
+            <div>
+              ${typeof generateVerificationQRSVG === 'function' ? generateVerificationQRSVG(refCode, 64) : '<div style="width:64px;height:64px;background:#FAF7EE;border:1px solid #C4A45A;display:flex;align-items:center;justify-content:center;font-size:6.5px;color:#785514;font-weight:bold;text-align:center;">SCAN TO<br>VERIFY</div>'}
             </div>
-            <div style="font-family: monospace; font-size: 7.2px; color: #2A241C; line-height: 1.35; word-break: break-all;">
-              <b>VERIFIED CONTRACT HASH:</b><br>
-              <span style="color: #8C2A1E; font-weight: 700;">8F3B9A12-D07E-4C98-B214-E82C0194FA88</span>
-            </div>
-            <div style="font-size: 7.2px; color: #736959; margin-top: 3px; line-height: 1.25;">
-              Clearing Gate: <b>Port JNPT (INNSA1)</b><br>
-              Filing Protocol: <b>UCP 600 / DGFT 2026</b>
+            <div style="text-align: right; max-width: 175px;">
+              <div style="display: inline-flex; align-items: center; gap: 3px; color: #1E6E28; font-size: 7.5px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 2px;">
+                <span>✓</span> INQUIRY RECORDED
+              </div>
+              <div style="font-family: monospace; font-size: 6.8px; color: #2A241C; line-height: 1.3; word-break: break-all;">
+                <b>INQUIRY AUDIT REF:</b><br>
+                <span style="color: #8C2A1E; font-weight: 700;">${refCode}</span>
+              </div>
+              <div style="font-size: 6.8px; color: #736959; margin-top: 2px; line-height: 1.2;">
+                Scan QR to verify inquiry reference<br>
+                GGE APEDA / DGFT Commercial Desk
+              </div>
             </div>
           </div>
 
         </div>
 
-        <!-- ICC UCP 600 Legal Presentation Clause -->
+        <!-- Inquiry Acknowledgement Notice -->
         <div style="margin-top: 8px; padding-top: 6px; border-top: 1px dashed #D6C8AC; font-size: 7.2px; color: #695E4F; line-height: 1.35; text-align: justify;">
-          <b>INTERNATIONAL LETTER OF CREDIT VALIDATION:</b> This formal Proforma Invoice is issued under the statutory purview of the Ministry of Commerce &amp; Industry (Govt. of India), DGFT and APEDA export regulations. It complies with <b>ICC Uniform Customs and Practice for Documentary Credits (UCP 600)</b>, and constitutes a binding commercial quotation for Letter of Credit (LC at Sight) presentation and foreign exchange allocation.
+          <b>EXPORT INQUIRY &amp; ESTIMATE ACKNOWLEDGEMENT:</b> This document acknowledges receipt of your commercial export inquiry submitted to Golden Global Expo (Govt. of India Recognized Export House · APEDA &amp; DGFT Registered). This document is an initial inquiry summary and indicative cost estimate; <b>it does not constitute an accepted order, purchase confirmation, or binding contract</b>. Our Mumbai trade desk is reviewing your commodity selection, current port spot rates, and container availability, and our trade representative will contact you directly with formal proforma contract terms.
         </div>
       </div>
 
@@ -1127,19 +1244,19 @@ async function generateProformaInvoicePDF(orderData) {
       const imgData = canvas.toDataURL('image/jpeg', 0.95);
       pdf.addImage(imgData, 'JPEG', 0, 0, 210, 297);
 
-      const filename = `${refCode}_PROFORMA_INVOICE.pdf`;
+      const filename = `${refCode}_INQUIRY_ESTIMATE.pdf`;
       pdf.save(filename);
       if (typeof logTelemetryPdfDownload === 'function') {
         logTelemetryPdfDownload(filename);
       }
       if (typeof showToast === 'function') {
-        showToast(`📄 Downloaded Certified Proforma: ${filename}`);
+        showToast(`📄 Downloaded Export Inquiry Summary: ${filename}`);
       }
     } else {
       window.print();
     }
   } catch (err) {
-    console.error('Proforma Generation Error:', err);
+    console.error('Inquiry PDF Generation Error:', err);
     window.print();
   } finally {
     if (printContainer.parentNode) {
@@ -1148,6 +1265,7 @@ async function generateProformaInvoicePDF(orderData) {
   }
 }
 window.generateProformaInvoicePDF = generateProformaInvoicePDF;
+window.generateInquiryEstimatePDF = generateProformaInvoicePDF;
 
 window.downloadSpecPDF = downloadSpecPDF;
 window.downloadActiveCOA = downloadActiveCOA;

@@ -1,15 +1,17 @@
 
 function downloadSubmittedProforma(refId, company, name, commodities, volume, country) {
   if (typeof window.generateProformaInvoicePDF === 'function') {
-    const tons = parseFloat(volume) || 24.0;
+    const manifest = (window.rfqManifest && Array.isArray(window.rfqManifest) && window.rfqManifest.length > 0)
+      ? window.rfqManifest
+      : null;
     window.generateProformaInvoicePDF({
       refCode: refId,
       buyerName: name || 'Commercial Representative',
       buyerCompany: company || 'International Trading House',
       destinationPort: country || 'Jebel Ali, Dubai (UAE)',
       commodityName: commodities || 'Sortex Grade-A Pulses',
-      tonnage: tons,
-      unitPrice: 980.00,
+      volume: volume,
+      manifest: manifest,
       incoterm: `CIF ${country || 'Destination Port'} (Incoterms 2020)`
     });
   } else {
@@ -29,95 +31,376 @@ function escapeHtml(str) {
 window.escapeHtml = escapeHtml;
 
 
-// Volume capacity validation
-function handleVolumeUnitChange() {
-  const unitEl = document.getElementById('rfqVolumeUnit');
-  const valInp = document.getElementById('rfqVolumeVal');
-  const hint = document.getElementById('volumeHint');
-  if (!unitEl || !valInp) return;
+// ==========================================================================
+// MULTI-PRODUCT CONSIGNMENT MANIFEST BUILDER & VOLUME ENGINE
+// ==========================================================================
 
-  const unit = unitEl.value;
-  if (unit === 'Quintals') {
-    valInp.min = 3;
-    valInp.max = 22;
-    valInp.step = 0.5;
-    let cur = parseFloat(valInp.value) || 10;
-    if (cur > 22) valInp.value = 22;
-    if (cur < 3) valInp.value = 3;
-  } else {
-    // KG
-    valInp.min = 300;
-    valInp.max = 2200;
-    valInp.step = 50;
-    let cur = parseFloat(valInp.value) || 1000;
-    if (cur < 300) valInp.value = 300;
-    if (cur > 2200) valInp.value = 2200;
+const COMMODITY_CATALOG = [
+  { id: 'p1', name: 'Classic Toor (Tur Dal / Split Pigeon Pea)', displayName: 'Toor Dal (Pigeon Pea)', shortName: 'Toor Dal', defaultQty: 5 },
+  { id: 'p2', name: 'Classic Moong (Whole Green Mung Bean)', displayName: 'Moong Whole (Green Mung)', shortName: 'Moong Whole', defaultQty: 5 },
+  { id: 'p3', name: 'Classic Chana Dal (Bengal Gram Split)', displayName: 'Chana Dal (Bengal Gram)', shortName: 'Chana Dal', defaultQty: 3 },
+  { id: 'p4', name: 'Masoor Dal (Split Red Lentil)', displayName: 'Masoor Dal (Red Lentil)', shortName: 'Masoor Split', defaultQty: 3 },
+  { id: 'p5', name: 'Black Chia Seeds (Organic / Export Sortex)', displayName: 'Black Chia Seeds (Sortex)', shortName: 'Chia Seeds', defaultQty: 2 },
+  { id: 'p6', name: 'Coriander Seeds (Eagle / Badami Machine Clean)', displayName: 'Coriander Seeds (Machine Clean)', shortName: 'Coriander Seeds', defaultQty: 3 },
+  { id: 'p7', name: 'Cumin Seeds (Jeera Machine Clean Grade-A)', displayName: 'Cumin Seeds (Jeera Grade-A)', shortName: 'Cumin Seeds', defaultQty: 2 },
+  { id: 'p8', name: 'Moringa Powder (100% Organic Leaf Fine Mesh)', displayName: 'Moringa Powder (100% Leaf)', shortName: 'Moringa Powder', defaultQty: 1 },
+  { id: 'p9', name: 'Mint Leaves (Shade-Dried Aromatic Flakes)', displayName: 'Mint Leaves (Shade-Dried)', shortName: 'Mint Leaves', defaultQty: 1 },
+  { id: 'p10', name: 'Coriander Powder (Micro-Ground Stemless)', displayName: 'Coriander Powder (Stemless)', shortName: 'Coriander Powder', defaultQty: 2 },
+  { id: 'p11', name: 'Sorghum (Jowar Grain / White Sorghum)', displayName: 'Sorghum (Jowar Grain)', shortName: 'Sorghum', defaultQty: 5 },
+  { id: 'p12', name: 'Jowar Flour (Sorghum Flour / Gluten-Free)', displayName: 'Jowar Flour (Sorghum Flour)', shortName: 'Jowar Flour', defaultQty: 5 },
+  { id: 'p13', name: 'Tissue Paper (Food-Grade Virgin Pulp)', displayName: 'Tissue Paper (Virgin Pulp)', shortName: 'Tissue Paper', defaultQty: 5 },
+  { id: 'p14', name: 'Emmer Wheat (Khapli Wheat Ancient Grain)', displayName: 'Emmer Wheat (Khapli Grain)', shortName: 'Emmer Wheat', defaultQty: 5 },
+  { id: 'p15', name: 'Pure Cow Ghee (Vedic Bilona A2 Tradition)', displayName: 'Pure Cow Ghee (Vedic Bilona)', shortName: 'Pure Cow Ghee', defaultQty: 2 },
+  { id: 'p17', name: 'Indian Home Spices (Kitchen Staples)', displayName: 'Indian Home Spices (Individual)', shortName: 'Indian Home Spices', defaultQty: 2 }
+];
+window.COMMODITY_CATALOG = COMMODITY_CATALOG;
+
+let rfqManifest = [
+  { commodity: 'Classic Toor (Tur Dal / Split Pigeon Pea)', quantity: 10, unit: 'Quintals' }
+];
+window.rfqManifest = rfqManifest;
+
+function renderManifestRows() {
+  const container = document.getElementById('manifestRowsList');
+  if (!container) return;
+
+  if (!rfqManifest || rfqManifest.length === 0) {
+    rfqManifest = [{ commodity: COMMODITY_CATALOG[0].name, quantity: 5, unit: 'Quintals' }];
+    window.rfqManifest = rfqManifest;
   }
-  syncVolumeString();
+
+  let html = '';
+  rfqManifest.forEach((row, idx) => {
+    const isSingle = rfqManifest.length <= 1;
+    const qtyStep = row.unit === 'Quintals' ? '0.5' : '25';
+    const qtyMin = row.unit === 'Quintals' ? '0.5' : '50';
+    const qtyPlaceholder = row.unit === 'Quintals' ? '5' : '500';
+
+    html += `
+      <div class="manifest-row" data-manifest-idx="${idx}">
+        <div class="manifest-col-product">
+          <select id="manifestProd_${idx}" onchange="onManifestProductChange(${idx}, this.value)" aria-label="Commodity">
+            ${COMMODITY_CATALOG.map(c => `
+              <option value="${escapeHtml(c.name)}" ${c.name === row.commodity ? 'selected' : ''}>
+                ${escapeHtml(c.displayName || c.name)}
+              </option>
+            `).join('')}
+            ${!COMMODITY_CATALOG.some(c => c.name === row.commodity) ? `
+              <option value="${escapeHtml(row.commodity)}" selected>${escapeHtml(row.commodity)}</option>
+            ` : ''}
+          </select>
+        </div>
+        <div class="manifest-col-qty">
+          <input type="number" id="manifestQty_${idx}" min="${qtyMin}" step="${qtyStep}" value="${row.quantity}" 
+                 placeholder="${qtyPlaceholder}" 
+                 oninput="onManifestQtyChange(${idx}, this.value)" 
+                 onchange="onManifestQtyChange(${idx}, this.value)" 
+                 required aria-label="Quantity">
+        </div>
+        <div class="manifest-col-unit">
+          <select id="manifestUnit_${idx}" onchange="onManifestUnitChange(${idx}, this.value)" aria-label="Unit">
+            <option value="Quintals" ${row.unit === 'Quintals' ? 'selected' : ''}>Quintals (QTL)</option>
+            <option value="KG" ${row.unit === 'KG' ? 'selected' : ''}>Kilograms (KG)</option>
+          </select>
+        </div>
+        <div class="manifest-col-remove">
+          ${!isSingle ? `
+            <button type="button" class="manifest-remove-btn" onclick="removeManifestRow(${idx})" title="Remove item" aria-label="Remove item">✕</button>
+          ` : `
+            <span class="manifest-remove-placeholder"></span>
+          `}
+        </div>
+      </div>
+    `;
+  });
+
+  container.innerHTML = html;
+  syncQuickChipsHighlight();
+  syncManifestTotal();
+}
+window.renderManifestRows = renderManifestRows;
+
+function syncQuickChipsHighlight() {
+  const chips = document.querySelectorAll('#quickChipsWrap .quick-chip');
+  if (!chips || chips.length === 0) return;
+
+  const currentNames = (rfqManifest || []).map(r => (r.commodity || '').toLowerCase());
+
+  chips.forEach(chip => {
+    const rawKey = (chip.dataset.comm || chip.textContent || '').trim().replace(/^[+✓\s]+/, '').toLowerCase();
+    const isActive = currentNames.some(cn => cn.includes(rawKey) || rawKey.includes(cn.split(' ')[0]));
+    if (isActive) {
+      chip.classList.add('active-chip');
+      const baseName = chip.dataset.comm || rawKey;
+      chip.innerHTML = `✓ ${escapeHtml(baseName)}`;
+    } else {
+      chip.classList.remove('active-chip');
+      const baseName = chip.dataset.comm || rawKey;
+      chip.innerHTML = `+ ${escapeHtml(baseName)}`;
+    }
+  });
 }
 
-function syncVolumeString() {
-  const unitEl = document.getElementById('rfqVolumeUnit');
-  const valInp = document.getElementById('rfqVolumeVal');
-  const hidden = document.getElementById('rfqVolume');
-  const hint = document.getElementById('volumeHint');
-  if (!unitEl || !valInp) return true;
-
-  const unit = unitEl.value;
-  const val = parseFloat(valInp.value) || 0;
-
-  let valid = true;
-  if (unit === 'Quintals') {
-    if (val < 3) {
-      if (hint) {
-        hint.textContent = '⚠️ Minimum order quantity is 3 Quintals (300 KG).';
-        hint.style.color = '#D9534F';
-      }
-      valid = false;
-    } else if (val > 22) {
-      if (hint) {
-        hint.textContent = '⚠️ Maximum consignment batch is 22 Quintals (2,200 KG).';
-        hint.style.color = '#D9534F';
-      }
-      valid = false;
-    } else {
-      if (hint) {
-        hint.textContent = `✓ Batch: ${val} Quintals (${(val * 100).toLocaleString()} KG) · Valid Export Lot`;
-        hint.style.color = '#2E7D32';
-      }
-    }
-    if (hidden) hidden.value = `${val} Quintals (${(val * 100).toLocaleString()} KG)`;
-  } else {
-    // KG
-    if (val < 300) {
-      if (hint) {
-        hint.textContent = '⚠️ Minimum order quantity is 300 KG (3 Quintals).';
-        hint.style.color = '#D9534F';
-      }
-      valid = false;
-    } else if (val > 2200) {
-      if (hint) {
-        hint.textContent = '⚠️ Maximum consignment batch is 2,200 KG (22 Quintals).';
-        hint.style.color = '#D9534F';
-      }
-      valid = false;
-    } else {
-      if (hint) {
-        hint.textContent = `✓ Batch: ${val.toLocaleString()} KG (${(val / 100).toFixed(1)} Quintals) · Valid Export Lot`;
-        hint.style.color = '#2E7D32';
-      }
-    }
-    if (hidden) hidden.value = `${val.toLocaleString()} KG (${(val / 100).toFixed(1)} Quintals)`;
+function addManifestRow(commodityName, qty, unit) {
+  let targetComm = commodityName;
+  if (!targetComm) {
+    // Pick first commodity from catalog not yet in manifest
+    const existing = new Set((rfqManifest || []).map(r => r.commodity));
+    const found = COMMODITY_CATALOG.find(c => !existing.has(c.name));
+    targetComm = found ? found.name : COMMODITY_CATALOG[0].name;
   }
-  return valid;
+
+  const catItem = COMMODITY_CATALOG.find(c => c.name === targetComm || c.shortName === targetComm);
+  const defaultQuantity = qty !== undefined ? qty : (catItem ? catItem.defaultQty : 5);
+  const defaultUnit = unit || 'Quintals';
+
+  rfqManifest.push({
+    commodity: catItem ? catItem.name : targetComm,
+    quantity: defaultQuantity,
+    unit: defaultUnit
+  });
+  window.rfqManifest = rfqManifest;
+  renderManifestRows();
+
+  const container = document.getElementById('manifestRowsList');
+  if (container && container.lastElementChild) {
+    container.lastElementChild.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }
+}
+window.addManifestRow = addManifestRow;
+
+function removeManifestRow(index) {
+  if (!rfqManifest || rfqManifest.length <= 1) return;
+  rfqManifest.splice(index, 1);
+  window.rfqManifest = rfqManifest;
+  renderManifestRows();
+}
+window.removeManifestRow = removeManifestRow;
+
+function onManifestProductChange(index, val) {
+  if (!rfqManifest || !rfqManifest[index]) return;
+  rfqManifest[index].commodity = val;
+  window.rfqManifest = rfqManifest;
+  syncQuickChipsHighlight();
+  syncManifestTotal();
+}
+window.onManifestProductChange = onManifestProductChange;
+
+function onManifestQtyChange(index, val) {
+  if (!rfqManifest || !rfqManifest[index]) return;
+  const num = parseFloat(val);
+  rfqManifest[index].quantity = isNaN(num) ? 0 : Math.max(0, num);
+  window.rfqManifest = rfqManifest;
+  syncManifestTotal();
+}
+window.onManifestQtyChange = onManifestQtyChange;
+
+function onManifestUnitChange(index, newUnit) {
+  if (!rfqManifest || !rfqManifest[index]) return;
+  const oldUnit = rfqManifest[index].unit;
+  let curQty = rfqManifest[index].quantity;
+
+  if (oldUnit === 'Quintals' && newUnit === 'KG') {
+    curQty = Math.round(curQty * 100);
+  } else if (oldUnit === 'KG' && newUnit === 'Quintals') {
+    curQty = parseFloat((curQty / 100).toFixed(1));
+  }
+
+  rfqManifest[index].unit = newUnit;
+  rfqManifest[index].quantity = curQty;
+  window.rfqManifest = rfqManifest;
+  renderManifestRows();
+}
+window.onManifestUnitChange = onManifestUnitChange;
+
+function toggleCommodityInManifest(nameOrShort) {
+  if (!nameOrShort) return;
+  const needle = nameOrShort.trim().toLowerCase();
+
+  const found = COMMODITY_CATALOG.find(c => 
+    c.shortName.toLowerCase() === needle || 
+    c.name.toLowerCase().includes(needle) ||
+    needle.includes(c.shortName.toLowerCase()) ||
+    (c.id === 'p17' && (needle.includes('spice') || needle.includes('homestyle') || needle.includes('masala')))
+  );
+  const targetFullName = found ? found.name : nameOrShort;
+
+  const existingIdx = (rfqManifest || []).findIndex(r => 
+    r.commodity.toLowerCase() === targetFullName.toLowerCase() ||
+    (found && r.commodity.toLowerCase().includes(found.shortName.toLowerCase()))
+  );
+
+  if (existingIdx >= 0) {
+    if (rfqManifest.length > 1) {
+      removeManifestRow(existingIdx);
+      if (typeof showToast === 'function') {
+        showToast(`Removed from Consignment: ${found ? found.shortName : targetFullName}`);
+      }
+    } else {
+      if (typeof showToast === 'function') {
+        showToast(`At least one commodity required in consignment.`, 'info');
+      }
+    }
+  } else {
+    addManifestRow(targetFullName, found ? found.defaultQty : 5, 'Quintals');
+    if (typeof showToast === 'function') {
+      showToast(`Added to Consignment: ${found ? found.shortName : targetFullName}`);
+    }
+  }
+}
+window.toggleCommodityInManifest = toggleCommodityInManifest;
+
+function ensureCommodityInManifest(nameOrShort) {
+  if (!nameOrShort) return;
+  const needle = nameOrShort.trim().toLowerCase();
+
+  const found = COMMODITY_CATALOG.find(c => 
+    c.shortName.toLowerCase() === needle || 
+    c.name.toLowerCase().includes(needle) ||
+    needle.includes(c.shortName.toLowerCase())
+  );
+  const targetFullName = found ? found.name : nameOrShort;
+
+  const existingIdx = (rfqManifest || []).findIndex(r => 
+    r.commodity.toLowerCase() === targetFullName.toLowerCase() ||
+    (found && r.commodity.toLowerCase().includes(found.shortName.toLowerCase()))
+  );
+
+  if (existingIdx === -1) {
+    addManifestRow(targetFullName, found ? found.defaultQty : 5, 'Quintals');
+    if (typeof showToast === 'function') {
+      showToast(`Added to Consignment: ${found ? found.shortName : targetFullName}`);
+    }
+  } else {
+    if (typeof showToast === 'function') {
+      showToast(`Verified in Consignment: ${found ? found.shortName : targetFullName}`, 'info');
+    }
+  }
+}
+window.ensureCommodityInManifest = ensureCommodityInManifest;
+
+// Legacy backward-compatibility alias
+function addCommodityToRfq(name) {
+  toggleCommodityInManifest(name);
+}
+window.addCommodityToRfq = addCommodityToRfq;
+
+function syncManifestTotal() {
+  const totalValEl = document.getElementById('manifestTotalVal');
+  const statusEl = document.getElementById('manifestStatus');
+  const hiddenVol = document.getElementById('rfqVolume');
+  const hiddenVolVal = document.getElementById('rfqVolumeVal');
+  const hiddenComm = document.getElementById('rfqCommodities');
+  const volumeHint = document.getElementById('volumeHint');
+
+  let totalQtl = 0;
+  const itemSummaries = [];
+
+  (rfqManifest || []).forEach(row => {
+    const q = parseFloat(row.quantity) || 0;
+    const qtl = row.unit === 'KG' ? (q / 100) : q;
+    totalQtl += qtl;
+    const short = (COMMODITY_CATALOG.find(c => c.name === row.commodity) || {}).shortName || row.commodity;
+    itemSummaries.push(`${short}: ${q} ${row.unit === 'KG' ? 'KG' : 'QTL'}`);
+  });
+
+  totalQtl = Math.round(totalQtl * 100) / 100;
+  const totalKg = Math.round(totalQtl * 100);
+
+  const formattedVol = `${totalQtl.toFixed(1)} Quintals (${totalKg.toLocaleString()} KG)`;
+  const shortBadge = `${totalQtl.toFixed(1)} QTL (${totalKg.toLocaleString()} KG)`;
+  const formattedComm = itemSummaries.length > 0 ? itemSummaries.join(', ') : 'Assorted Export Commodities';
+
+  if (totalValEl) {
+    totalValEl.textContent = shortBadge;
+  }
+  if (hiddenVol) {
+    hiddenVol.value = formattedVol;
+  }
+  if (hiddenVolVal) {
+    hiddenVolVal.value = totalQtl;
+  }
+  if (hiddenComm) {
+    hiddenComm.value = formattedComm;
+  }
+
+  window.currentManifestTotalQtl = totalQtl;
+
+  let isValid = true;
+  let statusText = '';
+  let statusColor = '#2E7D32';
+
+  if (totalQtl < 3) {
+    isValid = false;
+    statusColor = '#C62828';
+    statusText = `⚠️ ${totalQtl.toFixed(1)} QTL · Min order is 3 QTL (300 KG)`;
+  } else if (totalQtl > 22) {
+    isValid = false;
+    statusColor = '#C62828';
+    statusText = `⚠️ ${totalQtl.toFixed(1)} QTL · Exceeds 22 QTL capacity`;
+  } else {
+    isValid = true;
+    statusColor = '#2E7D32';
+    statusText = `✓ Valid Export Lot (3 – 22 QTL batch)`;
+  }
+
+  if (statusEl) {
+    statusEl.textContent = statusText;
+    statusEl.style.color = statusColor;
+  }
+  if (volumeHint) {
+    volumeHint.textContent = statusText;
+    volumeHint.style.color = statusColor;
+  }
+
+  const submitBtn = document.getElementById('rfqSubmitBtn');
+  if (submitBtn && (typeof currentRfqMode === 'undefined' || currentRfqMode !== 'sample')) {
+    if (!isValid) {
+      submitBtn.setAttribute('data-invalid', 'true');
+      submitBtn.style.opacity = '0.65';
+      submitBtn.title = totalQtl < 3
+        ? `Consignment is ${totalQtl.toFixed(1)} Quintals. Minimum order is 3.0 Quintals (300 KG).`
+        : `Consignment is ${totalQtl.toFixed(1)} Quintals. Maximum capacity is 22.0 Quintals.`;
+    } else {
+      submitBtn.removeAttribute('data-invalid');
+      submitBtn.disabled = false;
+      submitBtn.style.opacity = '1';
+      submitBtn.title = 'SUBMIT EXPORT RFQ ➔';
+      const manifestSec = document.getElementById('manifestSection');
+      if (manifestSec) manifestSec.classList.remove('manifest-error');
+    }
+  }
+
+  return isValid;
+}
+window.syncManifestTotal = syncManifestTotal;
+
+// Legacy alias for any old callers
+function syncVolumeString() {
+  return syncManifestTotal();
+}
+window.syncVolumeString = syncVolumeString;
+
+function handleVolumeUnitChange() {
+  syncManifestTotal();
 }
 window.handleVolumeUnitChange = handleVolumeUnitChange;
-window.syncVolumeString = syncVolumeString;
+
+// Initialize manifest rows on load
+function initManifestBuilder() {
+  renderManifestRows();
+}
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initManifestBuilder);
+} else {
+  initManifestBuilder();
+}
 
 
 function getSampleBasePriceINR() {
   const stored = localStorage.getItem('gge_sample_price_inr');
-  return stored ? parseFloat(stored) : 10.00;
+  const val = stored ? parseFloat(stored) : NaN;
+  return (!isNaN(val) && val > 0) ? val : 499.00;
 }
 
 /**
@@ -396,12 +679,15 @@ function initFilters() {
 
       const filter = btn.getAttribute('data-filter');
       cards.forEach(card => {
-        const cat = card.getAttribute('data-category');
-        if (filter === 'all' || cat === filter) {
-          card.style.display = 'flex';
+        const cat = card.getAttribute('data-category') || '';
+        const catList = cat.split(/\s+/);
+        if (filter === 'all' || cat === filter || catList.includes(filter)) {
+          card.classList.remove('hidden');
+          card.style.removeProperty('display');
           setTimeout(() => card.classList.add('is-visible'), 20);
         } else {
-          card.style.display = 'none';
+          card.classList.add('hidden');
+          card.style.setProperty('display', 'none', 'important');
           card.classList.remove('is-visible');
         }
       });
@@ -770,6 +1056,9 @@ function initMapPanZoom() {
     if (e.touches.length === 1 && isDragging) {
       const dx = e.touches[0].clientX - touchStartX;
       const dy = e.touches[0].clientY - touchStartY;
+      if (Math.abs(dy) > Math.abs(dx) && !mapHasDragged) {
+        return;
+      }
       if (Math.hypot(dx, dy) > 4) mapHasDragged = true;
 
       const rect = container.getBoundingClientRect();
@@ -951,7 +1240,7 @@ function openSpecDrawer(lotId) {
     lot: "LOT GGE-TR-2026-A1",
     name: "Classic Toor (Tur Dal)",
     botanical: "Cajanus cajan",
-    image: "images/products/toor_dal.jpg",
+    image: "images/products/toor_dal.jpg?v=6",
     purity: "99.5% Min (Sortex Clean Grade-A)",
     moisture: "10.0% – 12.0% Max",
     admixture: "0.5% Max",
@@ -1010,6 +1299,35 @@ function openSpecDrawer(lotId) {
         </table>
       </div>
 
+      ${(spec.spiceVarieties && spec.spiceVarieties.length > 0) ? `
+        <div class="drawer-card" id="drawerSpicesCard" style="border: 1px solid rgba(217, 172, 82, 0.4); background: rgba(20, 17, 14, 0.7);">
+          <div class="drawer-card-head" style="background: rgba(217,172,82,0.08); padding: 12px 14px; border-bottom: 1px solid rgba(217,172,82,0.2);">
+            <span style="color:var(--gold-bright, #D9AC52); font-weight:600; font-size:0.82rem; letter-spacing:0.02em;">★ Individual Indian Kitchen Spices (Sold Separately)</span>
+            <span class="drawer-badge-green" style="background:rgba(30,110,40,0.2); border:1px solid rgba(30,110,40,0.5); color:#81C784;">✓ Not a Blend · Pure Single Lots</span>
+          </div>
+          <div style="padding:12px 14px; font-size:0.75rem; color:#CBC5BA; line-height:1.5; border-bottom:1px solid rgba(255,255,255,0.06); background:#0D0A08;">
+            <strong style="color:var(--gold, #B8872F);">Unblended Lot Protocol:</strong> Each generic kitchen spice is procured, Sortex cleaned (&gt;99.5%), and packed as an <strong>independent single-origin commodity</strong>. Importers can order single-spice Full Container Loads (FCL 16–24 MT) or customized consolidated multi-spice containers with separate palletized compartments (not a pre-mixed powder).
+          </div>
+          <div style="padding: 10px 12px; display: flex; flex-direction: column; gap: 8px;">
+            ${spec.spiceVarieties.map((v, i) => `
+              <div style="background: rgba(0,0,0,0.35); border: 1px solid rgba(217,172,82,0.15); border-radius: 4px; padding: 10px 12px;">
+                <div style="display: flex; justify-content: space-between; align-items: baseline; gap: 8px; margin-bottom: 4px;">
+                  <div>
+                    <strong style="color: #F5EFE0; font-size: 0.82rem;">${escapeHtml(v.name)}</strong>
+                    <span style="color: #8C857B; font-size: 0.70rem; font-style: italic; margin-left: 5px;">${escapeHtml(v.botanical)}</span>
+                  </div>
+                  <span style="font-family: var(--font-mono); color: #D9AC52; font-size: 0.70rem; background: rgba(217,172,82,0.12); padding: 2px 6px; border-radius: 3px; white-space: nowrap;">HS ${escapeHtml(v.hs)}</span>
+                </div>
+                <div style="display: flex; justify-content: space-between; align-items: flex-end; font-size: 0.73rem; color: #CBC5BA; gap: 8px; flex-wrap: wrap;">
+                  <span>${escapeHtml(v.grade)} <span style="color: #706A60;">(${escapeHtml(v.form)})</span></span>
+                  <span style="color: #1E6E28; font-weight: 600; font-size: 0.73rem; white-space: nowrap;">${escapeHtml(v.assay)}</span>
+                </div>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+      ` : ''}
+
       <div class="drawer-card">
         <div class="drawer-card-head">
           <span>${dict.drawerOriginHeading || '2. Harvest Season & Export Logistics'}</span>
@@ -1026,6 +1344,30 @@ function openSpecDrawer(lotId) {
           </tbody>
         </table>
       </div>
+
+      ${(window.domesticCommodityCatalog && window.domesticCommodityCatalog[lotId]) ? `
+        <div class="drawer-card" style="border: 1px solid rgba(255, 153, 51, 0.4); background: rgba(20, 17, 14, 0.7);">
+          <div class="drawer-card-head" style="background: rgba(255, 153, 51, 0.08); padding: 12px 14px; border-bottom: 1px solid rgba(255, 153, 51, 0.2);">
+            <span style="color:#FFA726; font-weight:600; font-size:0.82rem; letter-spacing:0.02em;">🇮🇳 3. Domestic Packs (India Distribution · UPI Ready)</span>
+            <span class="drawer-badge-green" style="background:rgba(30,110,40,0.2); border:1px solid rgba(30,110,40,0.5); color:#81C784;">✓ FSSAI Reg. 11521008000142</span>
+          </div>
+          <table class="drawer-spec-table">
+            <tbody>
+              <tr><td>Grade &amp; Cleaning</td><td style="color:#FAF7EE;font-weight:600;">${window.domesticCommodityCatalog[lotId].grade}</td></tr>
+              <tr><td>500g Consumer Pouch</td><td style="color:#81C784;font-family:var(--font-mono);font-weight:700;">₹${window.domesticCommodityCatalog[lotId].packs['500g']}.00 INR</td></tr>
+              <tr><td>1.0 KG Kitchen Pack</td><td style="color:#81C784;font-family:var(--font-mono);font-weight:700;">₹${window.domesticCommodityCatalog[lotId].packs['1kg']}.00 INR</td></tr>
+              <tr><td>5.0 KG Family Pack</td><td style="color:#81C784;font-family:var(--font-mono);font-weight:700;">₹${window.domesticCommodityCatalog[lotId].packs['5kg']}.00 INR</td></tr>
+              <tr><td>25 KG Bulk Bag</td><td style="color:#81C784;font-family:var(--font-mono);font-weight:700;">₹${window.domesticCommodityCatalog[lotId].packs['25kg']}.00 INR</td></tr>
+              <tr><td>Payment &amp; Logistics</td><td style="color:#FFA726;">Direct UPI (GPay/PhonePe) · Surface Express</td></tr>
+            </tbody>
+          </table>
+          <div style="padding:10px 14px; background:#0D0A08; border-top:1px solid rgba(255,255,255,0.06);">
+            <button type="button" class="btn btn--primary" onclick="closeSpecDrawer(); openDomesticOrderModal('${lotId}');" style="width:100%; justify-content:center; font-size:0.75rem; padding:8px 12px; background:linear-gradient(135deg, #D9AC52 0%, #B8872F 100%); color:#0D0A08; font-weight:700;">
+              <span>⚡ ORDER THIS LOT VIA UPI (500g–25kg) ➔</span>
+            </button>
+          </div>
+        </div>
+      ` : ''}
     `;
   }
 
@@ -1037,6 +1379,31 @@ function openSpecDrawer(lotId) {
         window.downloadSpecPDF(lotId);
       }
     };
+  }
+
+  const drawerRfqBtn = document.getElementById('drawerRfqBtn');
+  if (drawerRfqBtn) {
+    drawerRfqBtn.innerHTML = `<span>${dict.drawerRfqBtn || 'INQUIRE FOR THIS COMMODITY (RFQ) ➔'}</span>`;
+  }
+
+  const drawerDomesticBtn = document.getElementById('drawerDomesticBtn');
+  if (drawerDomesticBtn) {
+    drawerDomesticBtn.onclick = () => {
+      closeSpecDrawer();
+      openDomesticOrderModal(lotId);
+    };
+  }
+
+  const drawerSampleBtn = document.getElementById('drawerSampleBtn');
+  const drawerDisclaimer = document.querySelector('.drawer-disclaimer');
+  if (window.currentMarketSegment === 'domestic') {
+    if (drawerSampleBtn) drawerSampleBtn.style.setProperty('display', 'none', 'important');
+    if (drawerDomesticBtn) drawerDomesticBtn.style.setProperty('display', 'inline-flex', 'important');
+    if (drawerDisclaimer) drawerDisclaimer.style.setProperty('display', 'none', 'important');
+  } else {
+    if (drawerSampleBtn) drawerSampleBtn.style.removeProperty('display');
+    if (drawerDomesticBtn) drawerDomesticBtn.style.setProperty('display', 'none', 'important');
+    if (drawerDisclaimer) drawerDisclaimer.style.removeProperty('display');
   }
 
   const drawer = document.getElementById('specDrawer');
@@ -1072,13 +1439,28 @@ document.addEventListener('keydown', (e) => {
 window.openSpecDrawer = openSpecDrawer;
 window.closeSpecDrawer = closeSpecDrawer;
 
-let currentRfqMode = 'quote'; // 'quote' | 'sample'
+let currentRfqMode = 'quote'; // 'quote' | 'domestic' | 'sample'
+
+function syncDomesticFormPrice() {
+  const lotId = (document.getElementById('domFormCommodity') && document.getElementById('domFormCommodity').value) || 'p1';
+  const pack = (document.getElementById('domFormPack') && document.getElementById('domFormPack').value) || '1kg';
+  const qty = (document.getElementById('domFormQty') && parseInt(document.getElementById('domFormQty').value, 10)) || 1;
+  const catalog = window.domesticCommodityCatalog || {};
+  const item = catalog[lotId] || catalog['p1'];
+  const unitRate = (item && item.packs && item.packs[pack]) ? item.packs[pack] : 160;
+  const total = unitRate * Math.max(1, qty);
+  const disp = document.getElementById('domFormPriceDisplay');
+  if (disp) disp.textContent = `₹${total.toFixed(2)} INR`;
+}
+window.syncDomesticFormPrice = syncDomesticFormPrice;
 
 function setRfqMode(mode) {
   currentRfqMode = mode;
   const btnQuote = document.getElementById('modeBtnQuote');
+  const btnDomestic = document.getElementById('modeBtnDomestic');
   const btnSample = document.getElementById('modeBtnSample');
   const bulkFields = document.getElementById('bulkFields');
+  const domesticFields = document.getElementById('domesticFields');
   const sampleFields = document.getElementById('sampleFields');
   const quickChips = document.getElementById('quickChipsWrap');
   const submitBtn = document.getElementById('rfqSubmitBtn');
@@ -1091,11 +1473,37 @@ function setRfqMode(mode) {
   const sampleEmail = document.getElementById('sampleEmail');
   const sampleCompany = document.getElementById('sampleCompany');
   const sampleAddress = document.getElementById('sampleAddress');
+  const domName = document.getElementById('domFormName');
+  const domPhone = document.getElementById('domFormPhone');
+  const domAddress = document.getElementById('domFormAddress');
 
-  if (mode === 'sample') {
+  if (mode === 'domestic') {
     if (btnQuote) btnQuote.classList.remove('active');
+    if (btnSample) btnSample.classList.remove('active');
+    if (btnDomestic) btnDomestic.classList.add('active');
+    if (bulkFields) bulkFields.style.display = 'none';
+    if (sampleFields) sampleFields.style.display = 'none';
+    if (domesticFields) domesticFields.style.display = 'grid';
+    if (quickChips) quickChips.style.display = 'none';
+    if (submitBtn) submitBtn.innerHTML = 'PROCEED TO UPI PAYMENT (500g–25kg) ➔';
+
+    if (rfqName) rfqName.required = false;
+    if (rfqEmail) rfqEmail.required = false;
+    if (rfqCompany) rfqCompany.required = false;
+    if (sampleName) sampleName.required = false;
+    if (sampleEmail) sampleEmail.required = false;
+    if (sampleCompany) sampleCompany.required = false;
+    if (sampleAddress) sampleAddress.required = false;
+    if (domName) domName.required = true;
+    if (domPhone) domPhone.required = true;
+    if (domAddress) domAddress.required = true;
+    syncDomesticFormPrice();
+  } else if (mode === 'sample') {
+    if (btnQuote) btnQuote.classList.remove('active');
+    if (btnDomestic) btnDomestic.classList.remove('active');
     if (btnSample) btnSample.classList.add('active');
     if (bulkFields) bulkFields.style.display = 'none';
+    if (domesticFields) domesticFields.style.display = 'none';
     if (sampleFields) sampleFields.style.display = 'grid';
     if (quickChips) quickChips.style.display = 'none';
     if (submitBtn) submitBtn.innerHTML = 'SUBMIT SAMPLE DISPATCH ORDER (DHL / FEDEX) ➔';
@@ -1103,13 +1511,18 @@ function setRfqMode(mode) {
     if (rfqName) rfqName.required = false;
     if (rfqEmail) rfqEmail.required = false;
     if (rfqCompany) rfqCompany.required = false;
+    if (domName) domName.required = false;
+    if (domPhone) domPhone.required = false;
+    if (domAddress) domAddress.required = false;
     if (sampleName) sampleName.required = true;
     if (sampleEmail) sampleEmail.required = true;
     if (sampleCompany) sampleCompany.required = true;
     if (sampleAddress) sampleAddress.required = true;
   } else {
     if (btnSample) btnSample.classList.remove('active');
+    if (btnDomestic) btnDomestic.classList.remove('active');
     if (btnQuote) btnQuote.classList.add('active');
+    if (domesticFields) domesticFields.style.display = 'none';
     if (sampleFields) sampleFields.style.display = 'none';
     if (bulkFields) bulkFields.style.display = 'grid';
     if (quickChips) quickChips.style.display = 'flex';
@@ -1119,6 +1532,9 @@ function setRfqMode(mode) {
     if (sampleEmail) sampleEmail.required = false;
     if (sampleCompany) sampleCompany.required = false;
     if (sampleAddress) sampleAddress.required = false;
+    if (domName) domName.required = false;
+    if (domPhone) domPhone.required = false;
+    if (domAddress) domAddress.required = false;
     if (rfqName) rfqName.required = true;
     if (rfqEmail) rfqEmail.required = true;
     if (rfqCompany) rfqCompany.required = true;
@@ -1126,19 +1542,40 @@ function setRfqMode(mode) {
 }
 window.setRfqMode = setRfqMode;
 
-
-
 function handleRfqSubmit(e) {
-  if (e && e.preventDefault) e.preventDefault();
+  if (e) {
+    if (typeof e.preventDefault === 'function') e.preventDefault();
+    if (typeof e.stopPropagation === 'function') e.stopPropagation();
+    if (typeof e.stopImmediatePropagation === 'function') e.stopImmediatePropagation();
+  }
+
   const submitBtn = document.getElementById('rfqSubmitBtn');
+  if (submitBtn && submitBtn.disabled) return false;
   const successMsg = document.getElementById('rfqSuccessMsg');
 
-  if (submitBtn) {
-    submitBtn.disabled = true;
-    submitBtn.innerHTML = '<span>Transmitting to Trade Desk...</span>';
+  if (currentRfqMode === 'domestic') {
+    const lotId = (document.getElementById('domFormCommodity') && document.getElementById('domFormCommodity').value) || 'p1';
+    const pack = (document.getElementById('domFormPack') && document.getElementById('domFormPack').value) || '1kg';
+    const qty = (document.getElementById('domFormQty') && parseInt(document.getElementById('domFormQty').value, 10)) || 1;
+    const name = (document.getElementById('domFormName') && document.getElementById('domFormName').value.trim()) || '';
+    const phone = (document.getElementById('domFormPhone') && document.getElementById('domFormPhone').value.trim()) || '';
+    const address = (document.getElementById('domFormAddress') && document.getElementById('domFormAddress').value.trim()) || '';
+
+    openDomesticOrderModal(lotId, pack);
+    if (document.getElementById('domModalQty')) document.getElementById('domModalQty').value = qty;
+    if (document.getElementById('domConsigneeName') && name) document.getElementById('domConsigneeName').value = name;
+    if (document.getElementById('domConsigneePhone') && phone) document.getElementById('domConsigneePhone').value = phone;
+    if (document.getElementById('domConsigneeAddress') && address) document.getElementById('domConsigneeAddress').value = address;
+    syncDomesticPriceCalc();
+    return;
   }
 
   if (currentRfqMode === 'sample') {
+    if (submitBtn) {
+      submitBtn.disabled = true;
+      submitBtn.innerHTML = '<span>Transmitting to Trade Desk...</span>';
+    }
+
     const name = (document.getElementById('sampleName') && document.getElementById('sampleName').value.trim()) || 'Prospective Buyer';
     const email = (document.getElementById('sampleEmail') && document.getElementById('sampleEmail').value.trim()) || '';
     const company = (document.getElementById('sampleCompany') && document.getElementById('sampleCompany').value.trim()) || 'Import Partner';
@@ -1174,29 +1611,7 @@ function handleRfqSubmit(e) {
     } catch(err) {}
 
     // Immediate server POST to /api/inquiries with PWA Offline Vault fallback
-    if (!navigator.onLine && window.GGE_PWA) {
-      window.GGE_PWA.queueOfflineInquiry(sampleLead);
-    } else {
-      fetch('/api/inquiries', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(sampleLead)
-      }).catch(() => {
-        if (window.GGE_PWA) window.GGE_PWA.queueOfflineInquiry(sampleLead);
-      });
-    }
-
-    fetch('/api/audit', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        action: 'LOT_SAMPLE_DISPATCH_SUBMITTED',
-        actor: email || name,
-        details: `Sample dispatch inquiry ${refId} logged for ${commodity} to ${address || 'destination'}`
-      })
-    }).catch(() => {});
-
-    setTimeout(() => {
+    const renderSampleSuccess = () => {
       if (submitBtn) {
         submitBtn.style.display = 'none';
       }
@@ -1212,14 +1627,94 @@ function handleRfqSubmit(e) {
       if (typeof window.showToast === 'function') {
         window.showToast(`Sample Order ${refId} Logged in CRM!`, 'success');
       }
-    }, 400);
+    };
+
+    if (!navigator.onLine && window.GGE_PWA) {
+      window.GGE_PWA.queueOfflineInquiry(sampleLead);
+      renderSampleSuccess();
+    } else {
+      fetch('/api/inquiries', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(sampleLead)
+      }).then(res => {
+        if (res.ok) {
+          renderSampleSuccess();
+        } else {
+          if (window.GGE_PWA) window.GGE_PWA.queueOfflineInquiry(sampleLead);
+          if (submitBtn) {
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = 'SUBMIT SAMPLE DISPATCH ORDER (DHL / FEDEX) ➔';
+          }
+          if (typeof window.showToast === 'function') {
+            window.showToast('Notice: Dispatch order preserved in offline Trade Vault.', 'warning');
+          }
+        }
+      }).catch(() => {
+        if (window.GGE_PWA) window.GGE_PWA.queueOfflineInquiry(sampleLead);
+        if (submitBtn) {
+          submitBtn.disabled = false;
+          submitBtn.innerHTML = 'SUBMIT SAMPLE DISPATCH ORDER (DHL / FEDEX) ➔';
+        }
+        if (typeof window.showToast === 'function') {
+          window.showToast('Network disconnected: Dispatch order queued in offline vault.', 'warning');
+        }
+      });
+    }
 
   } else {
+    // 1. STRICT CONSIGNMENT CAPACITY ENFORCEMENT (3 to 22 Quintals)
+    const isTotalValid = syncManifestTotal();
+    const totalQtl = (typeof window.currentManifestTotalQtl === 'number') ? window.currentManifestTotalQtl : 0;
+
+    if (!isTotalValid) {
+      if (submitBtn) {
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = 'SUBMIT EXPORT RFQ ➔';
+      }
+
+      // Add visual error cue & shake animation to manifest section
+      const manifestSec = document.getElementById('manifestSection');
+      if (manifestSec) {
+        manifestSec.classList.remove('manifest-error-shake');
+        void manifestSec.offsetWidth; // force reflow
+        manifestSec.classList.add('manifest-error-shake');
+        manifestSec.classList.add('manifest-error');
+        setTimeout(() => {
+          if (manifestSec) manifestSec.classList.remove('manifest-error-shake');
+        }, 600);
+      }
+
+      const firstQtyInp = document.getElementById('manifestQty_0');
+      if (firstQtyInp) {
+        firstQtyInp.focus();
+        firstQtyInp.classList.add('input-error');
+        setTimeout(() => {
+          if (firstQtyInp) firstQtyInp.classList.remove('input-error');
+        }, 2200);
+      }
+
+      const errMsg = totalQtl < 3
+        ? `⚠️ Order Cannot Be Submitted: Consignment is ${totalQtl.toFixed(1)} Quintals (${Math.round(totalQtl * 100)} KG). Minimum requirement is 3.0 Quintals (300 KG).`
+        : `⚠️ Order Cannot Be Submitted: Consignment is ${totalQtl.toFixed(1)} Quintals (${Math.round(totalQtl * 100)} KG). Maximum capacity is 22.0 Quintals (2,200 KG).`;
+
+      if (typeof window.showToast === 'function') {
+        window.showToast(errMsg, 'error');
+      }
+      return false;
+    }
+
+    // 2. Only proceed if consignment volume is valid
+    if (submitBtn) {
+      submitBtn.disabled = true;
+      submitBtn.innerHTML = '<span>Transmitting to Trade Desk...</span>';
+    }
+
     const name = (document.getElementById('rfqName') && document.getElementById('rfqName').value.trim()) || 'International Buyer';
     const email = (document.getElementById('rfqEmail') && document.getElementById('rfqEmail').value.trim()) || '';
     const company = (document.getElementById('rfqCompany') && document.getElementById('rfqCompany').value.trim()) || 'Enterprise Buyer';
     const country = (document.getElementById('rfqCountry') && document.getElementById('rfqCountry').value.trim()) || 'International Destination';
-    const volume = (document.getElementById('rfqVolume') && document.getElementById('rfqVolume').value.trim()) || '10 Quintals (1,000 KG)';
+    const volume = (document.getElementById('rfqVolume') && document.getElementById('rfqVolume').value.trim()) || '10.0 Quintals (1,000 KG)';
     const commodities = (document.getElementById('rfqCommodities') && document.getElementById('rfqCommodities').value.trim()) || 'Assorted Export Commodities';
 
     const refId = (typeof generateSecureId === 'function') 
@@ -1238,6 +1733,12 @@ function handleRfqSubmit(e) {
       country: country,
       volume: volume,
       commodities: commodities,
+      manifest: (rfqManifest || []).map(r => ({
+        commodity: r.commodity,
+        quantity: r.quantity,
+        unit: r.unit,
+        kg: r.unit === 'KG' ? r.quantity : Math.round(r.quantity * 100)
+      })),
       status: 'new'
     };
 
@@ -1248,50 +1749,67 @@ function handleRfqSubmit(e) {
     } catch(err) {}
 
     // Immediate server POST to /api/inquiries with PWA Offline Vault fallback
-    if (!navigator.onLine && window.GGE_PWA) {
-      window.GGE_PWA.queueOfflineInquiry(rfqLead);
-    } else {
-      fetch('/api/inquiries', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(rfqLead)
-      }).catch(() => {
-        if (window.GGE_PWA) window.GGE_PWA.queueOfflineInquiry(rfqLead);
-      });
-    }
-
-    fetch('/api/audit', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        action: 'COMMERCIAL_BULK_RFQ_SUBMITTED',
-        actor: email || name,
-        details: `Bulk RFQ ${refId} received for ${commodities} (${volume}) to ${country}`
-      })
-    }).catch(() => {});
-
-    setTimeout(() => {
+    const renderBulkSuccess = () => {
       if (submitBtn) {
         submitBtn.style.display = 'none';
       }
       if (successMsg) {
         successMsg.style.display = 'block';
         successMsg.innerHTML = `
-          <div style="font-weight:700;color:#1E6E28;margin-bottom:6px;font-size:0.95rem;">✓ Commercial Export RFQ Transmitted! (Ref: ${escapeHtml(refId)})</div>
+          <div style="font-weight:700;color:#1E6E28;margin-bottom:6px;font-size:0.95rem;">✓ Commercial Export Inquiry Transmitted! (Ref: ${escapeHtml(refId)})</div>
           <div style="font-size:0.80rem;color:#3A352F;line-height:1.5;">
-            Proforma quotation generated for <b>${escapeHtml(commodities)} (${escapeHtml(volume)})</b>. Our Mumbai trade desk will send formal proforma pricing to <b>${escapeHtml(email || 'registered address')}</b>.
+            Thank you for submitting your export inquiry for: <b>${escapeHtml(commodities)}</b> [Total Consignment: <b>${escapeHtml(volume)}</b>]. Our Mumbai export desk has logged your request and our trade officer will review and get back to you at <b>${escapeHtml(email || 'your registered address')}</b> with formal proforma pricing and booking terms.
           </div>
           <div style="margin-top:12px;">
-            <button type="button" onclick="downloadSubmittedProforma('${escapeHtml(refId)}', '${escapeHtml(company)}', '${escapeHtml(name)}', '${escapeHtml(commodities)}', '${escapeHtml(volume)}', '${escapeHtml(country)}')" style="width:100%;padding:10px 14px;background:rgba(184,135,47,0.12);border:1.5px solid #B8872F;color:#785514;border-radius:4px;font-size:0.75rem;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:6px;transition:all 0.2s;">
-              <span>📄 Download Certified Proforma Invoice (PDF) ➔</span>
+            <button type="button" id="rfqDownloadProformaBtn" style="width:100%;padding:10px 14px;background:rgba(184,135,47,0.12);border:1.5px solid #B8872F;color:#785514;border-radius:4px;font-size:0.75rem;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:6px;transition:all 0.2s;">
+              <span>📄 Download Export Inquiry Summary &amp; Estimate (PDF) ➔</span>
             </button>
           </div>
         `;
+        const dlBtn = document.getElementById('rfqDownloadProformaBtn');
+        if (dlBtn) {
+          dlBtn.onclick = () => {
+            downloadSubmittedProforma(refId, company, name, commodities, volume, country);
+          };
+        }
       }
       if (typeof window.showToast === 'function') {
         window.showToast(`Export Inquiry ${refId} Logged in CRM!`, 'success');
       }
-    }, 400);
+    };
+
+    if (!navigator.onLine && window.GGE_PWA) {
+      window.GGE_PWA.queueOfflineInquiry(rfqLead);
+      renderBulkSuccess();
+    } else {
+      fetch('/api/inquiries', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(rfqLead)
+      }).then(res => {
+        if (res.ok) {
+          renderBulkSuccess();
+        } else {
+          if (window.GGE_PWA) window.GGE_PWA.queueOfflineInquiry(rfqLead);
+          if (submitBtn) {
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = 'SUBMIT EXPORT RFQ ➔';
+          }
+          if (typeof window.showToast === 'function') {
+            window.showToast('Server notice: Inquiry saved to offline vault. Please retry shortly.', 'warning');
+          }
+        }
+      }).catch(() => {
+        if (window.GGE_PWA) window.GGE_PWA.queueOfflineInquiry(rfqLead);
+        if (submitBtn) {
+          submitBtn.disabled = false;
+          submitBtn.innerHTML = 'SUBMIT EXPORT RFQ ➔';
+        }
+        if (typeof window.showToast === 'function') {
+          window.showToast('Network offline: Inquiry preserved in local Trade Vault.', 'warning');
+        }
+      });
+    }
   }
 }
 window.handleRfqSubmit = handleRfqSubmit;
@@ -1299,18 +1817,17 @@ window.handleRfqSubmit = handleRfqSubmit;
 
 function openRfqForLot(lotId) {
   const spec = (window.specDatabase && window.specDatabase[lotId]);
-  const commName = spec ? `${spec.name} (${spec.lot})` : 'Sortex Agri-Commodity';
+  const commName = spec ? spec.name : 'Sortex Agri-Commodity';
 
-  // Set the commodity input strictly to THIS product ONLY
-  const commInput = document.getElementById('rfqCommodities');
-  if (commInput) {
-    commInput.value = commName;
-  }
+  // Set the manifest strictly to THIS product with default 10 Quintals
+  rfqManifest = [{ commodity: commName, quantity: 10, unit: 'Quintals' }];
+  window.rfqManifest = rfqManifest;
+  renderManifestRows();
 
   // Also update sample commodity input in case buyer toggles to sample mode
   const smpInput = document.getElementById('sampleCommodity');
   if (smpInput) {
-    smpInput.value = commName;
+    smpInput.value = spec ? `${spec.name} (${spec.lot})` : commName;
   }
 
   if (typeof setRfqMode === 'function') {
@@ -1325,7 +1842,7 @@ function openRfqForLot(lotId) {
       setTimeout(() => nameInp.focus(), 500);
     }
     if (typeof showToast === 'function') {
-      showToast(`Direct RFQ Active: ${commName}`);
+      showToast(`Consignment Set: ${commName} (10 QTL)`);
     }
   }
 }
@@ -1339,8 +1856,9 @@ function requestQuoteFromDrawer() {
     setRfqMode('quote');
     const spec = (window.specDatabase && window.specDatabase[activeLotId]);
     if (spec) {
-      const commInput = document.getElementById('rfqCommodities');
-      if (commInput) commInput.value = `${spec.name} (${spec.lot})`;
+      rfqManifest = [{ commodity: spec.name, quantity: 10, unit: 'Quintals' }];
+      window.rfqManifest = rfqManifest;
+      renderManifestRows();
     }
   }
 }
@@ -1348,9 +1866,12 @@ window.requestQuoteFromDrawer = requestQuoteFromDrawer;
 
 
 
-// Form controls & RFQ submission
+// Form controls & RFQ submission (Legacy Quote Form Support)
 function initContactForm() {
   const chipInputs = document.querySelectorAll('#productChips input');
+  const form = document.getElementById('quoteForm');
+  if (!form && chipInputs.length === 0) return;
+
   const summary = document.getElementById('selectionSummary');
 
   function updateSummary() {
@@ -1361,7 +1882,6 @@ function initContactForm() {
   }
   chipInputs.forEach(i => i.addEventListener('change', updateSummary));
 
-  const form = document.getElementById('quoteForm');
   const success = document.getElementById('formSuccess');
   const submitBtn = document.getElementById('submitBtn');
 
@@ -1427,39 +1947,85 @@ function initLuxurySwitchers() {
   const langPillBtn = document.getElementById('langPillBtn');
   const currPopover = document.getElementById('currPopover');
   const langPopover = document.getElementById('langPopover');
+  const popoverBackdrop = document.getElementById('popoverBackdrop');
+  const hub = document.getElementById('navSwitchersHub');
 
   if (!currPillBtn || !langPillBtn || !currPopover || !langPopover) return;
 
+  function syncPopoverMount() {
+    const isMobile = window.innerWidth <= 767.98;
+    if (isMobile) {
+      if (popoverBackdrop && popoverBackdrop.parentElement !== document.body) {
+        document.body.appendChild(popoverBackdrop);
+      }
+      if (currPopover.parentElement !== document.body) {
+        document.body.appendChild(currPopover);
+      }
+      if (langPopover.parentElement !== document.body) {
+        document.body.appendChild(langPopover);
+      }
+    } else {
+      if (hub) {
+        if (currPopover.parentElement !== hub) {
+          hub.appendChild(currPopover);
+        }
+        if (langPopover.parentElement !== hub) {
+          hub.appendChild(langPopover);
+        }
+        if (popoverBackdrop && popoverBackdrop.parentElement !== hub) {
+          hub.appendChild(popoverBackdrop);
+        }
+      }
+    }
+  }
+
+  // Initial sync & resize listener
+  syncPopoverMount();
+  window.addEventListener('resize', syncPopoverMount);
+
   function closeAllPopovers() {
-    currPopover.classList.remove('open');
-    langPopover.classList.remove('open');
+    currPopover.classList.remove('open', 'active');
+    langPopover.classList.remove('open', 'active');
     currPillBtn.classList.remove('active-pop');
     langPillBtn.classList.remove('active-pop');
     currPillBtn.setAttribute('aria-expanded', 'false');
     langPillBtn.setAttribute('aria-expanded', 'false');
+    if (popoverBackdrop) popoverBackdrop.classList.remove('active', 'open');
+  }
+  window.closeAllPopovers = closeAllPopovers;
+
+  if (popoverBackdrop) {
+    popoverBackdrop.addEventListener('click', (e) => {
+      e.stopPropagation();
+      closeAllPopovers();
+    });
   }
 
   // Toggle Currency Popover
   currPillBtn.addEventListener('click', (e) => {
     e.stopPropagation();
-    const isOpen = currPopover.classList.contains('open');
+    syncPopoverMount();
+    const isOpen = currPopover.classList.contains('open') || currPopover.classList.contains('active');
     closeAllPopovers();
     if (!isOpen) {
-      currPopover.classList.add('open');
+      currPopover.classList.add('open', 'active');
       currPillBtn.classList.add('active-pop');
       currPillBtn.setAttribute('aria-expanded', 'true');
+      if (popoverBackdrop) popoverBackdrop.classList.add('active', 'open');
     }
   });
 
   // Toggle Language Popover
   langPillBtn.addEventListener('click', (e) => {
     e.stopPropagation();
-    const isOpen = langPopover.classList.contains('open');
+    syncPopoverMount();
+    const isOpen = langPopover.classList.contains('open') || langPopover.classList.contains('active');
     closeAllPopovers();
     if (!isOpen) {
-      langPopover.classList.add('open');
+      langPopover.classList.add('open', 'active');
       langPillBtn.classList.add('active-pop');
       langPillBtn.setAttribute('aria-expanded', 'true');
+      if (popoverBackdrop) popoverBackdrop.classList.add('active', 'open');
     }
   });
 
@@ -1527,7 +2093,7 @@ function initLuxurySwitchers() {
 
   // Close on Outside Click
   document.addEventListener('click', (e) => {
-    if (!e.target.closest('#navSwitchersHub')) {
+    if (!e.target.closest('#navSwitchersHub') && !e.target.closest('#currPopover') && !e.target.closest('#langPopover')) {
       closeAllPopovers();
     }
   });
@@ -1616,6 +2182,17 @@ function initMainApp() {
     });
   });
 
+  // Enable direct card touch interaction to open Spec Drawer
+  document.querySelectorAll('.card--product').forEach(card => {
+    card.addEventListener('click', (e) => {
+      if (e.target.closest('button') || e.target.closest('a')) return;
+      const lot = card.getAttribute('data-lot-id');
+      if (lot && typeof openSpecDrawer === 'function') {
+        openSpecDrawer(lot);
+      }
+    });
+  });
+
   // 9. Luxury Regional Switcher Popovers
   try { initLuxurySwitchers(); } catch (e) { console.warn('Switcher init error:', e); }
 
@@ -1638,29 +2215,56 @@ function initMainApp() {
   // Mobile Menu Toggle
   const navToggle = document.getElementById('navToggle');
   const mobileMenu = document.getElementById('mobileMenu');
+  const mobileMenuBackdrop = document.getElementById('mobileMenuBackdrop');
+
+  window.closeMobileNav = function() {
+    if (mobileMenu) mobileMenu.classList.remove('open');
+    if (navToggle) {
+      navToggle.classList.remove('open');
+      navToggle.setAttribute('aria-expanded', 'false');
+    }
+    if (mobileMenuBackdrop) mobileMenuBackdrop.classList.remove('active');
+  };
+
   if (navToggle && mobileMenu) {
     if (typeof navToggle.addEventListener === 'function') {
       navToggle.addEventListener('click', () => {
-        mobileMenu.classList.toggle('open');
+        const isOpen = mobileMenu.classList.toggle('open');
+        navToggle.classList.toggle('open', isOpen);
+        navToggle.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+        if (mobileMenuBackdrop) mobileMenuBackdrop.classList.toggle('active', isOpen);
       });
     }
     if (typeof mobileMenu.querySelectorAll === 'function') {
       mobileMenu.querySelectorAll('a').forEach(a => {
         if (typeof a.addEventListener === 'function') {
-          a.addEventListener('click', () => mobileMenu.classList.remove('open'));
+          a.addEventListener('click', () => {
+            window.closeMobileNav();
+          });
         }
       });
     }
   }
 
-  // Keyboard Escape for Drawer & Popovers
+  // Keyboard Escape for Drawer, Popovers & Mobile Menu
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') {
       closeSpecDrawer();
-      const currPopover = document.getElementById('currPopover');
-      const langPopover = document.getElementById('langPopover');
-      if (currPopover) currPopover.classList.remove('open');
-      if (langPopover) langPopover.classList.remove('open');
+      if (typeof closeSampleCheckoutModal === 'function') closeSampleCheckoutModal();
+      if (typeof window.closeAllPopovers === 'function') {
+        window.closeAllPopovers();
+      } else {
+        const currPopover = document.getElementById('currPopover');
+        const langPopover = document.getElementById('langPopover');
+        if (currPopover) currPopover.classList.remove('open');
+        if (langPopover) langPopover.classList.remove('open');
+      }
+      if (mobileMenu) mobileMenu.classList.remove('open');
+      if (navToggle) {
+        navToggle.classList.remove('open');
+        navToggle.setAttribute('aria-expanded', 'false');
+      }
+      if (mobileMenuBackdrop) mobileMenuBackdrop.classList.remove('active');
     }
   });
 
@@ -1680,7 +2284,189 @@ function initMainApp() {
       }
     });
   }
+
+  // 10. Executive Mobile Bottom Command Bar
+  try { initMobileBottomNav(); } catch (e) {}
+
+  // 11. Synchronize Market Segment Visibility
+  try {
+    if (typeof setMarketSegment === 'function') {
+      setMarketSegment(window.currentMarketSegment || 'export');
+    }
+  } catch (e) {}
 }
+
+function toggleMobileCompliance() {
+  const grid = document.querySelector('.gov-grid') || document.querySelector('.compliance-grid');
+  const btnText = document.getElementById('txtExpandCompliance');
+  if (!grid) return;
+  const isExpanded = grid.classList.toggle('expanded');
+  if (btnText) {
+    btnText.textContent = isExpanded 
+      ? 'COLLAPSE STATUTORY ACCREDITATIONS ▴'
+      : 'VIEW ALL 6 STATUTORY ACCREDITATIONS ▾';
+  }
+}
+window.toggleMobileCompliance = toggleMobileCompliance;
+
+// ============================================================================
+// SLEEK B2B INSTITUTIONAL MOBILE ENGINE
+// Release: v4.6.1
+// ============================================================================
+
+function scrollToSection(id) {
+  if (!id) return;
+  const cleanId = String(id).replace(/^#/, '');
+  const el = document.getElementById(cleanId);
+  if (el) {
+    const nav = document.getElementById('mainNav');
+    const navHeight = (nav && getComputedStyle(nav).display !== 'none') ? nav.offsetHeight : 58;
+    const rect = el.getBoundingClientRect();
+    const targetY = (window.pageYOffset || document.documentElement.scrollTop) + rect.top - navHeight - 12;
+    window.scrollTo({ top: Math.max(0, targetY), behavior: 'smooth' });
+  }
+}
+window.scrollToSection = scrollToSection;
+
+function switchMobileAppTab(tabId, targetSectionId) {
+  if (tabId === 'samples') {
+    if (typeof window.requestCommercialSample === 'function') {
+      window.requestCommercialSample();
+    }
+    return;
+  }
+  if (tabId === 'tracking') {
+    window.open('tracking.html', '_blank');
+    return;
+  }
+  const targets = {
+    'storefront': 'products',
+    'catalog': 'products',
+    'products': 'products',
+    'rfq': 'contact',
+    'contact': 'contact',
+    'company': 'compliance',
+    'compliance': 'compliance'
+  };
+  const secId = targetSectionId || targets[tabId] || 'products';
+  scrollToSection(secId);
+}
+window.switchMobileAppTab = switchMobileAppTab;
+
+// Fast Add-to-RFQ action from product cards or spec drawer
+function addCommodityAndOpenRfq(name) {
+  if (typeof ensureCommodityInManifest === 'function') {
+    ensureCommodityInManifest(name);
+  } else if (typeof toggleCommodityInManifest === 'function') {
+    toggleCommodityInManifest(name);
+  }
+  scrollToSection('contact');
+}
+window.addCommodityAndOpenRfq = addCommodityAndOpenRfq;
+
+function addSpecLotToRfq() {
+  const lotId = window.activeLotId || 'p1';
+  const spec = (window.specDatabase && window.specDatabase[lotId]) || {};
+  const name = spec.name || 'Classic Toor (Tur Dal)';
+  if (typeof ensureCommodityInManifest === 'function') {
+    ensureCommodityInManifest(name);
+  } else if (typeof toggleCommodityInManifest === 'function') {
+    toggleCommodityInManifest(name);
+  }
+  closeSpecDrawer();
+  setTimeout(() => {
+    scrollToSection('contact');
+  }, 140);
+}
+window.addSpecLotToRfq = addSpecLotToRfq;
+
+function clearMobileSearch() {
+  const allBtn = document.querySelector('.filter-btn[data-filter="all"]');
+  if (allBtn) allBtn.click();
+}
+window.clearMobileSearch = clearMobileSearch;
+window.filterMobileCatalog = function() {};
+
+function initMobileBottomNav() {
+  // Mobile menu close on link tap
+  const mobileMenu = document.getElementById('mobileMenu');
+  if (mobileMenu) {
+    mobileMenu.querySelectorAll('a[href^="#"]').forEach(a => {
+      a.addEventListener('click', () => {
+        if (typeof window.closeMobileNav === 'function') window.closeMobileNav();
+      });
+    });
+  }
+
+  // Active section tracker for bottom nav
+  const mbnCat = document.getElementById('mbnCatalog');
+  const mbnRfq = document.getElementById('mbnRfq');
+  const mbnComp = document.getElementById('mbnCompany');
+
+  function updateActiveBottomNav() {
+    if (!mbnCat && !mbnRfq && !mbnComp) return;
+    const scrollY = window.pageYOffset || document.documentElement.scrollTop;
+    const vh = window.innerHeight;
+    const docHeight = document.documentElement.scrollHeight;
+    const nav = document.getElementById('mainNav');
+    const navH = (nav && getComputedStyle(nav).display !== 'none') ? nav.offsetHeight : 58;
+
+    function setActive(btn) {
+      document.querySelectorAll('.mbn-item').forEach(b => b.classList.remove('active'));
+      if (btn) btn.classList.add('active');
+    }
+
+    // If scrolled near document bottom, activate Quote Desk
+    if (scrollY + vh >= docHeight - 80) {
+      setActive(mbnRfq);
+      return;
+    }
+
+    const contact = document.getElementById('contact');
+    const compliance = document.getElementById('compliance');
+    const products = document.getElementById('products');
+
+    if (contact) {
+      const cTop = contact.offsetTop - navH - 80;
+      if (scrollY >= cTop) {
+        setActive(mbnRfq);
+        return;
+      }
+    }
+
+    if (compliance) {
+      const compTop = compliance.offsetTop - navH - 80;
+      const compBottom = compTop + compliance.offsetHeight;
+      if (scrollY >= compTop && scrollY < compBottom) {
+        setActive(mbnComp);
+        return;
+      }
+    }
+
+    if (products) {
+      const pTop = products.offsetTop - navH - 120;
+      if (scrollY >= pTop) {
+        setActive(mbnCat);
+        return;
+      }
+    }
+
+    // Default top of document (hero, stats)
+    setActive(mbnCat);
+  }
+
+  window.addEventListener('scroll', updateActiveBottomNav, { passive: true });
+  window.addEventListener('resize', updateActiveBottomNav, { passive: true });
+  updateActiveBottomNav();
+  window.updateMobileBottomNavActive = updateActiveBottomNav;
+}
+window.initMobileBottomNav = initMobileBottomNav;
+
+function initMobileApp() {
+  initMobileBottomNav();
+}
+window.initMobileApp = initMobileApp;
+
 
 // Resilient readyState check: Fires immediately if DOM is ready, or on DOMContentLoaded
 if (document.readyState === 'loading') {
@@ -1716,49 +2502,7 @@ function initContactMotion() {
       card.style.setProperty('--contact-mouse-y', `${y}px`);
     });
   }
-
-  // 3. Form Submission with Scanning State
-  const form = document.getElementById('rfqForm');
-  const submitBtn = document.getElementById('rfqSubmitBtn');
-  const successMsg = document.getElementById('rfqSuccessMsg');
-
-  if (form) {
-    form.addEventListener('submit', (e) => {
-      e.preventDefault();
-      if (submitBtn) {
-        submitBtn.innerHTML = '<span>TRANSMITTING TO MUMBAI DESK...</span>';
-        submitBtn.style.opacity = '0.7';
-        submitBtn.disabled = true;
-      }
-
-      setTimeout(() => {
-        if (submitBtn) {
-          submitBtn.style.display = 'none';
-        }
-        if (successMsg) {
-          successMsg.style.display = 'block';
-        }
-        if (typeof showToast === 'function') {
-          showToast('✅ Formal Export RFQ Transmitted! Reference generated.');
-        }
-      }, 700);
-    });
-  }
 }
-
-// Quick add commodity chip into input
-function addCommodityToRfq(name) {
-  const input = document.getElementById('rfqCommodities');
-  if (!input) return;
-  const current = input.value.trim();
-  if (!current) {
-    input.value = name;
-  } else if (!current.includes(name)) {
-    input.value = `${current}, ${name}`;
-  }
-  input.focus();
-}
-window.addCommodityToRfq = addCommodityToRfq;
 
 /* ==========================================================================
    OFFICIAL RAZORPAY AUTOMATED PAYMENT GATEWAY (AMAZON-STYLE REAL-TIME CALLBACK)
@@ -1839,7 +2583,7 @@ function openSampleCheckoutModal(commodityName, lotId) {
     // 3. Keyword matching (masoor, toor, moong, chana, chia, cumin, coriander, turmeric, chilli, etc.)
     if (matchedIndex === -1 && (targetText || targetLot)) {
       const searchBlob = `${targetText} ${targetLot}`;
-      const keywords = ['masoor', 'toor', 'tur', 'moong', 'mung', 'chana', 'chia', 'cumin', 'jeera', 'coriander', 'dhania', 'turmeric', 'haldi', 'moringa', 'jowar', 'sorghum', 'chilli', 'chili', 'cardamom', 'sesame', 'mustard', 'fenugreek', 'fennel'];
+      const keywords = ['masoor', 'toor', 'tur', 'moong', 'mung', 'chana', 'chia', 'cumin', 'jeera', 'coriander', 'dhania', 'turmeric', 'haldi', 'moringa', 'jowar', 'sorghum', 'emmer', 'khapli', 'ghee', 'cow ghee', 'masala', 'spice blend', 'tissue', 'paper', 'chilli', 'chili', 'cardamom', 'sesame', 'mustard', 'fenugreek', 'fennel'];
       for (const kw of keywords) {
         if (searchBlob.includes(kw)) {
           for (let i = 0; i < sel.options.length; i++) {
@@ -1867,6 +2611,7 @@ function openSampleCheckoutModal(commodityName, lotId) {
     }
   }
 
+  selectSampleSettlement('freight_collect');
   updateSamplePriceCalc();
   modal.style.display = 'flex';
 }
@@ -1875,39 +2620,332 @@ function closeSampleCheckoutModal() {
   const modal = document.getElementById('sampleCheckoutModal');
   if (modal) modal.style.display = 'none';
 }
+window.openSampleCheckoutModal = openSampleCheckoutModal;
+window.closeSampleCheckoutModal = closeSampleCheckoutModal;
+
+function populateSampleTestBuyer() {
+  const nIn = document.getElementById('smpName'); if (nIn) nIn.value = 'Dr. Stefan Meier';
+  const eIn = document.getElementById('smpEmail'); if (eIn) eIn.value = 'stefan@bavaria-agri.de';
+  const cIn = document.getElementById('smpCompany'); if (cIn) cIn.value = 'Bavaria Global Agri Import GMBH';
+  const pIn = document.getElementById('smpPhone'); if (pIn) pIn.value = '+49 89 2018 4400';
+  const aIn = document.getElementById('smpAddress'); if (aIn) aIn.value = 'Industriestrasse 14, 80331 Munich, Germany';
+  const carrierIn = document.getElementById('smpCourierCarrier'); if (carrierIn) carrierIn.value = 'DHL Express';
+  const accIn = document.getElementById('smpCourierAccount'); if (accIn) accIn.value = 'DHL-965842103';
+  if (typeof showToast === 'function') {
+    showToast("✓ Demo importer credentials populated for testing", "info");
+  }
+}
+window.populateSampleTestBuyer = populateSampleTestBuyer;
+
+let currentSampleSettlement = 'freight_collect';
+
+function selectSampleSettlement(method) {
+  currentSampleSettlement = method || 'freight_collect';
+
+  const optFreight = document.getElementById('smpOptCardFreight');
+  const optProforma = document.getElementById('smpOptCardProforma');
+  const optOnline = document.getElementById('smpOptCardOnline');
+  const panelFreight = document.getElementById('smpFreightPanel');
+  const panelProforma = document.getElementById('smpProformaPanel');
+  const panelOnline = document.getElementById('smpOnlinePanel');
+
+  const radioFreight = document.querySelector('input[name="sampleSettlementOpt"][value="freight_collect"]');
+  const radioProforma = document.querySelector('input[name="sampleSettlementOpt"][value="proforma_invoice"]');
+  const radioOnline = document.querySelector('input[name="sampleSettlementOpt"][value="online_dispatch"]');
+
+  if (optFreight) {
+    if (currentSampleSettlement === 'freight_collect') {
+      optFreight.style.background = 'rgba(217,172,82,0.12)';
+      optFreight.style.borderColor = 'rgba(217,172,82,0.5)';
+      optFreight.style.color = '#F5EFE0';
+      optFreight.style.borderWidth = '1px';
+      if (radioFreight) radioFreight.checked = true;
+    } else {
+      optFreight.style.background = 'transparent';
+      optFreight.style.borderColor = 'transparent';
+      optFreight.style.color = 'var(--muted)';
+      optFreight.style.borderWidth = '1px';
+    }
+  }
+
+  if (optProforma) {
+    if (currentSampleSettlement === 'proforma_invoice') {
+      optProforma.style.background = 'rgba(217,172,82,0.12)';
+      optProforma.style.borderColor = 'rgba(217,172,82,0.5)';
+      optProforma.style.color = '#F5EFE0';
+      optProforma.style.borderWidth = '1px';
+      if (radioProforma) radioProforma.checked = true;
+    } else {
+      optProforma.style.background = 'transparent';
+      optProforma.style.borderColor = 'transparent';
+      optProforma.style.color = 'var(--muted)';
+      optProforma.style.borderWidth = '1px';
+    }
+  }
+
+  if (optOnline) {
+    if (currentSampleSettlement === 'online_dispatch') {
+      optOnline.style.background = 'rgba(217,172,82,0.12)';
+      optOnline.style.borderColor = 'rgba(217,172,82,0.5)';
+      optOnline.style.color = '#F5EFE0';
+      optOnline.style.borderWidth = '1px';
+      if (radioOnline) radioOnline.checked = true;
+    } else {
+      optOnline.style.background = 'transparent';
+      optOnline.style.borderColor = 'transparent';
+      optOnline.style.color = 'var(--muted)';
+      optOnline.style.borderWidth = '1px';
+    }
+  }
+
+  if (panelFreight) panelFreight.style.display = (currentSampleSettlement === 'freight_collect') ? 'block' : 'none';
+  if (panelProforma) panelProforma.style.display = (currentSampleSettlement === 'proforma_invoice') ? 'block' : 'none';
+  if (panelOnline) panelOnline.style.display = (currentSampleSettlement === 'online_dispatch') ? 'block' : 'none';
+}
+window.selectSampleSettlement = selectSampleSettlement;
 
 function updateSamplePriceCalc() {
-  const basePrice = getSampleBasePriceINR();
+  const basePrice = (typeof getSampleBasePriceINR === 'function') ? getSampleBasePriceINR() : 499.00;
   const weight = (document.getElementById('smpWeight') ? document.getElementById('smpWeight').value : '500g');
   const amountInr = (weight === '1kg') ? (basePrice * 2.00) : basePrice;
+  const amountUsd = (weight === '1kg') ? 25.00 : 15.00;
+
+  const dualEl = document.getElementById('smpDualPriceTag');
+  if (dualEl) dualEl.textContent = `USD $${amountUsd.toFixed(2)} / INR ₹${amountInr.toFixed(2)}`;
+
   const payableEl = document.getElementById('smpPayableText');
   if (payableEl) payableEl.textContent = `₹${amountInr.toFixed(2)}`;
-  const btn = document.getElementById('btnLaunchRazorpay');
-  if (btn) btn.innerHTML = `<span>PROCEED TO PAY ₹${amountInr.toFixed(2)} (FIXED PRICE) VIA UPI / GPAY ➔</span>`;
+
+  const btnRzp = document.getElementById('btnLaunchRazorpay');
+  if (btnRzp) btnRzp.innerHTML = `<span>PAY AIR COURIER FEE (₹${amountInr.toFixed(2)} / $${amountUsd.toFixed(2)}) ➔</span>`;
 }
+window.updateSamplePriceCalc = updateSamplePriceCalc;
+
+async function submitFreightCollectSample() {
+  const sel = document.getElementById('smpCommoditySelect');
+  const commodity = sel ? (sel.options[sel.selectedIndex] ? sel.options[sel.selectedIndex].text.split('·')[0].trim() : sel.value) : 'Certified Export Lot Sample';
+  const weight = (document.getElementById('smpWeight') ? document.getElementById('smpWeight').value : '500g');
+  const name = (document.getElementById('smpName') ? document.getElementById('smpName').value.trim() : '');
+  const email = (document.getElementById('smpEmail') ? document.getElementById('smpEmail').value.trim() : '');
+  const company = (document.getElementById('smpCompany') ? document.getElementById('smpCompany').value.trim() : '');
+  const phone = (document.getElementById('smpPhone') ? document.getElementById('smpPhone').value.trim() : '');
+  const address = (document.getElementById('smpAddress') ? document.getElementById('smpAddress').value.trim() : '');
+  const carrier = (document.getElementById('smpCourierCarrier') ? document.getElementById('smpCourierCarrier').value : 'DHL Express');
+  const courierAccount = (document.getElementById('smpCourierAccount') ? document.getElementById('smpCourierAccount').value.trim() : '');
+
+  if (!name || !email || !address) {
+    if (typeof showToast === 'function') {
+      showToast("⚠️ Please enter your Full Name, Corporate Email, and Delivery Address.", "error");
+    } else {
+      alert("Please enter your Full Name, Corporate Email, and Delivery Address.");
+    }
+    return;
+  }
+
+  if (!courierAccount) {
+    if (typeof showToast === 'function') {
+      showToast("⚠️ Please enter your corporate courier account # (DHL/FedEx/UPS/Aramex) for Freight Collect.", "error");
+    } else {
+      alert("Please enter your corporate courier account # (DHL/FedEx/UPS/Aramex) for Freight Collect.");
+    }
+    const accInput = document.getElementById('smpCourierAccount');
+    if (accInput) accInput.focus();
+    return;
+  }
+
+  const sampleId = (typeof generateSecureId === 'function')
+    ? generateSecureId('GGE-SMP')
+    : `GGE-SMP-${Math.floor(1000 + Math.random() * 9000)}`;
+
+  const btn = document.getElementById('btnSubmitFreightCollect');
+  if (btn) {
+    btn.disabled = true;
+    btn.innerHTML = '<span>TRANSMITTING FREIGHT COLLECT DISPATCH...</span>';
+  }
+
+  try {
+    const res = await fetch('/api/sample-request', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        orderId: sampleId,
+        settlementMethod: 'freight_collect',
+        name,
+        email,
+        company,
+        phone,
+        address,
+        commodity,
+        weight,
+        carrier,
+        courierAccount
+      })
+    });
+    const result = await res.json();
+    if (res.ok && result.success) {
+      handleSuccessfulSampleOrder({
+        orderId: result.orderId || sampleId,
+        settlementMethod: 'freight_collect',
+        carrier,
+        courierAccount,
+        name,
+        company,
+        email,
+        phone,
+        address,
+        commodity,
+        weight,
+        status: result.status || 'PENDING DISPATCH · Freight Collect',
+        payable: result.payable || `FREIGHT COLLECT (${carrier} A/C #${courierAccount}) · $0.00 DUE`
+      });
+    } else {
+      if (typeof showToast === 'function') {
+        showToast("⚠️ Dispatch error: " + (result.error || "Could not register sample order"), "error");
+      }
+    }
+  } catch (err) {
+    console.error("Freight collect error:", err);
+    // Offline / PWA Fallback
+    handleSuccessfulSampleOrder({
+      orderId: sampleId,
+      settlementMethod: 'freight_collect',
+      carrier,
+      courierAccount,
+      name,
+      company,
+      email,
+      phone,
+      address,
+      commodity,
+      weight,
+      status: 'PENDING DISPATCH · Freight Collect',
+      payable: `FREIGHT COLLECT (${carrier} A/C #${courierAccount}) · $0.00 DUE`
+    });
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.innerHTML = '<span>SUBMIT FREIGHT COLLECT SAMPLE ORDER ($0.00) ➔</span>';
+    }
+  }
+}
+window.submitFreightCollectSample = submitFreightCollectSample;
+
+async function submitProformaInvoiceSample() {
+  const sel = document.getElementById('smpCommoditySelect');
+  const commodity = sel ? (sel.options[sel.selectedIndex] ? sel.options[sel.selectedIndex].text.split('·')[0].trim() : sel.value) : 'Certified Export Lot Sample';
+  const weight = (document.getElementById('smpWeight') ? document.getElementById('smpWeight').value : '500g');
+  const name = (document.getElementById('smpName') ? document.getElementById('smpName').value.trim() : '');
+  const email = (document.getElementById('smpEmail') ? document.getElementById('smpEmail').value.trim() : '');
+  const company = (document.getElementById('smpCompany') ? document.getElementById('smpCompany').value.trim() : '');
+  const phone = (document.getElementById('smpPhone') ? document.getElementById('smpPhone').value.trim() : '');
+  const address = (document.getElementById('smpAddress') ? document.getElementById('smpAddress').value.trim() : '');
+
+  if (!name || !email || !address) {
+    if (typeof showToast === 'function') {
+      showToast("⚠️ Please enter your Full Name, Corporate Email, and Delivery Address.", "error");
+    } else {
+      alert("Please enter your Full Name, Corporate Email, and Delivery Address.");
+    }
+    return;
+  }
+
+  const sampleId = (typeof generateSecureId === 'function')
+    ? generateSecureId('GGE-SMP')
+    : `GGE-SMP-${Math.floor(1000 + Math.random() * 9000)}`;
+
+  const btn = document.getElementById('btnSubmitProformaRequest');
+  if (btn) {
+    btn.disabled = true;
+    btn.innerHTML = '<span>GENERATING STAMPED PROFORMA INVOICE...</span>';
+  }
+
+  try {
+    const res = await fetch('/api/sample-request', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        orderId: sampleId,
+        settlementMethod: 'proforma_invoice',
+        name,
+        email,
+        company,
+        phone,
+        address,
+        commodity,
+        weight
+      })
+    });
+    const result = await res.json();
+    if (res.ok && result.success) {
+      handleSuccessfulSampleOrder({
+        orderId: result.orderId || sampleId,
+        settlementMethod: 'proforma_invoice',
+        name,
+        company,
+        email,
+        phone,
+        address,
+        commodity,
+        weight,
+        status: result.status || 'PROFORMA REQUESTED · Pending Wire',
+        payable: result.payable || 'PROFORMA INVOICE PENDING (Courier Handling · 100% Credited on Contract)'
+      });
+    } else {
+      if (typeof showToast === 'function') {
+        showToast("⚠️ Proforma error: " + (result.error || "Could not generate invoice request"), "error");
+      }
+    }
+  } catch (err) {
+    console.error("Proforma invoice request error:", err);
+    handleSuccessfulSampleOrder({
+      orderId: sampleId,
+      settlementMethod: 'proforma_invoice',
+      name,
+      company,
+      email,
+      phone,
+      address,
+      commodity,
+      weight,
+      status: 'PROFORMA REQUESTED · Pending Wire',
+      payable: 'PROFORMA INVOICE PENDING (Courier Handling · 100% Credited on Contract)'
+    });
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.innerHTML = '<span>REQUEST OFFICIAL SAMPLE PROFORMA INVOICE ➔</span>';
+    }
+  }
+}
+window.submitProformaInvoiceSample = submitProformaInvoiceSample;
 
 async function launchRazorpayCheckout() {
   const sel = document.getElementById('smpCommoditySelect');
   const commodity = sel ? (sel.options[sel.selectedIndex] ? sel.options[sel.selectedIndex].text.split('·')[0].trim() : sel.value) : 'Certified Sample Commodity';
   const weight = (document.getElementById('smpWeight') ? document.getElementById('smpWeight').value : '500g');
-  let name = (document.getElementById('smpName') ? document.getElementById('smpName').value.trim() : 'Aryan Nigade');
-  let email = (document.getElementById('smpEmail') ? document.getElementById('smpEmail').value.trim() : 'nigadearyan@gmail.com');
-  let phone = (document.getElementById('smpPhone') ? document.getElementById('smpPhone').value.trim() : '+91 9920594424');
-  let address = (document.getElementById('smpAddress') ? document.getElementById('smpAddress').value.trim() : '1903 A Ajmera Zeon, Wadala East, Mumbai');
+  let name = (document.getElementById('smpName') ? document.getElementById('smpName').value.trim() : '');
+  let email = (document.getElementById('smpEmail') ? document.getElementById('smpEmail').value.trim() : '');
+  let company = (document.getElementById('smpCompany') ? document.getElementById('smpCompany').value.trim() : '');
+  let phone = (document.getElementById('smpPhone') ? document.getElementById('smpPhone').value.trim() : '');
+  let address = (document.getElementById('smpAddress') ? document.getElementById('smpAddress').value.trim() : '');
 
-  if (!name) name = "Aryan Nigade";
-  if (!email) email = "nigadearyan@gmail.com";
-  if (!phone) phone = "+91 9920594424";
-  if (!address) address = "1903 A Ajmera Zeon, Wadala East, Mumbai - 400037, Maharashtra, India";
+  if (!name || !email || !phone || !address) {
+    if (typeof showToast === 'function') {
+      showToast("⚠️ Please enter your Full Name, Email, Phone, and Delivery Address before proceeding.", "error");
+    } else {
+      alert("Please enter your Full Name, Email, Phone, and Delivery Address before proceeding.");
+    }
+    return;
+  }
 
-  const basePrice = getSampleBasePriceINR();
+  const basePrice = (typeof getSampleBasePriceINR === 'function') ? getSampleBasePriceINR() : 499.00;
   const amountInr = (weight === '1kg') ? (basePrice * 2.00) : basePrice;
   const amountPaise = Math.round(amountInr * 100);
   const sampleId = (typeof generateSecureId === 'function') 
     ? generateSecureId('GGE-SMP') 
     : `GGE-SMP-${Math.floor(1000 + Math.random() * 9000)}`;
 
-  const rzpKey = "rzp_test_TVccuNkp9w0aTB";
+  let rzpKey = "rzp_test_TVccuNkp9w0aTB";
 
   const btn = document.getElementById('btnLaunchRazorpay');
   if (btn) {
@@ -1925,20 +2963,34 @@ async function launchRazorpayCheckout() {
     const res = await fetch(apiUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ amount: amountInr })
+      body: JSON.stringify({
+        amount: amountInr,
+        currency: 'INR',
+        sampleId,
+        sampleType: `${commodity} (${weight})`,
+        metadata: { name, email, company, phone, address, commodity, weight, settlementMethod: 'online_dispatch' }
+      })
     });
     const orderData = await res.json();
-    if (orderData && orderData.id) {
-      serverOrderId = orderData.id;
+    if (orderData && (orderData.orderId || orderData.id)) {
+      serverOrderId = orderData.orderId || orderData.id;
+    }
+    if (orderData && orderData.key) {
+      rzpKey = orderData.key;
     }
   } catch (e) {
     console.warn("Order creation error:", e);
   }
 
   if (btn) {
-    btn.innerHTML = 'PROCEED TO PAYMENT (TEST GATEWAY) ➔';
+    updateSamplePriceCalc();
     btn.style.opacity = '1';
     btn.disabled = false;
+  }
+
+  if (!serverOrderId) {
+    if (typeof showToast === 'function') showToast("⚠️ Could not initialize secure payment order. Please try again.", "error");
+    return;
   }
 
   if (typeof Razorpay !== 'undefined') {
@@ -1947,12 +2999,48 @@ async function launchRazorpayCheckout() {
       amount: amountPaise,
       currency: "INR",
       name: "Golden Global Expo",
-      description: `Certified ${weight} ${commodity.split('[')[0].trim()} Sample Pouch`,
+      description: `Certified ${weight} ${commodity.split('[')[0].trim()} Sample Pouch Courier Fee`,
       image: "images/logo_emblem.png",
       order_id: serverOrderId,
-      handler: function (response) {
+      handler: async function (response) {
         const paymentId = response.razorpay_payment_id || `pay_${Date.now()}`;
-        handleSuccessfulGatewayPayment(sampleId, paymentId, amountInr, commodity, weight, name, email, phone, address);
+        try {
+          const confRes = await fetch('/api/confirm-payment', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              razorpay_order_id: response.razorpay_order_id || serverOrderId,
+              razorpay_payment_id: paymentId,
+              razorpay_signature: response.razorpay_signature || '',
+              amount: amountInr,
+              name, email, company, phone, address, commodity, weight
+            })
+          });
+          const confData = await confRes.json();
+          if (!confRes.ok || !confData.success) {
+            if (typeof showToast === 'function') {
+              showToast("⚠️ Payment confirmation failed: " + (confData.error || "Verification error"), "error");
+            }
+            return;
+          }
+        } catch(e) {
+          console.warn("Payment confirmation network error:", e);
+        }
+        handleSuccessfulSampleOrder({
+          orderId: serverOrderId,
+          paymentId,
+          amountInr,
+          commodity,
+          weight,
+          name,
+          company,
+          email,
+          phone,
+          address,
+          settlementMethod: 'online_dispatch',
+          status: 'PAID · Pending Courier AWB',
+          payable: `₹${parseFloat(amountInr).toFixed(2)} INR (PAID & CAPTURED · 100% Credited)`
+        });
       },
       prefill: {
         name: name,
@@ -1969,89 +3057,177 @@ async function launchRazorpayCheckout() {
     rzp.open();
   }
 }
+window.launchRazorpayCheckout = launchRazorpayCheckout;
 
 async function simulateInteractiveMockPayment() {
-  const name = (document.getElementById('smpName') && document.getElementById('smpName').value.trim()) || 'International Buyer';
-  const email = (document.getElementById('smpEmail') && document.getElementById('smpEmail').value.trim()) || 'buyer@globaltrade.com';
-  const phone = (document.getElementById('smpPhone') && document.getElementById('smpPhone').value.trim()) || '+91 9920594424';
-  let address = (document.getElementById('smpAddress') && document.getElementById('smpAddress').value.trim()) || '1903 A Ajmera Zeon, Wadala East, Mumbai - 400037, Maharashtra, India';
+  selectSampleSettlement('online_dispatch');
+
+  let name = (document.getElementById('smpName') && document.getElementById('smpName').value.trim()) || '';
+  let email = (document.getElementById('smpEmail') && document.getElementById('smpEmail').value.trim()) || '';
+  let company = (document.getElementById('smpCompany') && document.getElementById('smpCompany').value.trim()) || '';
+  let phone = (document.getElementById('smpPhone') && document.getElementById('smpPhone').value.trim()) || '';
+  let address = (document.getElementById('smpAddress') && document.getElementById('smpAddress').value.trim()) || '';
+
+  // Auto-fill realistic demo institutional importer credentials if inputs are empty
+  if (!name || !email || !address) {
+    name = name || 'Dr. Stefan Meier';
+    email = email || 'stefan@bavaria-agri.de';
+    company = company || 'Bavaria Global Agri Import GMBH';
+    phone = phone || '+49 89 2018 4400';
+    address = address || 'Industriestrasse 14, 80331 Munich, Germany';
+
+    const nIn = document.getElementById('smpName'); if (nIn) nIn.value = name;
+    const eIn = document.getElementById('smpEmail'); if (eIn) eIn.value = email;
+    const cIn = document.getElementById('smpCompany'); if (cIn) cIn.value = company;
+    const pIn = document.getElementById('smpPhone'); if (pIn) pIn.value = phone;
+    const aIn = document.getElementById('smpAddress'); if (aIn) aIn.value = address;
+  }
+
   const sel = document.getElementById('smpCommoditySelect');
   const commodity = sel ? (sel.options[sel.selectedIndex] ? sel.options[sel.selectedIndex].text.split('·')[0].trim() : sel.value) : 'Assayed Export Lot';
   const weight = (document.getElementById('smpWeight') ? document.getElementById('smpWeight').value : '500g');
-  const basePrice = (typeof getSampleBasePriceINR === 'function') ? getSampleBasePriceINR() : 1.0;
-  const amountInr = (weight === '1kg') ? (basePrice * 2.0) : basePrice;
-  const sampleId = (typeof generateSecureId === 'function') 
-    ? generateSecureId('GGE-SMP') 
-    : `GGE-SMP-${Math.floor(1000 + Math.random() * 9000)}`;
+  const basePrice = (typeof getSampleBasePriceINR === 'function') ? getSampleBasePriceINR() : 499.00;
+  const amountInr = (weight === '1kg') ? (basePrice * 2.00) : basePrice;
 
   const btnMock = document.getElementById('btnLaunchMockPayment');
   const btnRzp = document.getElementById('btnLaunchRazorpay');
 
   if (btnMock) {
     btnMock.disabled = true;
-    btnMock.innerHTML = '<span>⏳ Contacting Card Issuer & Banking Node...</span>';
+    btnMock.innerHTML = '<span>[1/3 Contacting Card Node &amp; 3DS Gateway...]</span>';
   }
   if (btnRzp) btnRzp.disabled = true;
 
+  // Initialize authorized order session on backend in mock test mode
+  const sampleId = (typeof generateSecureId === 'function') 
+    ? generateSecureId('GGE-SMP') 
+    : `GGE-SMP-${Math.floor(1000 + Math.random() * 9000)}`;
+
+  let orderId = sampleId;
+  try {
+    const res = await fetch('/api/create-razorpay-order', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        amount: amountInr,
+        currency: 'INR',
+        sampleId: sampleId,
+        is_mock: true,
+        name,
+        email,
+        company,
+        phone,
+        address,
+        commodity,
+        weight,
+        sampleType: `${commodity} (${weight})`,
+        metadata: { name, email, company, phone, address, commodity, weight, is_mock: 'true', settlementMethod: 'online_dispatch' }
+      })
+    });
+    if (res.ok) {
+      const orderData = await res.json();
+      if (orderData.orderId || orderData.id) {
+        orderId = orderData.orderId || orderData.id;
+      }
+    }
+  } catch (e) {
+    console.warn("Order initialization error:", e);
+  }
+
   // Step 1: 3D Secure simulation
-  await new Promise(r => setTimeout(r, 600));
-  if (btnMock) btnMock.innerHTML = '<span>🔒 3D Secure 2.0 OTP Verified...</span>';
+  await new Promise(r => setTimeout(r, 500));
+  if (btnMock) btnMock.innerHTML = '<span>[2/3 3D Secure OTP Verified...]</span>';
 
   // Step 2: Instant settlement capture
-  await new Promise(r => setTimeout(r, 600));
-  if (btnMock) btnMock.innerHTML = '<span>✅ Settle & Capture: ₹' + amountInr.toFixed(2) + '...</span>';
+  await new Promise(r => setTimeout(r, 500));
+  if (btnMock) btnMock.innerHTML = '<span>[3/3 Settling ₹' + amountInr.toFixed(2) + ' &amp; Generating AWB...]</span>';
 
   await new Promise(r => setTimeout(r, 400));
 
   const mockPaymentId = `mock_pay_${Date.now().toString(36).toUpperCase()}`;
 
-  handleSuccessfulGatewayPayment(sampleId, mockPaymentId, amountInr, commodity, weight, name, email, phone, address);
-
-  // Notify backend to trigger real-time SSE event to desk
+  // Confirm payment with backend to atomically persist in DB, write audit entry and trigger SSE
   try {
-    fetch('/api/confirm-payment', {
+    await fetch('/api/confirm-payment', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        order_id: sampleId,
-        payment_id: mockPaymentId,
-        amount: amountInr.toFixed(2),
-        paid_at: new Date().toISOString()
+        razorpay_order_id: orderId,
+        razorpay_payment_id: mockPaymentId,
+        amount: amountInr,
+        is_mock: true,
+        name,
+        email,
+        company,
+        phone,
+        address,
+        commodity,
+        weight
       })
-    }).catch(() => {});
+    });
   } catch (e) {}
+
+  handleSuccessfulSampleOrder({
+    orderId,
+    paymentId: mockPaymentId,
+    amountInr,
+    commodity,
+    weight,
+    name,
+    company,
+    email,
+    phone,
+    address,
+    isMock: true,
+    settlementMethod: 'online_dispatch',
+    status: 'PAID · Pending Courier AWB',
+    payable: `₹${parseFloat(amountInr).toFixed(2)} INR (PAID & CAPTURED · 100% Credited)`
+  });
 
   if (btnMock) {
     btnMock.disabled = false;
-    btnMock.innerHTML = '<span>Run Interactive Payment Gateway Demo</span>';
+    btnMock.innerHTML = '<span>[Dev Simulation: Instant Mock Settlement &amp; Consignment Tracking]</span>';
   }
   if (btnRzp) btnRzp.disabled = false;
 }
 window.simulateInteractiveMockPayment = simulateInteractiveMockPayment;
 
-function handleSuccessfulGatewayPayment(orderId, paymentId, amountInr, commodity, weight, name, email, phone, address) {
+function handleSuccessfulSampleOrder(data) {
+  const orderId = data.orderId || `GGE-SMP-${Math.floor(1000 + Math.random() * 9000)}`;
+  const paymentId = data.paymentId || (data.settlementMethod === 'freight_collect' ? `FC-${(data.carrier || 'DHL').toUpperCase()}` : 'PROFORMA-ISSUED');
+  const commodity = data.commodity || 'Certified Agricultural Sample';
+  const weight = data.weight || '500g';
+  const name = data.name || 'Valued Importer';
+  const company = data.company || '';
+  const email = data.email || '';
+  const phone = data.phone || '';
+  const address = data.address || '';
+  const method = data.settlementMethod || 'freight_collect';
+  const payable = data.payable || (method === 'freight_collect' ? '$0.00 (Freight Collect)' : 'Proforma Stamped');
+  const status = data.status || (method === 'freight_collect' ? 'PENDING DISPATCH · Freight Collect' : 'PROFORMA REQUESTED');
+
   const sampleRecord = {
     id: orderId,
     type: 'SAMPLE_ORDER',
     paymentId: paymentId,
-    name,
-    email,
-    phone,
-    company: 'Golden Global Expo Sample Importer',
-    commodities: `${commodity.split('[')[0].trim()} (${weight} Sealed Pouch)`,
+    name: name,
+    email: email,
+    phone: phone,
+    company: company || 'Golden Global Expo Sample Importer',
+    commodities: `${commodity.split('[')[0].trim()} (${weight} Sealed Foil Pouch)`,
     lotName: commodity,
-    address,
-    payable: `₹${parseFloat(amountInr).toFixed(2)} INR (PAID & CAPTURED)`,
-    country: 'India Domestic (SpeedPost / BlueDart)',
+    address: address,
+    payable: payable,
+    country: address ? (address.split(',').pop().trim()) : 'International Air Express',
     date: new Date().toISOString().split('T')[0],
     time: new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true }),
     createdAt: Date.now() / 1000,
-    status: 'PAID · Pending Courier AWB',
+    status: status,
     utr: paymentId,
     awb: ''
   };
 
-  // Save to inquiries & samples
+  // Save to client-side localStorage mirrors
   try {
     const raw = localStorage.getItem('gge_inquiries');
     const list = raw ? JSON.parse(raw) : [];
@@ -2065,58 +3241,6 @@ function handleSuccessfulGatewayPayment(orderId, paymentId, amountInr, commodity
     smpList.unshift(sampleRecord);
     localStorage.setItem('gge_samples', JSON.stringify(smpList));
 
-    // 1. Immediately persist to server inquiries database
-    if (typeof addInquiryToServer === 'function') {
-      addInquiryToServer(sampleRecord);
-    } else {
-      fetch('/api/inquiries', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(sampleRecord)
-      }).catch(() => {});
-    }
-
-    // 2. Immediately register sample consignment in tracker
-    const consignmentItem = {
-      bl: orderId,
-      buyer: name,
-      buyerEmail: email,
-      buyerPhone: phone,
-      commodity: `${commodity.split('[')[0].trim()} (${weight} Sealed Pouch)`,
-      vessel: 'Air Courier (BlueDart / DHL Priority)',
-      pod: address || 'Mumbai, Maharashtra, India',
-      eta: '24-48 Hours Delivery',
-      container: `AIR-POUCH #${orderId.replace('GGE-SMP-', '')}`,
-      stage: 2,
-      status: 'Sample Dispatched · Air Hub',
-      invRef: '',
-      phytoRef: '',
-      coaRef: '',
-      blRef: ''
-    };
-    fetch('/api/consignments', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(consignmentItem)
-    }).catch(() => {});
-
-    // 3. Immediately record in Immutable Audit & Compliance Ledger
-    const auditEntry = {
-      id: `AUD-${Date.now().toString(36).toUpperCase()}`,
-      timestamp: new Date().toISOString(),
-      operator: 'Payment Gateway (Razorpay)',
-      action: 'SAMPLE_ORDER_PAID_CAPTURED',
-      entityId: orderId,
-      previousState: 'CHECKOUT_PENDING',
-      newState: `PAID_₹${parseFloat(amountInr).toFixed(2)}_CAPTURED`,
-      details: `Gateway Ref: ${paymentId} | Consignee: ${name} | Commodity: ${commodity}`
-    };
-    fetch('/api/audit', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(auditEntry)
-    }).catch(() => {});
-
     window.dispatchEvent(new Event('storage'));
     if (typeof BroadcastChannel !== 'undefined') {
       const bc = new BroadcastChannel('gge_sync_channel');
@@ -2124,36 +3248,65 @@ function handleSuccessfulGatewayPayment(orderId, paymentId, amountInr, commodity
     }
   } catch (e) {}
 
-  // Populate Green Tickmark Confirmation Screen
+  // Populate B2B Confirmation Screen
   const sId = document.getElementById('sucSampleId');
+  const sMethod = document.getElementById('sucMethod');
   const sPayId = document.getElementById('sucPaymentId');
   const sComm = document.getElementById('sucCommodity');
+  const sDocs = document.getElementById('sucDocs');
   const sName = document.getElementById('sucName');
   const sAddr = document.getElementById('sucAddress');
   const sPaid = document.getElementById('sucPaid');
 
   if (sId) sId.textContent = orderId;
   if (sPayId) sPayId.textContent = paymentId;
-  if (sComm) sComm.textContent = `${commodity.split('[')[0].trim()} (${weight} Sealed Pouch)`;
-  if (sName) sName.textContent = name;
-  if (sAddr) sAddr.textContent = address;
-  if (sPaid) sPaid.textContent = `₹${parseFloat(amountInr).toFixed(2)} INR (PAID & CAPTURED)`;
+
+  if (sMethod) {
+    if (method === 'freight_collect') {
+      sMethod.textContent = `Freight Collect (${data.carrier || 'DHL Express'} #${data.courierAccount || 'Billed'})`;
+    } else if (method === 'proforma_invoice') {
+      sMethod.textContent = 'Official Stamped Proforma Invoice (Wire)';
+    } else if (data.isMock || (paymentId && paymentId.startsWith('mock_pay_'))) {
+      sMethod.textContent = `Instant Air Dispatch · Test Simulation (${paymentId})`;
+    } else {
+      sMethod.textContent = `Instant Air Dispatch (${paymentId})`;
+    }
+  }
+
+  if (sComm) sComm.textContent = `${commodity.split('[')[0].trim()} (${weight} Sealed Foil Pouch)`;
+  if (sDocs) sDocs.textContent = '✓ Sealed Pouch · ✓ Lab COA · ✓ Phyto';
+  if (sName) sName.textContent = company ? `${name} (${company})` : name;
+  if (sAddr) sAddr.textContent = address || 'Designated Courier Address';
+
+  if (sPaid) {
+    if (method === 'freight_collect') {
+      sPaid.innerHTML = '<span style="width:6px; height:6px; border-radius:50%; background:var(--gold-bright);"></span> $0.00 Due (Freight Collect Billed)';
+    } else if (method === 'proforma_invoice') {
+      sPaid.innerHTML = '<span style="width:6px; height:6px; border-radius:50%; background:var(--gold-bright);"></span> Stamped PI Queued · 100% Credited';
+    } else if (data.isMock || (paymentId && paymentId.startsWith('mock_pay_'))) {
+      sPaid.innerHTML = `<span style="width:6px; height:6px; border-radius:50%; background:var(--gold-bright);"></span> Test Mode Verified · 100% Credited`;
+    } else {
+      sPaid.innerHTML = `<span style="width:6px; height:6px; border-radius:50%; background:var(--gold-bright);"></span> Paid & Captured · 100% Credited`;
+    }
+  }
 
   const trackBtn = document.getElementById('btnTrackNewSample');
   if (trackBtn) {
     trackBtn.href = `tracking.html?bl=${encodeURIComponent(orderId)}`;
   }
 
-  // Switch to Green Tickmark Step AUTOMATICALLY
+  // Switch to Confirmation Step AUTOMATICALLY
   const orderStep = document.getElementById('sampleOrderStep');
   const successStep = document.getElementById('sampleSuccessStep');
   if (orderStep) orderStep.style.display = 'none';
   if (successStep) successStep.style.display = 'block';
 
   if (typeof showToast === 'function') {
-    showToast(`🎉 Payment Captured (${paymentId})! Order Placed Successfully!`, 'success');
+    showToast(`🎉 Sample Order Placed! Ref: ${orderId}`, 'success');
   }
 }
+window.handleSuccessfulSampleOrder = handleSuccessfulSampleOrder;
+window.handleSuccessfulGatewayPayment = handleSuccessfulSampleOrder; // Alias for backwards compatibility
 
 function requestCommercialSample() {
   const lotId = window.activeLotId || '';
@@ -2162,6 +3315,787 @@ function requestCommercialSample() {
   closeSpecDrawer();
   openSampleCheckoutModal(currentTitle, lotId);
 }
+window.requestCommercialSample = requestCommercialSample;
+
+// ==========================================================================
+// DOMESTIC MARKET SEGMENT (INDIA) & DIRECT UPI ORDER ENGINE
+// ==========================================================================
+
+let currentMarketSegment = 'export'; // 'export' | 'domestic' | 'sample'
+window.currentMarketSegment = currentMarketSegment;
+let currentDomesticOrder = null;
+let currentDomesticPack = '1kg';
+
+function setMarketSegment(segment) {
+  if (segment === 'sample') {
+    requestCommercialSample();
+    return;
+  }
+
+  currentMarketSegment = segment;
+  window.currentMarketSegment = segment;
+
+  const btnExport = document.getElementById('segBtnExport');
+  const btnDomestic = document.getElementById('segBtnDomestic');
+  const btnSample = document.getElementById('segBtnSample');
+
+  if (btnExport) {
+    btnExport.classList.toggle('active', segment === 'export');
+    btnExport.setAttribute('aria-selected', segment === 'export' ? 'true' : 'false');
+  }
+  if (btnDomestic) {
+    btnDomestic.classList.toggle('active', segment === 'domestic');
+    btnDomestic.setAttribute('aria-selected', segment === 'domestic' ? 'true' : 'false');
+  }
+  if (btnSample) {
+    btnSample.classList.remove('active');
+    btnSample.setAttribute('aria-selected', 'false');
+  }
+
+  // 1. Synchronize body and root class/attribute for global styling
+  if (document.body) {
+    document.body.classList.toggle('market-domestic', segment === 'domestic');
+    document.body.classList.toggle('market-export', segment === 'export');
+  }
+  if (document.documentElement) {
+    document.documentElement.setAttribute('data-market-segment', segment);
+  }
+
+  // 2. Strict Sample Tab Visibility: Only visible when on international (export) trade
+  const modeBtnSample = document.getElementById('modeBtnSample');
+  if (modeBtnSample) {
+    if (segment === 'domestic') {
+      modeBtnSample.style.setProperty('display', 'none', 'important');
+    } else {
+      modeBtnSample.style.removeProperty('display');
+      modeBtnSample.style.display = '';
+    }
+  }
+
+  // If user is currently on Sample RFQ mode when switching to Domestic, immediately reset to Bulk RFQ
+  if (segment === 'domestic' && typeof currentRfqMode !== 'undefined' && currentRfqMode === 'sample') {
+    if (typeof setRfqMode === 'function') {
+      setRfqMode('quote');
+    }
+  }
+
+  // 3. Mobile Bottom Navigation: Samples tab strictly hidden in domestic mode
+  const mbnSamples = document.getElementById('mbnSamples');
+  if (mbnSamples) {
+    if (segment === 'domestic') {
+      mbnSamples.style.setProperty('display', 'none', 'important');
+    } else {
+      mbnSamples.style.removeProperty('display');
+      mbnSamples.style.display = '';
+    }
+  }
+
+  // 4. Commodity Spec Drawer & Hero Quick Hub: Samples triggers hidden in domestic mode
+  const drawerSampleBtn = document.getElementById('drawerSampleBtn');
+  if (drawerSampleBtn) {
+    if (segment === 'domestic') {
+      drawerSampleBtn.style.setProperty('display', 'none', 'important');
+    } else {
+      drawerSampleBtn.style.removeProperty('display');
+      drawerSampleBtn.style.display = '';
+    }
+  }
+  const drawerDomesticBtn = document.getElementById('drawerDomesticBtn');
+  if (drawerDomesticBtn) {
+    if (segment === 'domestic') {
+      drawerDomesticBtn.style.setProperty('display', 'inline-flex', 'important');
+    } else {
+      drawerDomesticBtn.style.setProperty('display', 'none', 'important');
+    }
+  }
+  const drawerDisclaimer = document.querySelector('.drawer-disclaimer');
+  if (drawerDisclaimer) {
+    if (segment === 'domestic') {
+      drawerDisclaimer.style.setProperty('display', 'none', 'important');
+    } else {
+      drawerDisclaimer.style.removeProperty('display');
+      drawerDisclaimer.style.display = '';
+    }
+  }
+  const hubTileSample = document.querySelector('.trade-hub-tile--sample');
+  if (hubTileSample) {
+    if (segment === 'domestic') {
+      hubTileSample.style.setProperty('display', 'none', 'important');
+    } else {
+      hubTileSample.style.removeProperty('display');
+      hubTileSample.style.display = '';
+    }
+  }
+
+  // 5. Contact Section Redirection Hint
+  const rfqHint = document.getElementById('rfqDomesticHint');
+  if (rfqHint) {
+    if (segment === 'domestic') {
+      rfqHint.innerHTML = `<span>Looking for International Export (Bulk FCL Containers)?</span> <a href="javascript:void(0)" onclick="setMarketSegment('export'); var p = document.getElementById('products'); if (p) p.scrollIntoView({behavior:'smooth'});" style="color:var(--gold-bright, #D9AC52); text-decoration:underline; margin-left:6px; font-weight:600;">Switch to Global Export Desk ➔</a>`;
+    } else {
+      rfqHint.innerHTML = `<span>Looking for Indian domestic supply (500g–25kg) with instant UPI?</span> <a href="javascript:void(0)" onclick="setMarketSegment('domestic'); var p = document.getElementById('products'); if (p) p.scrollIntoView({behavior:'smooth'});" style="color:var(--gold-bright, #D9AC52); text-decoration:underline; margin-left:6px; font-weight:600;">Switch to Domestic UPI Desk ➔</a>`;
+    }
+  }
+
+  // Gracefully update section subhead copy without extra intrusive banners
+  const subHead = document.querySelector('#products .section-head p');
+  if (subHead) {
+    if (segment === 'domestic') {
+      subHead.innerHTML = 'Sortex Clean Grade-A commodities in <strong>500g, 1kg, 5kg &amp; 25kg</strong> packs. All-India doorstep delivery with automated GST tax invoices and direct UPI settlement.';
+    } else if (segment === 'export') {
+      subHead.innerHTML = 'Every lot is mechanically graded, moisture-tested and packed to destination-country phytosanitary standards before it leaves Mumbai.';
+    }
+  }
+
+  const catalog = window.domesticCommodityCatalog || {};
+  const cards = document.querySelectorAll('.card--product');
+
+  cards.forEach(card => {
+    const lotId = card.getAttribute('data-lot-id');
+    const domData = catalog[lotId];
+
+    if (segment === 'domestic' && domData) {
+      // Save original export card state if not already saved
+      if (!card.dataset.exportSpecs) {
+        const b = card.querySelector('.card-badge');
+        card.dataset.exportBadgeText = b ? b.textContent : '';
+        card.dataset.exportBadgeClass = b ? b.className : '';
+        const p = card.querySelector('.price-val');
+        card.dataset.exportPriceText = p ? p.textContent : '';
+        card.dataset.exportPriceBase = p ? p.getAttribute('data-base') : '';
+        const s = card.querySelector('.spec-rows');
+        card.dataset.exportSpecs = s ? s.innerHTML : '';
+        const a = card.querySelector('.card-action-row');
+        card.dataset.exportActions = a ? a.innerHTML : '';
+      }
+
+      // 1. Badge: Quiet, elegant typography matching brand standards
+      const badgeEl = card.querySelector('.card-badge');
+      if (badgeEl) {
+        badgeEl.textContent = 'Sortex Clean · FSSAI Grade-A';
+        badgeEl.style.background = 'rgba(184, 135, 47, 0.12)';
+        badgeEl.style.color = '#B8872F';
+        badgeEl.style.borderColor = 'rgba(184, 135, 47, 0.28)';
+        badgeEl.style.display = 'inline-block';
+      }
+
+      // 2. Price Badge: Antique gold from rate
+      const priceBadge = card.querySelector('.price-val');
+      if (priceBadge) {
+        priceBadge.textContent = `From ₹${domData.packs['500g']} / 500g`;
+        priceBadge.style.color = '#D9AC52';
+        priceBadge.style.borderColor = 'rgba(217, 172, 82, 0.35)';
+      }
+
+      // 3. Spec Rows -> Domestic Distribution
+      const specRows = card.querySelector('.spec-rows');
+      if (specRows) {
+        specRows.innerHTML = `
+          <div class="spec-row"><span>Standard:</span><b>${escapeHtml(domData.grade)}</b></div>
+          <div class="spec-row"><span>Compliance:</span><b style="color:#D9AC52;">FSSAI Certified · Sortex</b></div>
+          <div class="spec-row"><span>Pack Sizes:</span><b>500g · 1kg · 5kg · 25kg</b></div>
+          <div class="spec-row"><span>Fulfillment:</span><b>Express Surface Dispatch</b></div>
+        `;
+      }
+
+      // 4. Interactive pack price pills and direct UPI button
+      const actionRow = card.querySelector('.card-action-row');
+      if (actionRow) {
+        actionRow.innerHTML = `
+          <div class="dom-card-packs" style="display:grid; grid-template-columns:repeat(4, 1fr); gap:4px; margin-bottom:8px;">
+            <button type="button" class="dom-pack-chip" onclick="event.stopPropagation(); openDomesticOrderModal('${lotId}', '500g')" title="Order 500g pack via UPI">
+              <span class="dom-chip-w">500g</span>
+              <span class="dom-chip-p">₹${domData.packs['500g']}</span>
+            </button>
+            <button type="button" class="dom-pack-chip" onclick="event.stopPropagation(); openDomesticOrderModal('${lotId}', '1kg')" title="Order 1kg pack via UPI">
+              <span class="dom-chip-w">1kg</span>
+              <span class="dom-chip-p">₹${domData.packs['1kg']}</span>
+            </button>
+            <button type="button" class="dom-pack-chip" onclick="event.stopPropagation(); openDomesticOrderModal('${lotId}', '5kg')" title="Order 5kg pack via UPI">
+              <span class="dom-chip-w">5kg</span>
+              <span class="dom-chip-p">₹${domData.packs['5kg']}</span>
+            </button>
+            <button type="button" class="dom-pack-chip" onclick="event.stopPropagation(); openDomesticOrderModal('${lotId}', '25kg')" title="Order 25kg pack via UPI">
+              <span class="dom-chip-w">25kg</span>
+              <span class="dom-chip-p">₹${domData.packs['25kg']}</span>
+            </button>
+          </div>
+          <button type="button" class="btn btn--primary card-spec-btn dom-order-cta-btn" onclick="event.stopPropagation(); openDomesticOrderModal('${lotId}');" style="width:100%; justify-content:center; font-size:0.75rem; padding:9px 12px; background:linear-gradient(135deg, #D9AC52 0%, #B8872F 100%); color:#0D0A08; font-weight:700;">
+            <span>ORDER PACKS (DIRECT UPI) ➔</span>
+          </button>
+        `;
+      }
+    } else if (segment === 'export' && card.dataset.exportSpecs) {
+      // Restore export view
+      const badgeEl = card.querySelector('.card-badge');
+      if (badgeEl) {
+        badgeEl.textContent = card.dataset.exportBadgeText || '';
+        badgeEl.style.background = '';
+        badgeEl.style.color = '';
+        badgeEl.style.borderColor = '';
+      }
+      const priceBadge = card.querySelector('.price-val');
+      if (priceBadge) {
+        priceBadge.style.color = '';
+        priceBadge.style.borderColor = '';
+        if (card.dataset.exportPriceBase) {
+          priceBadge.setAttribute('data-base', card.dataset.exportPriceBase);
+        }
+      }
+      const specRows = card.querySelector('.spec-rows');
+      if (specRows) {
+        specRows.innerHTML = card.dataset.exportSpecs;
+      }
+      const actionRow = card.querySelector('.card-action-row');
+      if (actionRow && card.dataset.exportActions) {
+        actionRow.innerHTML = card.dataset.exportActions;
+      }
+    }
+  });
+
+  if (segment === 'export' && typeof window.syncLiveProductPrices === 'function') {
+    window.syncLiveProductPrices();
+  }
+}
+window.setMarketSegment = setMarketSegment;
+
+function selectDomesticPackSize(pack) {
+  currentDomesticPack = pack || '1kg';
+  const packs = ['500g', '1kg', '5kg', '25kg'];
+  packs.forEach(p => {
+    const el = document.getElementById(`packCard_${p}`);
+    if (el) el.classList.toggle('active', p === currentDomesticPack);
+  });
+  syncDomesticPriceCalc();
+}
+window.selectDomesticPackSize = selectDomesticPackSize;
+
+function syncDomesticPriceCalc() {
+  const lotId = (document.getElementById('domModalCommodity') && document.getElementById('domModalCommodity').value) || 'p1';
+  const qtyInput = document.getElementById('domModalQty');
+  const qty = qtyInput ? Math.max(1, parseInt(qtyInput.value, 10) || 1) : 1;
+  const catalog = window.domesticCommodityCatalog || {};
+  const item = catalog[lotId] || catalog['p1'];
+
+  // Update pack rates display on the 4 cards in modal
+  if (item && item.packs) {
+    ['500g', '1kg', '5kg', '25kg'].forEach(p => {
+      const rEl = document.getElementById(`rate_${p}`);
+      if (rEl) rEl.textContent = `₹${item.packs[p]}`;
+    });
+  }
+
+  const unitRate = (item && item.packs && item.packs[currentDomesticPack]) ? item.packs[currentDomesticPack] : 160;
+  const totalInr = unitRate * qty;
+
+  const totalDisp = document.getElementById('domModalPayableTotal');
+  if (totalDisp) totalDisp.textContent = `₹${totalInr.toFixed(2)} INR`;
+
+  // Total weight in KG
+  let packKg = 1.0;
+  if (currentDomesticPack === '500g') packKg = 0.5;
+  else if (currentDomesticPack === '5kg') packKg = 5.0;
+  else if (currentDomesticPack === '25kg') packKg = 25.0;
+  const totalKg = packKg * qty;
+
+  const wtDisp = document.getElementById('domTotalWeightDisplay');
+  if (wtDisp) wtDisp.textContent = `${totalKg.toFixed(1)} KG Total`;
+}
+window.syncDomesticPriceCalc = syncDomesticPriceCalc;
+
+function onDomesticCommodityChange() {
+  syncDomesticPriceCalc();
+}
+window.onDomesticCommodityChange = onDomesticCommodityChange;
+
+function adjustDomesticQty(delta) {
+  const inp = document.getElementById('domModalQty');
+  if (!inp) return;
+  let val = parseInt(inp.value, 10) || 1;
+  val = Math.max(1, Math.min(1000, val + delta));
+  inp.value = val;
+  syncDomesticPriceCalc();
+}
+window.adjustDomesticQty = adjustDomesticQty;
+
+function onDomesticQtyInput() {
+  syncDomesticPriceCalc();
+}
+window.onDomesticQtyInput = onDomesticQtyInput;
+
+function populateDomesticDemoBuyer() {
+  const n = document.getElementById('domConsigneeName'); if (n) n.value = 'Rajesh Patel';
+  const p = document.getElementById('domConsigneePhone'); if (p) p.value = '98200 12345';
+  const e = document.getElementById('domConsigneeEmail'); if (e) e.value = 'rajesh@pateltraders.in';
+  const pin = document.getElementById('domConsigneePincode'); if (pin) pin.value = '400703';
+  const a = document.getElementById('domConsigneeAddress'); if (a) a.value = 'Shop 12, APMC Market 2, Sector 19';
+  const c = document.getElementById('domConsigneeCity'); if (c) c.value = 'Navi Mumbai';
+  const s = document.getElementById('domConsigneeState'); if (s) s.value = 'Maharashtra';
+  if (typeof showToast === 'function') {
+    showToast("✓ Demo Indian buyer populated for testing", "info");
+  }
+}
+window.populateDomesticDemoBuyer = populateDomesticDemoBuyer;
+
+async function proceedToDomesticUPI() {
+  const lotId = (document.getElementById('domModalCommodity') && document.getElementById('domModalCommodity').value) || 'p1';
+  const catalog = window.domesticCommodityCatalog || {};
+  const item = catalog[lotId] || catalog['p1'];
+  const commodityName = item ? item.name : 'Classic Toor (Tur Dal)';
+
+  const packSize = currentDomesticPack || '1kg';
+  const qty = (document.getElementById('domModalQty') && parseInt(document.getElementById('domModalQty').value, 10)) || 1;
+
+  const name = (document.getElementById('domConsigneeName') && document.getElementById('domConsigneeName').value.trim()) || '';
+  const phone = (document.getElementById('domConsigneePhone') && document.getElementById('domConsigneePhone').value.trim()) || '';
+  const email = (document.getElementById('domConsigneeEmail') && document.getElementById('domConsigneeEmail').value.trim()) || '';
+  const pincode = (document.getElementById('domConsigneePincode') && document.getElementById('domConsigneePincode').value.trim()) || '';
+  const address = (document.getElementById('domConsigneeAddress') && document.getElementById('domConsigneeAddress').value.trim()) || '';
+  const city = (document.getElementById('domConsigneeCity') && document.getElementById('domConsigneeCity').value.trim()) || '';
+  const state = (document.getElementById('domConsigneeState') && document.getElementById('domConsigneeState').value.trim()) || 'Maharashtra';
+
+  if (!name || !phone || !address || !pincode || !city) {
+    if (typeof showToast === 'function') {
+      showToast("⚠️ Please enter Consignee Name, Phone, Address, City & PIN code.", "error");
+    } else {
+      alert("Please enter Consignee Name, Phone, Address, City & PIN code.");
+    }
+    return;
+  }
+
+  const btn = document.getElementById('btnProceedToUpi');
+  if (btn) {
+    btn.disabled = true;
+    btn.innerHTML = '<span>INITIALIZING NPCI UPI SESSION...</span>';
+  }
+
+  const unitRate = (item && item.packs && item.packs[packSize]) ? item.packs[packSize] : 160;
+  const expectedAmount = unitRate * qty;
+
+  const orderId = `GGE-DOM-${Math.floor(1000 + Math.random() * 9000)}`;
+
+  try {
+    const payload = {
+      orderId,
+      commodity: commodityName,
+      packSize,
+      quantity: qty,
+      amount: expectedAmount,
+      name,
+      phone,
+      email: email || `${phone.replace(/\D/g, '')}@sms.goldenglobalexpo.com`,
+      address,
+      city,
+      state,
+      pincode,
+      is_mock: Boolean(window.__GGE_DEMO_MODE || (name && name.toLowerCase().includes('demo')) || (orderId && orderId.startsWith('GGE-DOM-MOCK')))
+    };
+
+    let res = null;
+    try {
+      res = await fetch('/api/domestic-orders', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      if (!res.ok && res.status === 404) {
+        res = await fetch('/api/create-upi-order', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+      }
+    } catch(fetchErr) {
+      // Offline fallback queue
+      if (typeof window !== 'undefined' && window.GGE_PWA && typeof window.GGE_PWA.queueOfflineInquiry === 'function') {
+        window.GGE_PWA.queueOfflineInquiry({
+          id: orderId,
+          type: 'DOMESTIC_ORDER',
+          name, phone, email, address, city, state, pincode,
+          commodities: `${commodityName} (${packSize} × ${qty} Units)`,
+          volume: `${packSize} × ${qty}`,
+          payable: `₹${expectedAmount.toFixed(2)} INR`,
+          status: 'OFFLINE_INITIATED'
+        });
+      }
+      throw fetchErr;
+    }
+
+    const data = await res.json();
+    if (!res.ok || !data.success) {
+      if (typeof showToast === 'function') {
+        showToast("⚠️ Gateway error: " + (data.error || "Could not initialize UPI order"), "error");
+      }
+      return;
+    }
+
+    currentDomesticOrder = {
+      orderId: data.orderId || orderId,
+      amount: data.amount || expectedAmount,
+      upiUri: data.upiUri,
+      upiVpa: data.upiVpa || 'goldenglobalexpo@icici',
+      commodity: commodityName,
+      packSize,
+      quantity: qty,
+      name,
+      phone,
+      email,
+      address,
+      city,
+      state,
+      pincode
+    };
+
+    renderDomesticStep2(currentDomesticOrder);
+
+  } catch(err) {
+    console.error("Create UPI order error:", err);
+    currentDomesticOrder = {
+      orderId,
+      amount: expectedAmount,
+      upiUri: `upi://pay?pa=goldenglobalexpo@icici&pn=Golden+Global+Expo&am=${expectedAmount.toFixed(2)}&cu=INR&tn=${orderId}&tr=${orderId}`,
+      upiVpa: 'goldenglobalexpo@icici',
+      commodity: commodityName,
+      packSize,
+      quantity: qty,
+      name,
+      phone,
+      email,
+      address,
+      city,
+      state,
+      pincode
+    };
+    renderDomesticStep2(currentDomesticOrder);
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.innerHTML = '<span>GENERATE UPI QR &amp; PAY ➔</span>';
+    }
+  }
+}
+window.proceedToDomesticUPI = proceedToDomesticUPI;
+window.handleDomesticOrderSubmit = proceedToDomesticUPI;
+
+function renderDomesticStep2(order) {
+  const refEl = document.getElementById('domUpiOrderRef');
+  if (refEl) refEl.textContent = order.orderId;
+
+  const vpaEl = document.getElementById('domPayeeVpaDisplay');
+  if (vpaEl) vpaEl.textContent = order.upiVpa;
+
+  const amtEl = document.getElementById('domUpiAmountDisplay');
+  if (amtEl) amtEl.textContent = `₹${order.amount.toFixed(2)} INR`;
+
+  const commEl = document.getElementById('domUpiCommoditySummary');
+  if (commEl) commEl.textContent = `${order.commodity} (${order.packSize} × ${order.quantity})`;
+
+  // Render SVG QR Code via qrcode(0, 'M')
+  const qrWrap = document.getElementById('domUpiQrSvgWrap');
+  if (qrWrap && typeof qrcode === 'function') {
+    try {
+      const qr = qrcode(0, 'M');
+      qr.addData(order.upiUri);
+      qr.make();
+      const svgTag = qr.createSvgTag({ scalable: true });
+      qrWrap.innerHTML = svgTag;
+    } catch(e) {
+      console.warn("QR render fallback:", e);
+      qrWrap.innerHTML = `<div style="font-size:0.75rem;color:#14110E;text-align:center;padding:10px;">UPI: ${escapeHtml(order.upiVpa)}<br>₹${order.amount.toFixed(2)}</div>`;
+    }
+  }
+
+  const deepBtn = document.getElementById('domUpiDeepLinkBtn');
+  if (deepBtn) {
+    deepBtn.href = order.upiUri;
+  }
+
+  const utrInp = document.getElementById('domUtrInput');
+  if (utrInp) utrInp.value = '';
+
+  const s1 = document.getElementById('domesticStep1');
+  const s2 = document.getElementById('domesticStep2');
+  const s3 = document.getElementById('domesticStep3');
+  if (s1) s1.style.display = 'none';
+  if (s2) s2.style.display = 'block';
+  if (s3) s3.style.display = 'none';
+}
+
+function copyUpiVpaId() {
+  const vpa = (currentDomesticOrder && currentDomesticOrder.upiVpa) ? currentDomesticOrder.upiVpa : 'goldenglobalexpo@icici';
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(vpa);
+  }
+  const btn = document.getElementById('btnCopyVpa');
+  if (btn) {
+    const orig = btn.innerHTML;
+    btn.innerHTML = '✓ Copied!';
+    btn.style.color = '#81C784';
+    setTimeout(() => {
+      btn.innerHTML = orig;
+      btn.style.color = '#D9AC52';
+    }, 2000);
+  }
+  if (typeof showToast === 'function') {
+    showToast(`✓ Payee UPI ID copied: ${vpa}`, 'info');
+  }
+}
+window.copyUpiVpaId = copyUpiVpaId;
+
+async function confirmDomesticUpiPayment() {
+  if (!currentDomesticOrder) return;
+  const utrInp = document.getElementById('domUtrInput');
+  let utr = utrInp ? utrInp.value.trim() : '';
+  if (!utr) {
+    if (typeof showToast === 'function') {
+      showToast("⚠️ Please enter the 12-digit UPI UTR / Transaction Reference number.", "error");
+    } else {
+      alert("Please enter the 12-digit UPI UTR / Transaction Reference number.");
+    }
+    if (utrInp) utrInp.focus();
+    return;
+  }
+
+  const btn = document.getElementById('btnConfirmDomesticUpi');
+  if (btn) {
+    btn.disabled = true;
+    btn.innerHTML = '<span>VERIFYING SETTLEMENT...</span>';
+  }
+
+  try {
+    const payload = {
+      orderId: currentDomesticOrder.orderId,
+      utr: utr,
+      amount: currentDomesticOrder.amount,
+      name: currentDomesticOrder.name,
+      phone: currentDomesticOrder.phone,
+      email: currentDomesticOrder.email,
+      address: currentDomesticOrder.address,
+      city: currentDomesticOrder.city,
+      state: currentDomesticOrder.state,
+      pincode: currentDomesticOrder.pincode,
+      commodity: currentDomesticOrder.commodity,
+      packSize: currentDomesticOrder.packSize,
+      quantity: currentDomesticOrder.quantity,
+      is_mock: utr.startsWith('mock_') || utr.startsWith('UTR991448') || currentDomesticOrder.orderId.startsWith('GGE-DOM-MOCK')
+    };
+
+    let res = null;
+    try {
+      res = await fetch('/api/domestic-orders/verify-upi', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      if (!res.ok && res.status === 404) {
+        res = await fetch('/api/confirm-upi-payment', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+      }
+    } catch(fetchErr) {
+      if (typeof window !== 'undefined' && window.GGE_PWA && typeof window.GGE_PWA.queueOfflineInquiry === 'function') {
+        window.GGE_PWA.queueOfflineInquiry({
+          id: currentDomesticOrder.orderId,
+          type: 'DOMESTIC_ORDER',
+          utr: utr,
+          amount: currentDomesticOrder.amount,
+          name: currentDomesticOrder.name,
+          phone: currentDomesticOrder.phone,
+          status: 'PAID_OFFLINE_VERIFY_QUEUED'
+        });
+      }
+      throw fetchErr;
+    }
+
+    const data = await res.json();
+    if (!res.ok || !data.success) {
+      if (typeof showToast === 'function') {
+        showToast("⚠️ Settlement verification error: " + (data.error || "Payment not verified"), "error");
+      }
+      return;
+    }
+
+    if (data.taxInvoiceRef) currentDomesticOrder.taxInvoiceRef = data.taxInvoiceRef;
+    if (data.courierPartner) currentDomesticOrder.courierPartner = data.courierPartner;
+    if (data.trackingNumber) currentDomesticOrder.trackingNumber = data.trackingNumber;
+
+    renderDomesticStep3(currentDomesticOrder, utr);
+
+  } catch(err) {
+    console.error("Confirm UPI error:", err);
+    renderDomesticStep3(currentDomesticOrder, utr);
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.innerHTML = '<span>VERIFY &amp; SCHEDULE DISPATCH ➔</span>';
+    }
+  }
+}
+window.confirmDomesticUpiPayment = confirmDomesticUpiPayment;
+
+function simulateInstantDomesticUPI() {
+  if (!currentDomesticOrder) return;
+  const mockUtr = `UTR991448${Math.floor(100000 + Math.random() * 900000)}`;
+  const utrInp = document.getElementById('domUtrInput');
+  if (utrInp) utrInp.value = mockUtr;
+  if (typeof showToast === 'function') {
+    showToast(`⚡ Simulated UPI Payment: ${mockUtr}`, 'info');
+  }
+  confirmDomesticUpiPayment();
+}
+window.simulateInstantDomesticUPI = simulateInstantDomesticUPI;
+
+function renderDomesticStep3(order, utr) {
+  const oId = document.getElementById('domReceiptOrderId');
+  if (oId) oId.textContent = order.orderId;
+
+  const uEl = document.getElementById('domReceiptUtr');
+  if (uEl) uEl.textContent = utr;
+
+  const cEl = document.getElementById('domReceiptCommodity');
+  if (cEl) cEl.textContent = `${order.commodity} (${order.packSize} × ${order.quantity} Units)`;
+
+  const aEl = document.getElementById('domReceiptAmount');
+  if (aEl) aEl.textContent = `₹${order.amount.toFixed(2)} INR (PAID VIA UPI)`;
+
+  const dEl = document.getElementById('domReceiptDestination');
+  if (dEl) dEl.textContent = `${order.city}, ${order.state} (PIN ${order.pincode})`;
+
+  const trackBtn = document.getElementById('btnTrackDomesticOrder');
+  if (trackBtn) {
+    trackBtn.href = `tracking.html?bl=${encodeURIComponent(order.orderId)}`;
+  }
+
+  // Save to client localStorage for cross-tab sync with desk.html
+  try {
+    const list = JSON.parse(localStorage.getItem('gge_inquiries') || '[]');
+    const shortSfx = order.orderId.replace('GGE-DOM-', '');
+    const domRecord = {
+      id: order.orderId,
+      type: 'DOMESTIC_ORDER',
+      name: order.name,
+      company: 'Domestic Retail / APMC Distribution',
+      email: order.email,
+      phone: order.phone,
+      country: 'India',
+      address: `${order.address}, ${order.city}, ${order.state} - ${order.pincode}`,
+      city: order.city,
+      state: order.state,
+      pincode: order.pincode,
+      commodities: `${order.commodity} (${order.packSize} × ${order.quantity} Units)`,
+      volume: `${order.packSize} × ${order.quantity}`,
+      pack_size: order.packSize,
+      pack_quantity: order.quantity,
+      incoterms: 'DOOR DELIVERY (Surface Express)',
+      payable: `₹${order.amount.toFixed(2)} INR (PAID VIA UPI · UTR: ${utr})`,
+      status: 'PAID · Pending Domestic Dispatch',
+      payment_status: 'PAID',
+      tax_invoice_ref: order.taxInvoiceRef || `TAX-INV-DOM-${shortSfx}`,
+      courier_partner: order.courierPartner || 'Blue Dart Express Surface',
+      tracking_number: order.trackingNumber || `BD-DOM-${shortSfx}`,
+      blCode: order.orderId,
+      utr: utr,
+      date: new Date().toISOString().split('T')[0],
+      createdAt: Date.now() / 1000
+    };
+    list.unshift(domRecord);
+    localStorage.setItem('gge_inquiries', JSON.stringify(list));
+
+    // Also persist dedicated domestic orders storage
+    const domList = JSON.parse(localStorage.getItem('gge_domestic_orders') || '[]');
+    domList.unshift(domRecord);
+    localStorage.setItem('gge_domestic_orders', JSON.stringify(domList));
+
+    if (typeof window.saveDomesticOrders === 'function') {
+      window.saveDomesticOrders(domList);
+    }
+    if (typeof window.saveInquiries === 'function') {
+      window.saveInquiries(list);
+    }
+
+    // Also persist consignment to localStorage so tracking.html works immediately
+    const consignList = JSON.parse(localStorage.getItem('gge_consignments') || '[]');
+    consignList.unshift({
+      bl: order.orderId,
+      inquiryRef: order.orderId,
+      quotationRef: order.orderId,
+      buyer: order.name,
+      buyerEmail: order.email,
+      buyerPhone: order.phone,
+      commodity: `${order.commodity} (${order.packSize} × ${order.quantity} Units)`,
+      vessel: 'Domestic Surface Express (BlueDart / Delhivery)',
+      pod: `${order.city}, ${order.state} (PIN ${order.pincode})`,
+      eta: '2-4 Business Days Door Delivery',
+      container: `DOM-PARCEL #${shortSfx}`,
+      stage: 2,
+      status: 'Domestic Order Confirmed · Hub Allocation',
+      invRef: order.taxInvoiceRef || `TAX-INV-DOM-${shortSfx}`,
+      phytoRef: `AGMARK-IN-${shortSfx}`,
+      coaRef: `FSSAI-GGE-${shortSfx}`,
+      blRef: order.trackingNumber || `BD-DOM-${shortSfx}`,
+      updatedAt: Date.now() / 1000
+    });
+    localStorage.setItem('gge_consignments', JSON.stringify(consignList));
+
+    if (typeof BroadcastChannel !== 'undefined') {
+      const bc = new BroadcastChannel('gge_channel');
+      bc.postMessage({ type: 'NEW_DOMESTIC_ORDER', order: domRecord });
+      bc.close();
+    }
+  } catch(e) {
+    console.warn("Storage sync error:", e);
+  }
+
+  const s1 = document.getElementById('domesticStep1');
+  const s2 = document.getElementById('domesticStep2');
+  const s3 = document.getElementById('domesticStep3');
+  if (s1) s1.style.display = 'none';
+  if (s2) s2.style.display = 'none';
+  if (s3) s3.style.display = 'block';
+
+  if (typeof showToast === 'function') {
+    showToast(`🎉 Domestic Order ${order.orderId} Confirmed via UPI!`, 'success');
+  }
+}
+
+function returnToDomesticStep1() {
+  const s1 = document.getElementById('domesticStep1');
+  const s2 = document.getElementById('domesticStep2');
+  const s3 = document.getElementById('domesticStep3');
+  if (s1) s1.style.display = 'block';
+  if (s2) s2.style.display = 'none';
+  if (s3) s3.style.display = 'none';
+}
+window.returnToDomesticStep1 = returnToDomesticStep1;
+
+function openDomesticOrderModal(lotId, preselectedPack) {
+  const modal = document.getElementById('domesticOrderModal');
+  if (!modal) return;
+
+  const lot = lotId || 'p1';
+  const sel = document.getElementById('domModalCommodity');
+  if (sel) {
+    for (let i = 0; i < sel.options.length; i++) {
+      if (sel.options[i].value === lot || sel.options[i].text.toLowerCase().includes(lot.toLowerCase())) {
+        sel.selectedIndex = i;
+        break;
+      }
+    }
+  }
+
+  selectDomesticPackSize(preselectedPack || '1kg');
+  returnToDomesticStep1();
+  modal.style.display = 'flex';
+}
+window.openDomesticOrderModal = openDomesticOrderModal;
+
+function closeDomesticOrderModal() {
+  const modal = document.getElementById('domesticOrderModal');
+  if (modal) modal.style.display = 'none';
+}
+window.closeDomesticOrderModal = closeDomesticOrderModal;
 
 
 // Client telemetry and analytics
@@ -2419,12 +4353,12 @@ async function initVisitorTelemetryTracker() {
 
     // Track Form Drafts & Abandonment Live Keystrokes
     const trackFormInputs = () => {
-      const fname = (document.getElementById('fname') && document.getElementById('fname').value) || '';
-      const email = (document.getElementById('email') && document.getElementById('email').value) || '';
-      const company = (document.getElementById('company') && document.getElementById('company').value) || '';
-      const country = (document.getElementById('country') && document.getElementById('country').value) || '';
-      const vol = (document.getElementById('rfqVolumeVal') && document.getElementById('rfqVolumeVal').value) || '';
-      const unit = (document.getElementById('rfqVolumeUnit') && document.getElementById('rfqVolumeUnit').value) || 'QTL';
+      const fname = (document.getElementById('rfqName') && document.getElementById('rfqName').value) || (document.getElementById('fname') && document.getElementById('fname').value) || '';
+      const email = (document.getElementById('rfqEmail') && document.getElementById('rfqEmail').value) || (document.getElementById('email') && document.getElementById('email').value) || '';
+      const company = (document.getElementById('rfqCompany') && document.getElementById('rfqCompany').value) || (document.getElementById('company') && document.getElementById('company').value) || '';
+      const country = (document.getElementById('rfqCountry') && document.getElementById('rfqCountry').value) || (document.getElementById('country') && document.getElementById('country').value) || '';
+      const vol = (document.getElementById('rfqVolume') && document.getElementById('rfqVolume').value) || '';
+      const comm = (document.getElementById('rfqCommodities') && document.getElementById('rfqCommodities').value) || '';
 
       if (company || email || fname || vol) {
         session.draftLead = {
@@ -2432,8 +4366,8 @@ async function initVisitorTelemetryTracker() {
           name: fname || 'Commercial Representative',
           email: email || '',
           country: country || session.origin,
-          volume: vol ? `${vol} ${unit}` : 'FCL Load',
-          commodities: session.inspectedLots.join(', ') || 'Sortex Commodities'
+          volume: vol || 'FCL Load',
+          commodities: comm || session.inspectedLots.join(', ') || 'Sortex Commodities'
         };
         if (!session.action.includes('Transmitted') && !session.action.includes('Sample')) {
           session.action = `⚠️ Abandoned Lead: ${company || fname}`;
@@ -2441,7 +4375,7 @@ async function initVisitorTelemetryTracker() {
       }
     };
 
-    ['fname', 'email', 'company', 'country', 'rfqVolumeVal'].forEach(id => {
+    ['fname', 'rfqName', 'email', 'rfqEmail', 'company', 'rfqCompany', 'country', 'rfqCountry', 'rfqVolumeVal'].forEach(id => {
       const el = document.getElementById(id);
       if (el) el.addEventListener('input', trackFormInputs);
     });

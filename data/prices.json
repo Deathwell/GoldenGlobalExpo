@@ -6,114 +6,150 @@
     "baseUsd": 145.5,
     "price": 145.5,
     "marginPct": 8.0,
-    "updatedAt": 1788476251.4225147
+    "updatedAt": 1789499252.3709435
   },
   "p2": {
     "code": "p2",
     "name": "Classic Moong (Whole)",
-    "category": "Agri",
+    "category": "Pulses",
     "baseUsd": 840.0,
     "price": 840.0,
     "marginPct": 0.0,
-    "updatedAt": 1788432527.2309349
+    "updatedAt": 1788782150.719673
   },
   "p3": {
     "code": "p3",
     "name": "Classic Chana Dal",
-    "category": "Agri",
+    "category": "Pulses",
     "baseUsd": 760.0,
     "price": 760.0,
     "marginPct": 0.0,
-    "updatedAt": 1788432527.230935
+    "updatedAt": 1788782150.7196734
   },
   "p4": {
     "code": "p4",
     "name": "Classic Masoor (Red Split)",
-    "category": "Agri",
+    "category": "Pulses",
     "baseUsd": 790.0,
     "price": 790.0,
     "marginPct": 0.0,
-    "updatedAt": 1788432527.2309353
+    "updatedAt": 1788782150.7196736
   },
   "p5": {
     "code": "p5",
     "name": "Chia Seeds (Superfood)",
-    "category": "Agri",
+    "category": "Seeds",
     "baseUsd": 1850.0,
     "price": 1850.0,
     "marginPct": 0.0,
-    "updatedAt": 1788432527.2309356
+    "updatedAt": 1788782150.7196739
   },
   "p6": {
     "code": "p6",
     "name": "Coriander Seeds (Dhania)",
-    "category": "Agri",
+    "category": "Spices",
     "baseUsd": 1420.0,
     "price": 1420.0,
     "marginPct": 0.0,
-    "updatedAt": 1788432527.2309358
+    "updatedAt": 1788782150.719674
   },
   "p7": {
     "code": "p7",
     "name": "Cumin Seeds (Jeera Whole)",
-    "category": "Agri",
+    "category": "Spices",
     "baseUsd": 3800.0,
     "price": 3800.0,
     "marginPct": 0.0,
-    "updatedAt": 1788432527.230936
+    "updatedAt": 1788782150.7196743
   },
   "p8": {
     "code": "p8",
     "name": "Moringa Leaf Powder",
-    "category": "Agri",
+    "category": "Powders",
     "baseUsd": 3800.0,
     "price": 3800.0,
     "marginPct": 0.0,
-    "updatedAt": 1788432527.2309363
+    "updatedAt": 1788782150.7196746
   },
   "p9": {
     "code": "p9",
     "name": "Mint Powder (Pudina)",
-    "category": "Agri",
+    "category": "Powders",
     "baseUsd": 3200.0,
     "price": 3200.0,
     "marginPct": 0.0,
-    "updatedAt": 1788432527.2309365
+    "updatedAt": 1788782150.7196748
   },
   "p10": {
     "code": "p10",
     "name": "Coriander Powder",
-    "category": "Agri",
+    "category": "Powders",
     "baseUsd": 1650.0,
     "price": 1650.0,
     "marginPct": 0.0,
-    "updatedAt": 1788432527.2309368
+    "updatedAt": 1788782150.719675
   },
   "p11": {
     "code": "p11",
     "name": "Jowar (Whole Sorghum)",
-    "category": "Agri",
+    "category": "Grains",
     "baseUsd": 520.0,
     "price": 520.0,
     "marginPct": 0.0,
-    "updatedAt": 1788432527.230937
+    "updatedAt": 1788782150.7196753
   },
   "p12": {
     "code": "p12",
-    "name": "Jowar Flour (Gluten Free)",
-    "category": "Agri",
-    "baseUsd": 580.0,
-    "price": 580.0,
+    "name": "Jowar Flour (Sorghum Flour)",
+    "category": "Grains",
+    "baseUsd": 620.0,
+    "price": 620.0,
     "marginPct": 0.0,
-    "updatedAt": 1788432527.2309372
+    "updatedAt": 1788782150.7196753
   },
   "p13": {
     "code": "p13",
     "name": "Tissue Paper Virgin Pulp",
-    "category": "Agri",
+    "category": "Paper",
     "baseUsd": 1150.0,
     "price": 1150.0,
     "marginPct": 0.0,
-    "updatedAt": 1788432527.2309375
+    "updatedAt": 1788782150.7196753
+  },
+  "p14": {
+    "code": "p14",
+    "name": "Emmer Wheat (Khapli Wheat)",
+    "category": "Grains",
+    "baseUsd": 680.0,
+    "price": 680.0,
+    "marginPct": 0.0,
+    "updatedAt": 1788782150.719676
+  },
+  "p15": {
+    "code": "p15",
+    "name": "Pure Cow Ghee (Desi Bilona)",
+    "category": "Dairy",
+    "baseUsd": 6800.0,
+    "price": 6800.0,
+    "marginPct": 0.0,
+    "updatedAt": 1788782150.719676
+  },
+  "p17": {
+    "code": "p17",
+    "name": "Indian Home Spices (Individual Lots)",
+    "category": "Spices",
+    "baseUsd": 2450.0,
+    "price": 2450.0,
+    "marginPct": 0.0,
+    "updatedAt": 1788782150.7196763
+  },
+  "sample_pouch": {
+    "code": "sample_pouch",
+    "name": "Sample Kit 500g Pouch",
+    "category": "Sample",
+    "baseUsd": 499.0,
+    "price": 499.0,
+    "marginPct": 0.0,
+    "updatedAt": 1789499252.5585072
   }
 }

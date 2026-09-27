@@ -1,0 +1,598 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Statutory Document Verification Gateway | Golden Global Expo</title>
+  <meta name="description" content="Official cryptographic verification portal for Golden Global Expo export consignments, Certificates of Analysis (COA), and bills of lading.">
+  <link rel="icon" type="image/png" href="/images/icon-192.png">
+  
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400&family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  
+  <style>
+    :root {
+      --bg-base: #0A0908;
+      --bg-surface: #14110E;
+      --bg-card: rgba(24, 20, 16, 0.75);
+      --border-gold: rgba(217, 172, 82, 0.28);
+      --gold-primary: #B8872F;
+      --gold-bright: #D9AC52;
+      --gold-light: #F5EFE0;
+      --emerald: #10B981;
+      --emerald-bg: rgba(16, 185, 129, 0.12);
+      --emerald-border: rgba(16, 185, 129, 0.35);
+      --red: #EF4444;
+      --red-bg: rgba(239, 68, 68, 0.12);
+      --text-main: #F5EFE0;
+      --text-muted: #A69E92;
+      --font-serif: 'Cormorant Garamond', serif;
+      --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      --font-mono: 'JetBrains Mono', monospace;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background-color: var(--bg-base);
+      color: var(--text-main);
+      font-family: var(--font-sans);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      background-image: 
+        radial-gradient(circle at 50% 0%, rgba(217, 172, 82, 0.08) 0%, transparent 60%),
+        radial-gradient(circle at 100% 100%, rgba(16, 185, 129, 0.04) 0%, transparent 50%);
+    }
+
+    /* Navigation */
+    .nav {
+      height: 72px;
+      border-bottom: 1px solid var(--border-gold);
+      background: rgba(10, 9, 8, 0.85);
+      backdrop-filter: blur(12px);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 5%;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      text-decoration: none;
+      color: var(--gold-light);
+    }
+    .brand-mark {
+      width: 38px;
+      height: 38px;
+      border-radius: 50%;
+      border: 1px solid var(--gold-bright);
+      background: rgba(217, 172, 82, 0.1);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--gold-bright);
+      font-weight: 800;
+      font-size: 0.82rem;
+      letter-spacing: 1px;
+    }
+    .brand-text h1 {
+      font-family: var(--font-serif);
+      font-size: 1.25rem;
+      letter-spacing: 0.05em;
+      color: var(--gold-light);
+    }
+    .brand-text small {
+      font-size: 0.65rem;
+      color: var(--gold-primary);
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      display: block;
+    }
+    .nav-links {
+      display: flex;
+      gap: 20px;
+      align-items: center;
+    }
+    .nav-links a {
+      color: var(--text-muted);
+      text-decoration: none;
+      font-size: 0.82rem;
+      transition: color 0.2s;
+    }
+    .nav-links a:hover { color: var(--gold-bright); }
+
+    /* Main Container */
+    .container {
+      max-width: 880px;
+      width: 100%;
+      margin: 40px auto 60px;
+      padding: 0 20px;
+      flex: 1;
+    }
+
+    /* Verification Header Card */
+    .card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-gold);
+      border-radius: 12px;
+      padding: 32px;
+      backdrop-filter: blur(16px);
+      box-shadow: 0 12px 40px rgba(0, 0, 0, 0.6);
+      margin-bottom: 24px;
+    }
+
+    .search-box {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 28px;
+    }
+    .search-input {
+      flex: 1;
+      background: rgba(0, 0, 0, 0.5);
+      border: 1px solid var(--border-gold);
+      border-radius: 8px;
+      padding: 14px 18px;
+      font-family: var(--font-mono);
+      font-size: 0.95rem;
+      color: var(--gold-bright);
+      outline: none;
+      text-transform: uppercase;
+      transition: border-color 0.2s;
+    }
+    .search-input:focus {
+      border-color: var(--gold-bright);
+      box-shadow: 0 0 12px rgba(217, 172, 82, 0.2);
+    }
+    .btn-verify {
+      background: linear-gradient(135deg, var(--gold-bright) 0%, var(--gold-primary) 100%);
+      color: #0A0908;
+      border: none;
+      border-radius: 8px;
+      padding: 0 28px;
+      font-weight: 700;
+      font-size: 0.88rem;
+      cursor: pointer;
+      transition: opacity 0.2s;
+    }
+    .btn-verify:hover { opacity: 0.92; }
+
+    /* Status Shield */
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 18px;
+      border-radius: 30px;
+      font-size: 0.85rem;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      margin-bottom: 20px;
+    }
+    .status-badge.valid {
+      background: var(--emerald-bg);
+      border: 1px solid var(--emerald-border);
+      color: var(--emerald);
+    }
+    .status-badge.invalid {
+      background: var(--red-bg);
+      border: 1px solid rgba(239, 68, 68, 0.35);
+      color: var(--red);
+    }
+
+    .doc-title {
+      font-family: var(--font-serif);
+      font-size: 1.8rem;
+      color: var(--gold-light);
+      margin-bottom: 6px;
+    }
+    .doc-sub {
+      color: var(--text-muted);
+      font-size: 0.85rem;
+      margin-bottom: 24px;
+    }
+
+    /* Grid layout */
+    .meta-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+    .meta-item {
+      background: rgba(0, 0, 0, 0.35);
+      border: 1px solid rgba(217, 172, 82, 0.15);
+      border-radius: 8px;
+      padding: 14px 16px;
+    }
+    .meta-label {
+      font-size: 0.72rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 4px;
+    }
+    .meta-val {
+      font-size: 0.92rem;
+      color: var(--gold-light);
+      font-weight: 600;
+    }
+    .meta-val.mono {
+      font-family: var(--font-mono);
+      color: var(--gold-bright);
+    }
+
+    /* Accreditations Row */
+    .accreditations-row {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 12px;
+      background: rgba(217, 172, 82, 0.04);
+      border: 1px dashed var(--border-gold);
+      border-radius: 8px;
+      padding: 16px;
+      margin-bottom: 24px;
+    }
+    .acc-item small {
+      display: block;
+      font-size: 0.68rem;
+      color: var(--text-muted);
+    }
+    .acc-item strong {
+      font-size: 0.82rem;
+      color: var(--gold-bright);
+      font-family: var(--font-mono);
+    }
+
+    /* Cryptographic block */
+    .crypto-block {
+      background: #050505;
+      border: 1px solid rgba(217, 172, 82, 0.2);
+      border-radius: 8px;
+      padding: 18px;
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      line-height: 1.6;
+      word-break: break-all;
+    }
+    .crypto-block b { color: var(--gold-bright); }
+    .crypto-hash {
+      color: var(--emerald);
+      margin: 4px 0;
+      font-weight: 700;
+    }
+
+    /* Actions */
+    .action-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: 24px;
+    }
+    .btn-action {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 20px;
+      border-radius: 6px;
+      font-size: 0.82rem;
+      font-weight: 600;
+      text-decoration: none;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .btn-action.primary {
+      background: rgba(217, 172, 82, 0.15);
+      border: 1px solid var(--border-gold);
+      color: var(--gold-bright);
+    }
+    .btn-action.primary:hover {
+      background: var(--gold-bright);
+      color: #0A0908;
+    }
+    .btn-action.secondary {
+      background: transparent;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      color: var(--text-muted);
+    }
+    .btn-action.secondary:hover {
+      color: var(--gold-light);
+      border-color: rgba(255, 255, 255, 0.3);
+    }
+
+    footer {
+      border-top: 1px solid rgba(217, 172, 82, 0.15);
+      padding: 24px 5%;
+      text-align: center;
+      font-size: 0.75rem;
+      color: var(--text-muted);
+    }
+
+    @media (max-width: 768px) {
+      .nav {
+        height: auto;
+        padding: 14px 16px;
+        flex-direction: column;
+        gap: 12px;
+      }
+      .nav-links {
+        width: 100%;
+        justify-content: center;
+        flex-wrap: wrap;
+        gap: 12px;
+      }
+      .container {
+        margin: 20px auto 40px;
+        padding: 0 14px;
+      }
+      .card {
+        padding: 20px 16px;
+      }
+      .search-box {
+        flex-direction: column;
+      }
+      .search-input {
+        font-size: 16px !important;
+      }
+      .btn-verify {
+        padding: 14px;
+        width: 100%;
+      }
+      .meta-grid {
+        grid-template-columns: 1fr;
+      }
+      .accreditations-row {
+        grid-template-columns: 1fr;
+      }
+      .action-row {
+        flex-direction: column;
+      }
+      .btn-action {
+        width: 100%;
+        justify-content: center;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Navigation -->
+  <nav class="nav">
+    <a href="index.html" class="brand">
+      <div class="brand-mark">GGE</div>
+      <div class="brand-text">
+        <h1>Golden Global Expo</h1>
+        <small>A Six Lady Farmers Initiative · Export House</small>
+      </div>
+    </a>
+    <div class="nav-links">
+      <a href="index.html">Trade Desk</a>
+      <a href="tracking.html">Cargo Tracking</a>
+      <a href="download.html">Document Vault</a>
+      <a href="login.html">Executive Portal</a>
+    </div>
+  </nav>
+
+  <!-- Main Content -->
+  <main class="container">
+    
+    <div class="card">
+      <h2 style="font-family:var(--font-serif); font-size:1.4rem; color:var(--gold-light); margin-bottom:14px;">
+        Statutory Document &amp; Quality Assay Verification
+      </h2>
+      <p style="font-size:0.85rem; color:var(--text-muted); margin-bottom:20px;">
+        Enter a Bill of Lading (B/L) reference, Certificate of Analysis (COA) identifier, or scan a physical document QR code to authenticate records against the immutable trade ledger.
+      </p>
+
+      <form id="verifyForm" onsubmit="event.preventDefault(); handleSearch();" class="search-box">
+        <input type="text" id="verifyInput" class="search-input" placeholder="e.g. GGE-INNSA1-2026 or LOT GGE-TR-2026-A1" required>
+        <button type="submit" class="btn-verify">Authenticate ➔</button>
+      </form>
+
+      <!-- Verification Results Display -->
+      <div id="resultContainer" style="display:none;">
+        <div id="statusBadge" class="status-badge valid">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+          <span id="statusText">OFFICIAL DOCUMENT VALIDATED &amp; TAMPER-PROOF</span>
+        </div>
+
+        <h3 id="docType" class="doc-title">Certified Export Document &amp; Assay Matrix</h3>
+        <p id="docSub" class="doc-sub">Issued pursuant to Foreign Trade Policy (Govt. of India) · Port JNPT (INNSA1)</p>
+
+        <!-- Document Metadata Grid -->
+        <div class="meta-grid">
+          <div class="meta-item">
+            <div class="meta-label">Document Reference</div>
+            <div id="resRef" class="meta-val mono">GGE-INNSA1-2026</div>
+          </div>
+          <div class="meta-item">
+            <div class="meta-label">Certified Commodity</div>
+            <div id="resCommodity" class="meta-val">Classic Toor Dal (Sortex Grade-A)</div>
+          </div>
+          <div class="meta-item">
+            <div class="meta-label">Consignee / Buyer</div>
+            <div id="resBuyer" class="meta-val">Valued Commercial Importer</div>
+          </div>
+          <div class="meta-item">
+            <div class="meta-label">Port of Loading</div>
+            <div id="resPol" class="meta-val">JNPT Nhava Sheva (INNSA1), Mumbai</div>
+          </div>
+          <div class="meta-item">
+            <div class="meta-label">Discharge Destination</div>
+            <div id="resPod" class="meta-val">Jebel Ali Port, Dubai (UAE)</div>
+          </div>
+          <div class="meta-item">
+            <div class="meta-label">Assay Purity Standard</div>
+            <div id="resPurity" class="meta-val">99.64% Min (Sortex Optical Clean)</div>
+          </div>
+        </div>
+
+        <!-- Accreditations Strip -->
+        <div class="accreditations-row">
+          <div class="acc-item">
+            <small>DGFT IEC CODE</small>
+            <strong id="resIec">AAGPB8439A</strong>
+          </div>
+          <div class="acc-item">
+            <small>APEDA REGISTRATION</small>
+            <strong id="resApeda">APEDA/MUM/2026/0488</strong>
+          </div>
+          <div class="acc-item">
+            <small>FSSAI CENTRAL EXPORT</small>
+            <strong id="resFssai">10022022001429</strong>
+          </div>
+          <div class="acc-item">
+            <small>SPICES BOARD CRES</small>
+            <strong id="resSpices">CRES-SB/2026/IND-492</strong>
+          </div>
+        </div>
+
+        <!-- Cryptographic Ledger Hash -->
+        <div class="crypto-block">
+          <div><b>CRYPTOGRAPHIC AUDIT PROOF (SHA-256):</b></div>
+          <div id="resHash" class="crypto-hash">8F3B9A12D07E4C98B214E82C0194FA888F3B9A12D07E4C98B214E82C0194FA88</div>
+          <div>Statutory Gateway: <b>Port Customs Nhava Sheva (INNSA1)</b> · Protocol: <b>ICC UCP 600 Compliant</b></div>
+          <div>Verification Timestamp: <span id="resTimestamp">2026-09-04 04:45:00 UTC</span> · Status: <b>IMMUTABLE LEDGER CONFIRMED</b></div>
+        </div>
+
+        <!-- Inquiry Notice Banner (Only shown if document is an Inquiry RFQ) -->
+        <div id="resInquiryNotice" style="display:none; padding:14px 18px; margin-top:16px; margin-bottom:8px; background:rgba(217,172,82,0.10); border:1px solid rgba(217,172,82,0.3); border-radius:6px;">
+          <div style="display:flex; align-items:center; gap:8px; color:var(--gold-bright); font-weight:700; font-size:0.88rem; margin-bottom:4px;">
+            <span>📋</span> COMMERCIAL EXPORT INQUIRY (PRE-ORDER ESTIMATE)
+          </div>
+          <p style="font-size:0.80rem; color:#E0D5BE; line-height:1.45; margin:0;">
+            This reference is an initial commercial inquiry currently under review by our Mumbai trade operations desk. A maritime Bill of Lading (B/L) and vessel tracking telemetry are issued only upon formal proforma confirmation, container booking, and port loading at Nhava Sheva (JNPT).
+          </p>
+        </div>
+
+        <!-- Action Links -->
+        <div class="action-row">
+          <a id="btnTrack" href="tracking.html" class="btn-action primary">
+            Track Consignment Live ➔
+          </a>
+          <a id="btnContactInquiry" href="index.html#contact" class="btn-action primary" style="display:none;">
+            Contact Mumbai Trade Desk ➔
+          </a>
+          <button onclick="window.print();" class="btn-action secondary">
+            Print Verification Docket
+          </button>
+          <a href="index.html#contact" class="btn-action secondary">
+            Contact Compliance Desk
+          </a>
+        </div>
+      </div>
+
+      <!-- Error Display -->
+      <div id="errorContainer" style="display:none; padding:24px; background:var(--red-bg); border:1px solid rgba(239,68,68,0.3); border-radius:8px; margin-top:16px;">
+        <div style="display:flex; align-items:center; gap:10px; color:var(--red); font-weight:700; margin-bottom:6px;">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+          DOCUMENT NOT FOUND IN STATUTORY REGISTRY
+        </div>
+        <p id="errorMsg" style="font-size:0.85rem; color:var(--text-muted); line-height:1.5;">
+          The requested document reference does not exist or has been revoked. Please check the reference code or contact our compliance desk.
+        </p>
+      </div>
+
+    </div>
+
+  </main>
+
+  <footer>
+    © 2026 Golden Global Expo. A division of Six Lady Farmers. All rights reserved. · Part of the Six Lady Farmers Group<br>
+    Ministry of Commerce &amp; Industry Registered Export House · JNPT Port (INNSA1), Mumbai, India<br>
+    All documents digitally validated under ICC Uniform Customs and Practice for Documentary Credits (UCP 600).
+  </footer>
+
+  <script>
+    async function verifyCode(code) {
+      if (!code) return;
+      code = code.trim();
+      document.getElementById('verifyInput').value = code;
+
+      const resultBox = document.getElementById('resultContainer');
+      const errorBox = document.getElementById('errorContainer');
+      resultBox.style.display = 'none';
+      errorBox.style.display = 'none';
+
+      try {
+        const res = await fetch(`/api/verify/${encodeURIComponent(code)}`);
+        const data = await res.json();
+
+        if (res.ok && data.valid) {
+          document.getElementById('resRef').textContent = data.document.referenceCode || code;
+          document.getElementById('resCommodity').textContent = data.document.commodity || 'Certified Export Commodity';
+          document.getElementById('resBuyer').textContent = data.document.consignee || 'International Trade House';
+          document.getElementById('resPol').textContent = data.document.portOfLoading || 'JNPT Nhava Sheva (INNSA1)';
+          document.getElementById('resPod').textContent = data.document.destinationPort || 'International Discharge Port';
+          document.getElementById('resPurity').textContent = data.document.assayPurity || '99.64% Min (Sortex Clean)';
+          
+          if (data.accreditations) {
+            document.getElementById('resIec').textContent = data.accreditations.dgft_iec || 'AAGPB8439A';
+            document.getElementById('resApeda').textContent = data.accreditations.apeda_reg || 'APEDA/MUM/2026/0488';
+            document.getElementById('resFssai').textContent = data.accreditations.fssai_lic || '10022022001429';
+            document.getElementById('resSpices').textContent = data.accreditations.spices_board || 'CRES-SB/2026/IND-492';
+          }
+
+          if (data.cryptography) {
+            document.getElementById('resHash').textContent = data.cryptography.ledgerHash || '';
+          }
+          if (data.document && data.document.verifiedAt) {
+            document.getElementById('resTimestamp').textContent = data.document.verifiedAt;
+          }
+
+          const isDocInquiry = Boolean(data.document && (data.document.isInquiry || (data.document.referenceCode && data.document.referenceCode.toUpperCase().startsWith('RFQ'))));
+          const trackBtn = document.getElementById('btnTrack');
+          const contactBtn = document.getElementById('btnContactInquiry');
+          const inqNotice = document.getElementById('resInquiryNotice');
+
+          if (isDocInquiry) {
+            if (trackBtn) trackBtn.style.display = 'none';
+            if (contactBtn) contactBtn.style.display = 'inline-flex';
+            if (inqNotice) inqNotice.style.display = 'block';
+          } else {
+            if (trackBtn) {
+              trackBtn.style.display = 'inline-flex';
+              trackBtn.href = `tracking.html?bl=${encodeURIComponent(code)}`;
+            }
+            if (contactBtn) contactBtn.style.display = 'none';
+            if (inqNotice) inqNotice.style.display = 'none';
+          }
+
+          resultBox.style.display = 'block';
+        } else {
+          document.getElementById('errorMsg').textContent = data.error || 'The reference code provided could not be verified.';
+          errorBox.style.display = 'block';
+        }
+      } catch (err) {
+        document.getElementById('errorMsg').textContent = 'Unable to connect to verification gateway. Please ensure your connection is active.';
+        errorBox.style.display = 'block';
+      }
+    }
+
+    function handleSearch() {
+      const val = document.getElementById('verifyInput').value;
+      if (val) {
+        const newUrl = window.location.pathname + '?doc=' + encodeURIComponent(val.trim());
+        window.history.pushState({ path: newUrl }, '', newUrl);
+        verifyCode(val.trim());
+      }
+    }
+
+    // Auto-read ?doc= or ?code= from URL parameters on page load
+    window.addEventListener('DOMContentLoaded', () => {
+      const params = new URLSearchParams(window.location.search);
+      const targetDoc = params.get('doc') || params.get('code') || params.get('bl') || params.get('hash');
+      if (targetDoc) {
+        verifyCode(targetDoc);
+      } else {
+        verifyCode('GGE-INNSA1-2026');
+      }
+    });
+  </script>
+</body>
+</html>

@@ -11,8 +11,32 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@600;700&family=Work+Sans:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <!-- Critical Anti-FOUC & Seal Guard -->
+  <style>
+    :root {
+      --bg: #0D0B08;
+      --gold: #B8872F;
+      --gold-bright: #D9AC52;
+    }
+    *, *::before, *::after { box-sizing: border-box; }
+    html, body {
+      background-color: #0D0B08 !important;
+      color: #F5EFE0 !important;
+      font-family: 'Work Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+      margin: 0;
+    }
+    .seal, svg.seal {
+      width: 36px !important;
+      height: 36px !important;
+      max-width: 36px !important;
+      max-height: 36px !important;
+      flex-shrink: 0 !important;
+      display: inline-block !important;
+    }
+  </style>
+
   <!-- Stylesheet -->
-  <link rel="stylesheet" href="css/desk.css?v=2.4.0">
+  <link rel="stylesheet" href="css/desk.css?v=4.9.5">
 </head>
 <body>
 
@@ -20,12 +44,12 @@
 <div class="auth-overlay" id="authOverlay">
   <div class="auth-card" style="position:relative;">
     <!-- Return to Storefront Icon -->
-    <a href="index.html" style="position:absolute;top:16px;right:18px;color:var(--muted);text-decoration:none;font-size:1.1rem;transition:color 0.2s ease;" title="Return to Main Website" onmouseover="this.style.color='#fff'" onmouseout="this.style.color='var(--muted)'">✕</a>
+    <a href="/index.html" style="position:absolute;top:16px;right:18px;color:var(--muted);text-decoration:none;font-size:1.1rem;transition:color 0.2s ease;" title="Return to Main Website" onmouseover="this.style.color='#fff'" onmouseout="this.style.color='var(--muted)'">✕</a>
 
-    <svg class="seal" viewBox="0 0 40 40" fill="none" style="margin:0 auto 14px;display:block;width:44px;height:44px;">
-      <circle cx="20" cy="20" r="18.5"/>
-      <circle cx="20" cy="20" r="14.5"/>
-      <text x="20" y="24" text-anchor="middle" font-family="Fraunces, serif" font-size="12" fill="var(--gold-bright)" stroke="none">GGE</text>
+    <svg class="seal" viewBox="0 0 40 40" width="44" height="44" fill="none" style="margin:0 auto 14px;display:block;width:44px !important;height:44px !important;max-width:44px !important;max-height:44px !important;min-width:44px !important;min-height:44px !important;flex-shrink:0 !important;">
+      <circle cx="20" cy="20" r="18.5" stroke="#B8872F" stroke-width="1.5" fill="none"/>
+      <circle cx="20" cy="20" r="14.5" stroke="#B8872F" stroke-width="1" fill="none"/>
+      <text x="20" y="24.5" text-anchor="middle" font-family="'Fraunces', Georgia, serif" font-size="12" font-weight="700" fill="#D9AC52" stroke="none">GGE</text>
     </svg>
 
     <!-- STEP 1: ADMIN ID / EMAIL INPUT -->
@@ -35,7 +59,7 @@
       
       <div style="text-align:left;margin-bottom:14px;">
         <label style="font-family:var(--font-mono);font-size:0.72rem;color:var(--muted);text-transform:uppercase;display:block;margin-bottom:4px;">Registered Admin Email</label>
-        <input type="email" id="adminEmailInput" value="nigadearyan@gmail.com" placeholder="name@domain.com" style="margin-bottom:0;text-align:left;font-size:0.95rem;letter-spacing:normal;" onkeydown="if(event.key==='Enter') sendOTP();">
+        <input type="email" id="adminEmailInput" placeholder="name@domain.com" style="margin-bottom:0;text-align:left;font-size:0.95rem;letter-spacing:normal;" onkeydown="if(event.key==='Enter') sendOTP();">
       </div>
 
       <button type="button" id="btnSendCode" class="btn-login" onclick="sendOTP()">
@@ -53,7 +77,7 @@
     <!-- STEP 2: 6-DIGIT OTP VERIFICATION INPUT -->
     <div id="authStep2" style="display:none;">
       <h2>Security Verification</h2>
-      <p style="margin-bottom:18px;">A 6-digit security code has been sent to your email:<br><b id="otpTargetEmail" style="color:var(--gold-bright);">nigadearyan@gmail.com</b><br><small style="color:var(--muted);font-size:0.75rem;">(Please check your Gmail Inbox &amp; Spam folder)</small></p>
+      <p style="margin-bottom:18px;">A 6-digit security code has been sent to your email:<br><b id="otpTargetEmail" style="color:var(--gold-bright);">admin@goldenglobalexpo.com</b><br><small style="color:var(--muted);font-size:0.75rem;">(Please check your Gmail Inbox &amp; Spam folder)</small></p>
 
       <div class="otp-inputs-grid" id="otpInputsGrid">
         <input type="text" maxlength="1" class="otp-digit" inputmode="numeric" autofocus>
@@ -88,17 +112,21 @@
 <header class="admin-header">
   <div class="header-wrap">
     <a href="#" class="admin-brand">
-      <svg class="seal" viewBox="0 0 40 40" fill="none">
-        <circle cx="20" cy="20" r="18.5"/>
-        <circle cx="20" cy="20" r="14.5"/>
-        <text x="20" y="24" text-anchor="middle" font-family="Fraunces, serif" font-size="12" fill="var(--gold-bright)" stroke="none">GGE</text>
+      <svg class="seal" viewBox="0 0 40 40" width="36" height="36" fill="none" style="width:36px !important;height:36px !important;max-width:36px !important;max-height:36px !important;min-width:36px !important;min-height:36px !important;flex-shrink:0 !important;display:inline-block !important;vertical-align:middle !important;" aria-hidden="true">
+        <circle cx="20" cy="20" r="18.5" stroke="#B8872F" stroke-width="1.5" fill="none"/>
+        <circle cx="20" cy="20" r="14.5" stroke="#B8872F" stroke-width="1" fill="none"/>
+        <text x="20" y="24.5" text-anchor="middle" font-family="'Fraunces', Georgia, serif" font-size="11" font-weight="700" fill="#D9AC52" stroke="none">GGE</text>
       </svg>
       <div>
         <div class="brand-title">Golden Global Expo</div>
-        <span class="brand-badge">Executive Trade Desk</span>
+        <span class="brand-badge">Executive Trade Desk · A Six Lady Farmers Initiative</span>
       </div>
     </a>
     <div class="header-actions">
+      <div id="roleBadge" title="Current Operational Governance Role" style="display:inline-flex;align-items:center;gap:6px;padding:5px 12px;background:rgba(217,172,82,0.12);border:1px solid rgba(217,172,82,0.3);border-radius:20px;font-size:0.75rem;color:var(--gold-bright);font-family:ui-monospace,SFMono-Regular,Consolas,monospace;">
+        <span id="roleDot" style="width:7px;height:7px;border-radius:50%;background:var(--gold-bright);display:inline-block;box-shadow:0 0 8px var(--gold-bright);"></span>
+        <span>ROLE: <b id="currentRoleText">OWNER / ADMIN</b></span>
+      </div>
       <div id="serverHealthBadge" title="Real-Time SQLite ACID WAL & APM Telemetry" style="display:inline-flex;align-items:center;gap:6px;padding:5px 12px;background:rgba(23,201,100,0.08);border:1px solid rgba(23,201,100,0.25);border-radius:20px;font-size:0.75rem;color:#17c964;font-family:ui-monospace,SFMono-Regular,Consolas,monospace;">
         <span style="width:7px;height:7px;border-radius:50%;background:#17c964;display:inline-block;box-shadow:0 0 8px #17c964;"></span>
         <span>ACID WAL <b id="apmLatencyDisplay">&lt;1ms</b></span>
@@ -139,6 +167,7 @@
   <!-- Navigation Tabs -->
   <div class="admin-tabs">
     <button type="button" class="tab-btn active" onclick="switchTab('inquiriesTab', this)">📬 Inquiry Desk &amp; CRM</button>
+    <button type="button" class="tab-btn" onclick="switchTab('catalogTab', this)">🌾 Commodity Catalog &amp; Quality Assays</button>
     <button type="button" class="tab-btn" onclick="switchTab('pricingTab', this)">🏷️ Commodity Price Manager</button>
     <button type="button" class="tab-btn" onclick="switchTab('trackingTab', this)">🚢 Consignment Tracker</button>
     <button type="button" class="tab-btn" onclick="switchTab('analyticsTab', this)">📊 Live Buyer Analytics &amp; Telemetry</button>
@@ -165,21 +194,66 @@
       </div>
     </div>
 
+    <!-- Inquiry Channel Filters -->
+    <div class="inquiry-filter-bar" style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;">
+      <button type="button" class="btn-action active" id="filterBtnAll" onclick="setInquiryFilter('all', this)">All Orders &amp; Leads</button>
+      <button type="button" class="btn-action" id="filterBtnDomestic" onclick="setInquiryFilter('domestic', this)" style="border-color:rgba(255,153,51,0.4);color:#FFA726;">🇮🇳 Domestic UPI Orders</button>
+      <button type="button" class="btn-action" id="filterBtnSample" onclick="setInquiryFilter('sample', this)" style="border-color:rgba(129,199,132,0.4);color:#81C784;">📦 Sample Orders</button>
+      <button type="button" class="btn-action" id="filterBtnExport" onclick="setInquiryFilter('export', this)" style="border-color:rgba(217,172,82,0.4);color:var(--gold-bright);">🌐 Bulk FCL RFQs</button>
+    </div>
+
     <div class="table-card">
       <div class="table-responsive">
-        <table>
+        <table class="inquiry-table" id="inquiryTable">
           <thead>
             <tr>
-              <th>Date &amp; Time</th>
-              <th>Buyer &amp; Entity</th>
-              <th>Destination Port</th>
-              <th>Commodity &amp; Volume</th>
-              <th>Status</th>
-              <th>Direct Actions</th>
+              <th style="width: 16%;">Date &amp; ID</th>
+              <th style="width: 20%;">Buyer &amp; Entity</th>
+              <th style="width: 14%;">Destination</th>
+              <th style="width: 17%;">Commodity &amp; Volume</th>
+              <th style="width: 11%;">Status</th>
+              <th style="width: 22%;">Actions</th>
             </tr>
           </thead>
           <tbody id="inquiriesTableBody">
             <!-- Dynamically Injected -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB: COMMODITY CATALOG & QUALITY ASSAYS -->
+  <div class="tab-pane" id="catalogTab">
+    <div class="section-toolbar">
+      <div class="section-title">
+        <h3>Commodity Specifications &amp; Quality Assays Console</h3>
+        <p>Live institutional export parameters, crop assays, Indian Customs HS codes, and NABL/SGS Certificate of Analysis attachments.</p>
+      </div>
+      <div class="toolbar-actions">
+        <button type="button" class="btn-action" onclick="refreshCommoditiesLive(this)" title="Reload catalog from database">
+          🔄 Sync Catalog
+        </button>
+        <button type="button" class="btn-action primary" onclick="openAddCommodityModal()">+ Register New Commodity</button>
+      </div>
+    </div>
+
+    <div class="table-card">
+      <div class="table-responsive">
+        <table class="inquiry-table" id="commodityCatalogTable">
+          <thead>
+            <tr>
+              <th style="width: 18%;">Commodity &amp; Code</th>
+              <th style="width: 12%;">Category / HS</th>
+              <th style="width: 15%;">Origin &amp; Harvest</th>
+              <th style="width: 22%;">Assay Benchmarks</th>
+              <th style="width: 13%;">Price (FOB USD)</th>
+              <th style="width: 10%;">COA Assay Doc</th>
+              <th style="width: 10%;">Actions</th>
+            </tr>
+          </thead>
+          <tbody id="commodityCatalogTableBody">
+            <!-- Dynamically populated by js/desk.js -->
           </tbody>
         </table>
       </div>
@@ -193,7 +267,7 @@
         <h3>Export Price Benchmark Manager</h3>
         <p>Edit indicative FOB / CIF prices per metric ton ($ / MT). Live website updates instantly across tabs.</p>
         <div style="display:flex; align-items:center; gap:8px; margin-top:6px;">
-          <span id="deskForexBadge" style="display:inline-flex; align-items:center; gap:6px; background:rgba(46,125,50,0.15); color:#81C784; border:1px solid rgba(129,199,132,0.4); padding:3px 10px; border-radius:4px; font-size:0.72rem; font-family:var(--font-mono);">⚡ Live Global Forex Active: 1 USD = ₹94.89 INR · €0.862 EUR · 3.67 AED</span>
+          <span id="deskForexBadge" style="display:inline-flex; align-items:center; gap:6px; background:rgba(46,125,50,0.15); color:#81C784; border:1px solid rgba(129,199,132,0.4); padding:3px 10px; border-radius:4px; font-size:0.72rem; font-family:var(--font-mono);">⚡ Live Global Forex Active: 1 USD = ₹95.70 INR · €0.862 EUR · 3.67 AED</span>
           <button type="button" class="btn-action" onclick="refreshForexNow(this)" style="padding:3px 10px; font-size:0.70rem; background:rgba(217,172,82,0.15); border:1px solid rgba(217,172,82,0.4); color:var(--gold-bright); border-radius:4px; cursor:pointer;" title="Pull latest live rates from interbank forex API">🔄 Refresh FX</button>
         </div>
       </div>
@@ -220,6 +294,18 @@
       </div>
       <div class="toolbar-actions">
         <button type="button" class="btn-action primary" onclick="openConsignmentModal()">+ Create New B/L Consignment</button>
+      </div>
+    </div>
+    <div style="display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:12px; margin: 16px 0 20px 0; padding:12px 16px; background:rgba(20,17,14,0.6); border:1px solid rgba(217,172,82,0.2); border-radius:6px;">
+      <div style="display:flex; align-items:center; gap:8px; flex:1; min-width:260px;">
+        <span style="font-size:0.9rem; color:var(--gold-bright);">🔍</span>
+        <input type="text" id="consignSearchInput" oninput="filterConsignmentsUI()" placeholder="Search by B/L code, buyer name, commodity, or container..." style="flex:1; background:rgba(0,0,0,0.4); border:1px solid rgba(255,255,255,0.12); color:#FFFFFF; padding:7px 12px; border-radius:4px; font-size:0.82rem;">
+      </div>
+      <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+        <button type="button" id="tabFilterAllConsigns" class="btn-action active" onclick="setConsignFilter('all', this)" style="font-size:0.75rem; padding:6px 14px; background:rgba(217,172,82,0.2); border-color:var(--gold-bright); color:var(--gold-bright);">All Shipments</button>
+        <button type="button" id="tabFilterOceanConsigns" class="btn-action" onclick="setConsignFilter('ocean', this)" style="font-size:0.75rem; padding:6px 14px;">🚢 Ocean Freight</button>
+        <button type="button" id="tabFilterSampleConsigns" class="btn-action" onclick="setConsignFilter('sample', this)" style="font-size:0.75rem; padding:6px 14px;">✈️ Sample Dispatches</button>
+        <button type="button" id="tabFilterDomesticConsigns" class="btn-action" onclick="setConsignFilter('domestic', this)" style="font-size:0.75rem; padding:6px 14px; border-color:rgba(255,153,51,0.4); color:#FFA726;">🇮🇳 Domestic Dispatches</button>
       </div>
     </div>
 
@@ -330,7 +416,7 @@
           </div>
           <div style="display:flex;justify-content:space-between;border-bottom:1px solid var(--line);padding-bottom:8px;">
             <span style="color:var(--muted);">Authorized Recipient:</span>
-            <b style="color:#81C784;">nigadearyan@gmail.com</b>
+            <b style="color:#81C784;">admin@goldenglobalexpo.com</b>
           </div>
           <div style="display:flex;justify-content:space-between;border-bottom:1px solid var(--line);padding-bottom:8px;">
             <span style="color:var(--muted);">Public Storefront Exposure:</span>
@@ -349,6 +435,49 @@
         <div style="margin-top:20px;background:rgba(255,255,255,0.03);border:1px solid var(--line);border-radius:4px;padding:12px;font-size:0.75rem;color:var(--muted);">
           <b>Cloudflare Zero Trust / Subdomain Ready:</b><br>
           In production, map this page to <code>desk.goldenglobalexpo.com</code> for complete subdomain isolation.
+        </div>
+      </div>
+
+      <!-- Enterprise RBAC Team Governance Directory -->
+      <div class="kpi-card" style="padding:24px;">
+        <h4 style="font-family:var(--font-serif);font-size:1.15rem;margin-bottom:6px;">Role-Based Access Control (RBAC)</h4>
+        <p style="font-size:0.8rem;color:var(--muted);margin-bottom:18px;">Segregation of duties under DGFT &amp; ISO 27001 trade governance standards:</p>
+        
+        <div style="display:flex;flex-direction:column;gap:14px;">
+          <!-- Role 1: Super-Admin / Executive Owner -->
+          <div style="padding:12px; background:rgba(217,172,82,0.06); border:1px solid rgba(217,172,82,0.25); border-radius:6px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+              <div style="display:flex; align-items:center; gap:8px;">
+                <span style="display:inline-block; width:8px; height:8px; border-radius:50%; background:#D4AF37; box-shadow:0 0 8px #D4AF37;"></span>
+                <b style="color:var(--gold-bright); font-size:0.85rem;">Executive Owner</b>
+              </div>
+              <span style="font-family:var(--font-mono); font-size:0.68rem; background:rgba(217,172,82,0.2); color:var(--gold-bright); padding:2px 8px; border-radius:12px; font-weight:700;">SUPER-ADMIN</span>
+            </div>
+            <div style="font-size:0.73rem; color:var(--muted); line-height:1.4;">
+              Email: <code style="color:#FAF7EE;">admin@goldenglobalexpo.com</code><br>
+              Permissions: <span style="color:#81C784;">Full Access · Spot Prices, Forex Margins, Banking Vault, Ledger Root</span>
+            </div>
+          </div>
+
+          <!-- Role 2: Logistics & Customs Desk -->
+          <div style="padding:12px; background:rgba(255,255,255,0.02); border:1px solid var(--line); border-radius:6px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+              <div style="display:flex; align-items:center; gap:8px;">
+                <span style="display:inline-block; width:8px; height:8px; border-radius:50%; background:#64B5F6;"></span>
+                <b style="color:#FAF7EE; font-size:0.85rem;">Logistics &amp; Customs Desk</b>
+              </div>
+              <span style="font-family:var(--font-mono); font-size:0.68rem; background:rgba(100,181,246,0.15); color:#64B5F6; padding:2px 8px; border-radius:12px; font-weight:700;">OPERATIONS STAFF</span>
+            </div>
+            <div style="font-size:0.73rem; color:var(--muted); line-height:1.4;">
+              Identifier: <code style="color:#FAF7EE;">logistics@goldenglobalexpo.com</code><br>
+              Permissions: <span style="color:#64B5F6;">Consignments, B/L Numbers, Container Tracking, SGS/Phyto Docs</span><br>
+              <span style="color:#EF5350;">Restricted: Baseline Pricing &amp; Financial Settings Locked</span>
+            </div>
+          </div>
+        </div>
+
+        <div style="margin-top:16px; font-size:0.72rem; color:rgba(245,239,224,0.6); line-height:1.4;">
+          🛡️ <i>Operational personnel cannot alter commodity pricing tables. Enforced server-side via HTTP 403 API token gating.</i>
         </div>
       </div>
     </div>
@@ -473,11 +602,12 @@
           <div class="form-group" style="margin:0;">
             <label>Current Shipment Stage</label>
             <select id="mStage" class="dossier-input">
-              <option value="1">Stage 1: Mandi Procurement</option>
-              <option value="2">Stage 2: Lab QA &amp; Sortex Clean Certified</option>
-              <option value="3">Stage 3: JNPT Customs &amp; Phyto Cleared</option>
-              <option value="4" selected>Stage 4: Ocean Transit (Active)</option>
-              <option value="5">Stage 5: Port Discharged &amp; Released</option>
+              <option value="1">Stage 1: Mandi Origin &amp; APMC Procurement</option>
+              <option value="2">Stage 2: Quality Assay &amp; Lab QA Certified</option>
+              <option value="3">Stage 3: CFS Stuffing (Phyto Cleared) / Air Hub Pack</option>
+              <option value="4">Stage 4: Customs LEO (EDI Gate Cleared) / Export Exit</option>
+              <option value="5" selected>Stage 5: High Seas Ocean Transit / Air Transit</option>
+              <option value="6">Stage 6: Port Discharged &amp; Delivered</option>
             </select>
           </div>
         </div>
@@ -587,8 +717,16 @@
     </div>
     <form id="leadForm" onsubmit="event.preventDefault(); saveLeadForm();">
       <div class="form-group">
-        <label>Buyer Name *</label>
-        <input type="text" id="lName" placeholder="e.g. Tariq Al-Mansoor" required>
+        <label>Order / Inquiry Classification *</label>
+        <select id="lType" style="width:100%;padding:9px 12px;background:#1A1410;color:#FAF8F3;border:1px solid rgba(217,172,82,0.35);border-radius:4px;font-size:0.85rem;font-weight:600;">
+          <option value="BULK_INQUIRY">🌐 International Commercial RFQ (Bulk FCL)</option>
+          <option value="DOMESTIC_ORDER">🇮🇳 Domestic Trade Order (500g / 1kg / 5kg / 25kg UPI)</option>
+          <option value="SAMPLE_ORDER">📦 Certified Sample Dispatch Order</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Buyer / Consignee Name *</label>
+        <input type="text" id="lName" placeholder="e.g. Tariq Al-Mansoor / Ramesh Gupta" required>
       </div>
       <div class="form-group">
         <label>Company / Trading House</label>
@@ -673,9 +811,12 @@
                 <option value="p8">Moringa Leaf Powder · HS 1211.90</option>
                 <option value="p9">Mint Powder (Pudina) · HS 1211.90</option>
                 <option value="p10">Coriander Powder · HS 0909.22</option>
-                <option value="p11">Jowar Whole Sorghum · HS 1007.90</option>
-                <option value="p12">Jowar Gluten-Free Flour · HS 1102.90</option>
+                <option value="p11">Sorghum (Jowar Whole Grain) · HS 1007.90</option>
+                <option value="p12">Jowar Flour (Sorghum Flour) · HS 1102.90</option>
                 <option value="p13">Tissue Paper &amp; Napkins · HS 4818.10</option>
+                <option value="p14">Emmer Wheat (Khapli) · HS 1001.99</option>
+                <option value="p15">Pure Cow Ghee (A2 Desi) · HS 0405.90</option>
+                <option value="p17">Indian Home Spices (Kitchen Staples) · HS 0904–0910</option>
               </select>
             </div>
 
@@ -763,6 +904,7 @@
             <input type="hidden" id="dosTonnage" value="22 Quintals (2,200 KG / 2.2 MT)">
             <input type="hidden" id="dosLoadingPort" value="FOB JNPT Nhava Sheva (INNSA1)">
             <input type="hidden" id="dosTerms" value="100% Irrevocable L/C at Sight">
+            <input type="hidden" id="dosPack" value="25kg / 50kg Export Bags">
           </div>
 
         </div>
@@ -828,10 +970,16 @@
 
       <!-- Live Generated Letterhead Output (Collapsible) -->
       <details style="background:rgba(0,0,0,0.4); border:1px solid rgba(217,172,82,0.25); border-radius:6px; padding:12px 16px;">
-        <summary style="font-family:var(--font-mono); font-size:0.74rem; color:var(--gold-bright); text-transform:uppercase; font-weight:600; cursor:pointer;">
-          👁️ Click to View / Edit Generated Formal Letterhead Text
+        <summary style="font-family:var(--font-mono); font-size:0.74rem; color:var(--gold-bright); text-transform:uppercase; font-weight:600; cursor:pointer; display:flex; justify-content:space-between; align-items:center;">
+          <span>👁️ Click to View / Edit Generated Formal Letterhead &amp; HTML Dossier</span>
+          <span style="font-size:0.68rem; color:#8C8275; text-transform:none; font-weight:normal;">(Auto-generates both Plain-Text &amp; Branded HTML)</span>
         </summary>
-        <textarea id="emBody" rows="7" style="font-family:var(--font-mono); font-size:0.75rem; line-height:1.55; color:#F5EFE0; background:rgba(10,8,6,0.95); border:1px solid rgba(217,172,82,0.3); padding:12px; border-radius:4px; width:100%; margin-top:10px;"></textarea>
+        <div style="display:flex; gap:10px; margin-top:12px; margin-bottom:8px;">
+          <button type="button" id="btnTabLetterheadText" onclick="toggleLetterheadView('text')" style="background:linear-gradient(135deg, #D9AC52 0%, #B8872F 100%); color:#0D0A08; font-weight:700; border:none; padding:6px 14px; font-size:0.75rem; border-radius:4px; cursor:pointer;">📄 Text Format</button>
+          <button type="button" id="btnTabLetterheadHtml" onclick="toggleLetterheadView('html')" style="background:rgba(255,255,255,0.08); color:#E0D8C8; border:1px solid rgba(217,172,82,0.3); padding:6px 14px; font-size:0.75rem; border-radius:4px; cursor:pointer;">🎨 Branded HTML Preview</button>
+        </div>
+        <textarea id="emBody" rows="8" style="font-family:var(--font-mono); font-size:0.75rem; line-height:1.55; color:#F5EFE0; background:rgba(10,8,6,0.95); border:1px solid rgba(217,172,82,0.3); padding:12px; border-radius:4px; width:100%; box-sizing:border-box; margin-top:4px;"></textarea>
+        <div id="emHtmlPreview" style="display:none; background:#ffffff; border-radius:6px; padding:12px; margin-top:8px; max-height:420px; overflow-y:auto; border:1px solid rgba(217,172,82,0.3); box-sizing:border-box;"></div>
       </details>
 
       <!-- LIVE DIRECT TRANSMISSION STATUS BANNER -->
@@ -841,7 +989,7 @@
       <div style="display: flex; gap: 12px; justify-content: space-between; align-items: center; border-top: 1.5px solid rgba(217,172,82,0.25); padding-top: 16px; flex-wrap: wrap;">
         <div style="font-family:var(--font-mono); font-size:0.72rem; color:var(--muted); display:flex; align-items:center; gap:6px;">
           <span style="display:inline-block; width:8px; height:8px; border-radius:50%; background:#81C784;"></span>
-          Active Sender: <b style="color:var(--ivory);">nigadearyan@gmail.com</b>
+          Active Sender: <b id="dossierSenderEmail" style="color:var(--ivory);">admin@goldenglobalexpo.com</b>
         </div>
         <div style="display:flex; gap:10px; flex-wrap:wrap;">
           <button type="button" class="btn-action" onclick="downloadAllDossierFiles()" style="background:rgba(255,255,255,0.08);border:1px solid rgba(217,172,82,0.4);color:var(--gold-bright);">
@@ -863,6 +1011,215 @@
   </div>
 </div>
 
+<!-- MODAL: ADD / EDIT COMMODITY SPECIFICATION -->
+<div class="modal-backdrop" id="commodityEditModal" style="display:none;" onclick="if(event.target === this) closeModal('commodityEditModal');">
+  <div class="modal-box" style="max-width:760px; width:95%;">
+    <div class="modal-head">
+      <h3 id="commodityModalTitle">Register New Export Commodity</h3>
+      <button type="button" class="modal-close" onclick="closeModal('commodityEditModal')">✕</button>
+    </div>
+    <form id="commodityEditForm" onsubmit="event.preventDefault(); saveCommodityForm();">
+      <input type="hidden" id="cEditCode" value="">
+      
+      <div style="display:grid; grid-template-columns:1fr 2fr; gap:12px;">
+        <div class="form-group">
+          <label for="cCode">Commodity Code *</label>
+          <input type="text" id="cCode" placeholder="e.g. p18" required style="font-family:var(--font-mono); text-transform:lowercase;">
+        </div>
+        <div class="form-group">
+          <label for="cName">Commodity Name *</label>
+          <input type="text" id="cName" placeholder="e.g. Classic Toor (Tur Dal / Split Pigeon Pea)" required>
+        </div>
+      </div>
+
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+        <div class="form-group">
+          <label for="cBotanical">Botanical Name</label>
+          <input type="text" id="cBotanical" placeholder="e.g. Cajanus cajan">
+        </div>
+        <div class="form-group">
+          <label for="cCategory">Category *</label>
+          <select id="cCategory" required style="width:100%; padding:10px 14px; background:rgba(0,0,0,0.35); border:1px solid var(--line); border-radius:4px; color:var(--ivory);">
+            <option value="Pulses">Pulses</option>
+            <option value="Seeds">Seeds</option>
+            <option value="Spices">Spices</option>
+            <option value="Grains">Grains</option>
+            <option value="Flour">Flour</option>
+            <option value="Essential Goods">Essential Goods</option>
+            <option value="Organic">Organic</option>
+          </select>
+        </div>
+      </div>
+
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+        <div class="form-group">
+          <label for="cHsCode">HS Tariff Code *</label>
+          <input type="text" id="cHsCode" placeholder="e.g. 0713.60.00" required style="font-family:var(--font-mono);">
+        </div>
+        <div class="form-group">
+          <label for="cOrigin">Origin Mandi / Belt</label>
+          <input type="text" id="cOrigin" placeholder="e.g. Maharashtra / Karnataka (India)">
+        </div>
+      </div>
+
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+        <div class="form-group">
+          <label for="cCrop">Crop Year</label>
+          <input type="text" id="cCrop" placeholder="e.g. 2025/2026 Crop">
+        </div>
+        <div class="form-group">
+          <label for="cHarvestSeason">Harvest Season</label>
+          <input type="text" id="cHarvestSeason" placeholder="e.g. December to February">
+        </div>
+      </div>
+
+      <!-- Assay Benchmarks Card -->
+      <div style="background:rgba(0,0,0,0.3); border:1px solid rgba(217,172,82,0.25); border-radius:6px; padding:14px; margin-bottom:14px;">
+        <div style="font-family:var(--font-mono); font-size:0.75rem; color:var(--gold-bright); font-weight:700; text-transform:uppercase; margin-bottom:10px;">
+          🔬 Export Quality Assay Benchmarks (Lab Specification)
+        </div>
+        <div style="display:grid; grid-template-columns:1fr 1fr 1fr 1fr; gap:10px;">
+          <div class="form-group" style="margin:0;">
+            <label for="cPurity">Purity % *</label>
+            <input type="text" id="cPurity" placeholder="99.5% Min" required>
+          </div>
+          <div class="form-group" style="margin:0;">
+            <label for="cMoisture">Moisture % *</label>
+            <input type="text" id="cMoisture" placeholder="11.0% Max" required>
+          </div>
+          <div class="form-group" style="margin:0;">
+            <label for="cForeignMatter">Foreign Matter %</label>
+            <input type="text" id="cForeignMatter" placeholder="0.1% Max">
+          </div>
+          <div class="form-group" style="margin:0;">
+            <label for="cProtein">Protein %</label>
+            <input type="text" id="cProtein" placeholder="22.5% Min">
+          </div>
+        </div>
+      </div>
+
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+        <div class="form-group">
+          <label for="cPacking">Packaging Style</label>
+          <input type="text" id="cPacking" placeholder="25kg / 50kg PP Woven Bags">
+        </div>
+        <div class="form-group">
+          <label for="cLoadability">Container Loadability</label>
+          <input type="text" id="cLoadability" placeholder="20' FCL Load: 24.0 MT">
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="cCertifications">Certifications & Accreditations</label>
+        <input type="text" id="cCertifications" placeholder="APEDA, FSSAI Export Standards, Phytosanitary, Non-GMO">
+      </div>
+
+      <!-- Commercial Pricing Grid -->
+      <div style="background:rgba(0,0,0,0.3); border:1px solid rgba(217,172,82,0.25); border-radius:6px; padding:14px; margin-bottom:14px;">
+        <div style="font-family:var(--font-mono); font-size:0.75rem; color:var(--gold-bright); font-weight:700; text-transform:uppercase; margin-bottom:10px;">
+          💵 Commercial Pricing (Export FOB & Domestic Packs)
+        </div>
+        <div style="display:grid; grid-template-columns:1.5fr 1fr 1fr 1fr 1fr; gap:10px;">
+          <div class="form-group" style="margin:0;">
+            <label for="cBaseUsd">Base FOB (USD/MT) *</label>
+            <input type="number" id="cBaseUsd" step="5" min="100" placeholder="850" required style="font-family:var(--font-mono); font-weight:700; color:#81C784;">
+          </div>
+          <div class="form-group" style="margin:0;">
+            <label for="cPack500g">500g (₹ INR)</label>
+            <input type="number" id="cPack500g" step="1" min="0" placeholder="90" style="font-family:var(--font-mono);">
+          </div>
+          <div class="form-group" style="margin:0;">
+            <label for="cPack1kg">1kg (₹ INR)</label>
+            <input type="number" id="cPack1kg" step="1" min="0" placeholder="160" style="font-family:var(--font-mono);">
+          </div>
+          <div class="form-group" style="margin:0;">
+            <label for="cPack5kg">5kg (₹ INR)</label>
+            <input type="number" id="cPack5kg" step="5" min="0" placeholder="780" style="font-family:var(--font-mono);">
+          </div>
+          <div class="form-group" style="margin:0;">
+            <label for="cPack25kg">25kg (₹ INR)</label>
+            <input type="number" id="cPack25kg" step="10" min="0" placeholder="3750" style="font-family:var(--font-mono);">
+          </div>
+        </div>
+      </div>
+
+      <div style="display:flex; align-items:center; gap:10px; margin-bottom:16px;">
+        <input type="checkbox" id="cIsActive" checked style="width:18px; height:18px; accent-color:var(--gold-bright); cursor:pointer;">
+        <label for="cIsActive" style="cursor:pointer; margin:0; font-size:0.85rem; color:#FAF8F3;">
+          Active Commodity (Visible on live international catalog & price index)
+        </label>
+      </div>
+
+      <div style="display:flex; justify-content:flex-end; gap:10px; border-top:1px solid var(--line); padding-top:16px;">
+        <button type="button" class="btn-action" onclick="closeModal('commodityEditModal')">Cancel</button>
+        <button type="submit" id="btnSaveCommodity" class="btn-action primary" style="padding:10px 22px; font-weight:700;">
+          Save Commodity Specifications ➔
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- MODAL: UPLOAD COMMODITY CERTIFICATE OF ANALYSIS (COA) -->
+<div class="modal-backdrop" id="commodityCoaModal" style="display:none;" onclick="if(event.target === this) closeModal('commodityCoaModal');">
+  <div class="modal-box" style="max-width:500px; width:95%;">
+    <div class="modal-head">
+      <h3>Attach Certificate of Analysis (COA)</h3>
+      <button type="button" class="modal-close" onclick="closeModal('commodityCoaModal')">✕</button>
+    </div>
+    <form id="commodityCoaForm" onsubmit="event.preventDefault(); uploadCommodityCoa();">
+      <input type="hidden" id="coaCommodityCode" value="">
+      
+      <div style="background:rgba(217,172,82,0.1); border:1px solid rgba(217,172,82,0.3); border-radius:6px; padding:12px 16px; margin-bottom:16px;">
+        <div style="font-family:var(--font-mono); font-size:0.70rem; color:var(--muted); text-transform:uppercase;">Selected Commodity Lot</div>
+        <div id="coaCommodityTitle" style="font-size:1rem; font-weight:700; color:var(--gold-bright); margin-top:2px;">—</div>
+      </div>
+
+      <div id="coaCurrentLinkWrap" style="display:none; margin-bottom:14px; padding:10px; background:rgba(46,125,50,0.15); border:1px solid #81C784; border-radius:4px; font-size:0.80rem;">
+        <span style="color:#81C784; font-weight:600;">Current Document:</span>
+        <a id="coaCurrentLink" href="#" target="_blank" style="color:var(--gold-bright); text-decoration:underline; margin-left:6px; font-family:var(--font-mono);">View Attached COA PDF ↗</a>
+      </div>
+
+      <div class="form-group">
+        <label for="coaFileInput">Select Official Lab Certificate (PDF, PNG, JPG — Max 15MB) *</label>
+        <input type="file" id="coaFileInput" accept=".pdf,.png,.jpg,.jpeg" required style="padding:10px; background:rgba(0,0,0,0.4); border:1px dashed var(--gold); border-radius:4px; color:#FAF8F3; width:100%; cursor:pointer;">
+      </div>
+
+      <div id="coaUploadStatus" style="display:none; padding:10px; border-radius:4px; font-family:var(--font-mono); font-size:0.75rem; margin-bottom:12px;"></div>
+
+      <div style="display:flex; justify-content:flex-end; gap:10px; border-top:1px solid var(--line); padding-top:16px;">
+        <button type="button" class="btn-action" onclick="closeModal('commodityCoaModal')">Cancel</button>
+        <button type="submit" id="btnUploadCoa" class="btn-action primary" style="padding:10px 20px; font-weight:700;">
+          Upload &amp; Attach COA ➔
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- MODAL: PROFORMA INVOICE PREVIEW & 1-CLICK DISPATCH -->
+<div class="modal-backdrop" id="proformaInvoiceModal" style="display:none;" onclick="if(event.target === this) closeModal('proformaInvoiceModal');">
+  <div class="modal-box" style="max-width:960px; width:95%; height:90vh; display:flex; flex-direction:column; padding:20px;">
+    <div class="modal-head" style="margin-bottom:12px; padding-bottom:10px;">
+      <div style="display:flex; align-items:center; gap:10px;">
+        <span style="font-size:1.4rem;">📄</span>
+        <div>
+          <h3 style="margin:0; font-size:1.15rem;">Export Proforma Invoice Preview</h3>
+          <span style="font-family:var(--font-mono); font-size:0.70rem; color:var(--muted);">ICC Incoterms® 2020 · DGFT IEC: AAGPB8439A · SWIFT MT103</span>
+        </div>
+      </div>
+      <div style="display:flex; align-items:center; gap:8px;">
+        <button type="button" class="btn-action primary" onclick="printProformaInvoice()" style="padding:6px 14px; font-size:0.75rem; font-weight:700;">
+          🖨️ Print / Save PDF
+        </button>
+        <button type="button" class="btn-action" onclick="downloadProformaHtml()" style="padding:6px 12px; font-size:0.75rem;">
+          📥 Download HTML
+        </button>
+        <button type="button" class="modal-close" onclick="closeModal('proformaInvoiceModal')">✕</button>
+      </div>
+    </div>
+    <div style="flex:1; width:100%; height:100%; min-height:480px; position:relative; background:#ffffff; border-radius:6px; overflow:hidden;">
+      <iframe id="proformaInvoiceFrame" style="width:100%; height:100%; border:none; background:#ffffff;"></iframe>
     </div>
   </div>
 </div>
@@ -870,13 +1227,13 @@
 <div class="toast" id="toast">Changes saved successfully!</div>
 
     <!-- Application Scripts -->
-  <script src="js/data/products.js?v=2.4.0"></script>
-  <script src="js/data/tracking-data.js?v=2.4.0"></script>
-  <script src="js/modules/storage.js?v=2.4.0"></script>
-  <script src="js/modules/toast.js?v=2.4.0"></script>
-  <script src="js/modules/currency.js?v=2.4.0"></script>
-  <script src="js/desk.js?v=2.4.0"></script>
-  <script src="js/modules/pwa.js?v=2.4.0"></script>
+  <script src="/js/data/products.js?v=4.4.9"></script>
+  <script src="/js/data/tracking-data.js?v=4.4.9"></script>
+  <script src="/js/modules/storage.js?v=4.4.9"></script>
+  <script src="/js/modules/toast.js?v=4.4.9"></script>
+  <script src="/js/modules/currency.js?v=4.4.9"></script>
+  <script src="/js/desk.js?v=4.4.9"></script>
+  <script src="/js/modules/pwa.js?v=4.4.9"></script>
 
 <!-- Buyer Telemetry & Audit Modal -->
 <div class="admin-modal-overlay" id="sessionAuditModal" style="display:none;align-items:center;justify-content:center;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.85);z-index:99999;backdrop-filter:blur(6px);padding:20px;box-sizing:border-box;">
@@ -1025,6 +1382,33 @@
 
   </div>
 </div>
+
+
+<!-- Institutional Compliance, Governance & Privacy Modal -->
+<div id="legalGovernanceModal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(10,8,6,0.88);z-index:999999;backdrop-filter:blur(8px);align-items:center;justify-content:center;padding:20px;box-sizing:border-box;">
+  <div style="background:#14110E;border:1px solid rgba(217,172,82,0.35);border-radius:8px;max-width:720px;width:100%;max-height:85vh;overflow-y:auto;padding:32px;box-sizing:border-box;color:#F5EFE0;position:relative;box-shadow:0 20px 60px rgba(0,0,0,0.8);">
+    <button type="button" onclick="document.getElementById('legalGovernanceModal').style.display='none'" style="position:absolute;top:18px;right:20px;background:none;border:none;color:#D9AC52;font-size:1.4rem;cursor:pointer;">✕</button>
+    <div style="font-family:'Fraunces',serif;font-size:1.4rem;color:#D9AC52;margin-bottom:8px;">Global Trade Governance, Terms &amp; Privacy Policy</div>
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:0.75rem;color:rgba(245,239,224,0.6);margin-bottom:20px;text-transform:uppercase;">Statutory Compliance · DPDP Act (India) · ICC Incoterms 2020</div>
+    
+    <div style="font-size:0.85rem;line-height:1.6;color:rgba(245,239,224,0.85);display:flex;flex-direction:column;gap:14px;">
+      <p><b>1. Merchant Export Operations &amp; Accreditations:</b> Golden Global Expo serves as the international agricultural trade and export division under Six Lady Farmers, headquartered at JNPT Mumbai, India. Export operations adhere to the Directorate General of Foreign Trade (DGFT), APEDA, Spices Board, and FSSAI statutory regulations.</p>
+      <p><b>2. Terms of Trade &amp; Incoterms:</b> All commercial quotations and contracts strictly conform to International Chamber of Commerce (ICC) Incoterms® 2020 (FOB JNPT / CIF Global Hubs). Bills of Lading, Phyto certificates, and Certificates of Analysis are legally binding shipping titles.</p>
+      <p><b>3. Privacy &amp; Data Protection (DPDP / GDPR):</b> Buyer contact information, volume inquiries, and banking details are encrypted in transit and at rest. We never sell or distribute commercial trade intelligence to unauthorized third parties.</p>
+      <p><b>4. Demonstrative Identifiers Notice:</b> Registration license references (IEC, APEDA, FSSAI) presented during technology evaluation and client walkthrough sessions represent valid institutional format templates pending final client merchant onboarding.</p>
+    </div>
+    
+    <div style="margin-top:24px;text-align:right;">
+      <button type="button" onclick="document.getElementById('legalGovernanceModal').style.display='none'" style="background:#B8872F;color:#14110E;border:none;padding:10px 24px;border-radius:4px;font-family:'IBM Plex Mono',monospace;font-weight:700;font-size:0.8rem;cursor:pointer;text-transform:uppercase;">Acknowledge &amp; Close</button>
+    </div>
+  </div>
+</div>
+<script>
+  window.openLegalGovernanceModal = function() {
+    var m = document.getElementById('legalGovernanceModal');
+    if (m) { m.style.display = 'flex'; }
+  };
+</script>
 
 </body>
 </html>

@@ -1,0 +1,469 @@
+/**
+ * ==============================================================================
+ * GOLDEN GLOBAL EXPO — DEDICATED TABLET & IPAD RESPONSIVE ENGINE
+ * Release: v1.0.0
+ * 
+ * STRICT ARCHITECTURAL RULE:
+ * This entire stylesheet is strictly scoped within:
+ *   @media (min-width: 768px) and (max-width: 1024.98px)
+ * 
+ * ZERO styles affect mobile viewports (< 768px).
+ * ZERO styles affect desktop viewports (>= 1025px).
+ * Desktop typography, spacing, navigation, and multi-column layouts remain
+ * 100% untouched and identical.
+ * ==============================================================================
+ */
+
+@media (min-width: 768px) and (max-width: 1024.98px) {
+
+  /* ----------------------------------------------------------------------------
+   * 1. CORE CONTAINER & GLOBAL WRAP
+   * ---------------------------------------------------------------------------- */
+  .wrap {
+    padding: 0 clamp(20px, 3.2vw, 36px) !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+  }
+
+  /* ----------------------------------------------------------------------------
+   * 2. HEADER & NAVIGATION
+   * ---------------------------------------------------------------------------- */
+  .nav, .main-nav {
+    height: 64px !important;
+  }
+
+  .nav .wrap, .main-nav .wrap {
+    height: 64px !important;
+  }
+
+  .seal {
+    width: 34px !important;
+    height: 34px !important;
+    min-width: 34px !important;
+  }
+
+  .brand-word b {
+    font-size: 0.96rem !important;
+  }
+
+  .brand-word span {
+    font-size: 0.54rem !important;
+    letter-spacing: 0.08em !important;
+  }
+
+  /* 2.1 Tablet Portrait (768px - 979.98px): Drawer Menu & Actions */
+  @media (max-width: 979.98px) {
+    .nav-links {
+      display: none !important;
+    }
+
+    .nav-toggle {
+      display: flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+      width: 38px !important;
+      height: 38px !important;
+      background: rgba(255, 255, 255, 0.04) !important;
+      border: 1px solid rgba(217, 172, 82, 0.28) !important;
+      border-radius: 4px !important;
+      color: #F5EFE0 !important;
+      cursor: pointer !important;
+    }
+
+    .nav-actions .btn {
+      display: none !important;
+    }
+
+    .mobile-menu {
+      top: 64px !important;
+      max-width: 520px !important;
+      left: auto !important;
+      right: 0 !important;
+      border-left: 1px solid rgba(217, 172, 82, 0.25) !important;
+      border-bottom: 1px solid rgba(217, 172, 82, 0.25) !important;
+      border-radius: 0 0 0 12px !important;
+      box-shadow: -15px 25px 60px rgba(0, 0, 0, 0.75) !important;
+      padding: 28px 32px !important;
+    }
+
+    .mobile-menu a {
+      font-size: 1.15rem !important;
+      padding: 10px 0 !important;
+    }
+  }
+
+  /* 2.2 Tablet Landscape (980px - 1024.98px): Full Nav Bar Without Overflow */
+  @media (min-width: 980px) and (max-width: 1024.98px) {
+    .nav .wrap, .main-nav .wrap {
+      padding: 0 14px !important;
+      gap: 10px !important;
+    }
+
+    .brand {
+      gap: 8px !important;
+    }
+
+    .brand-word b {
+      font-size: 0.90rem !important;
+    }
+
+    .brand-word span {
+      font-size: 0.50rem !important;
+      letter-spacing: 0.06em !important;
+    }
+
+    .nav-links {
+      display: flex !important;
+      gap: 12px !important;
+    }
+
+    .nav-links a {
+      font-size: 0.75rem !important;
+      letter-spacing: 0.02em !important;
+      padding: 4px 0 !important;
+    }
+
+    .nav-actions {
+      gap: 8px !important;
+    }
+
+    .mini-switchers {
+      height: 32px !important;
+      padding: 2px 5px !important;
+      gap: 3px !important;
+    }
+
+    .switcher-pill-btn {
+      font-size: 0.70rem !important;
+      padding: 2px 4px !important;
+      gap: 3px !important;
+    }
+
+    .nav-actions .btn {
+      display: inline-flex !important;
+      height: 32px !important;
+      padding: 0 14px !important;
+      font-size: 0.68rem !important;
+      letter-spacing: 0.05em !important;
+      white-space: nowrap !important;
+      line-height: 32px !important;
+      flex-shrink: 0 !important;
+    }
+
+    .nav-toggle {
+      display: none !important;
+    }
+  }
+
+  /* ----------------------------------------------------------------------------
+   * 3. HERO SECTION
+   * ---------------------------------------------------------------------------- */
+  .hero {
+    padding: 105px 0 54px !important;
+  }
+
+  .hero-content {
+    max-width: 760px !important;
+  }
+
+  .hero-title, .hero h1 {
+    font-size: clamp(2.35rem, 4.4vw, 3.35rem) !important;
+    line-height: 1.15 !important;
+  }
+
+  .hero-desc, .hero-lead, .hero p {
+    font-size: 1.02rem !important;
+    line-height: 1.62 !important;
+    max-width: 660px !important;
+  }
+
+  .hero-actions {
+    display: flex !important;
+    flex-direction: row !important;
+    flex-wrap: wrap !important;
+    gap: 14px !important;
+    align-items: center !important;
+    margin-top: 24px !important;
+  }
+
+  .hero-actions .btn {
+    flex: 0 0 auto !important;
+    min-width: 175px !important;
+    height: 46px !important;
+    padding: 0 22px !important;
+    font-size: 0.74rem !important;
+    letter-spacing: 0.08em !important;
+  }
+
+  /* Port Manifest / Credentials Strip */
+  .manifest-strip {
+    margin-top: 36px !important;
+  }
+
+  @media (max-width: 879.98px) {
+    .manifest-strip {
+      display: grid !important;
+      grid-template-columns: repeat(2, 1fr) !important;
+      gap: 16px 24px !important;
+      padding-top: 24px !important;
+    }
+  }
+
+  @media (min-width: 880px) and (max-width: 1024.98px) {
+    .manifest-strip {
+      display: grid !important;
+      grid-template-columns: repeat(4, 1fr) !important;
+      gap: 18px !important;
+      padding-top: 24px !important;
+    }
+  }
+
+  /* ----------------------------------------------------------------------------
+   * 4. COMMODITY PRODUCT CATALOG
+   * ---------------------------------------------------------------------------- */
+  /* Filter Ribbon */
+  .filter-bar {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    gap: 8px !important;
+    margin-bottom: 26px !important;
+    overflow-x: visible !important;
+    padding: 0 !important;
+  }
+
+  .filter-btn {
+    flex: 0 0 auto !important;
+    padding: 8px 18px !important;
+    font-size: 0.72rem !important;
+    min-height: 38px !important;
+  }
+
+  /* Product Grid: 2 Columns on Portrait (768-959), 3 Columns on Landscape (960-1024) */
+  @media (max-width: 959.98px) {
+    .product-grid {
+      display: grid !important;
+      grid-template-columns: repeat(2, 1fr) !important;
+      gap: 22px !important;
+      width: 100% !important;
+    }
+  }
+
+  @media (min-width: 960px) and (max-width: 1024.98px) {
+    .product-grid {
+      display: grid !important;
+      grid-template-columns: repeat(3, 1fr) !important;
+      gap: 22px !important;
+      width: 100% !important;
+    }
+  }
+
+  .card--product {
+    width: 100% !important;
+    border-radius: 6px !important;
+  }
+
+  .card-img-wrap {
+    height: 210px !important;
+  }
+
+  .card-body {
+    padding: 18px 20px 22px !important;
+  }
+
+  .card-title {
+    font-size: 1.15rem !important;
+  }
+
+  .card-btn, .card-spec-btn {
+    min-height: 42px !important;
+    font-size: 0.72rem !important;
+  }
+
+  /* ----------------------------------------------------------------------------
+   * 5. PROCESS, WHY US & CORRIDORS
+   * ---------------------------------------------------------------------------- */
+  @media (max-width: 959.98px) {
+    .steps-grid, .why-grid, .corridors-grid {
+      display: grid !important;
+      grid-template-columns: repeat(2, 1fr) !important;
+      gap: 20px !important;
+    }
+  }
+
+  @media (min-width: 960px) and (max-width: 1024.98px) {
+    .steps-grid, .why-grid, .corridors-grid {
+      display: grid !important;
+      grid-template-columns: repeat(3, 1fr) !important;
+      gap: 22px !important;
+    }
+  }
+
+  .step-card, .why-card {
+    padding: 28px 24px !important;
+  }
+
+  /* ----------------------------------------------------------------------------
+   * 6. ENTERPRISE RFQ & CONTACT SECTION
+   * ---------------------------------------------------------------------------- */
+  @media (max-width: 879.98px) {
+    .contact-card {
+      display: flex !important;
+      flex-direction: column !important;
+      gap: 32px !important;
+      padding: 30px 26px !important;
+    }
+  }
+
+  @media (min-width: 880px) and (max-width: 1024.98px) {
+    .contact-card {
+      display: grid !important;
+      grid-template-columns: 1fr 1.15fr !important;
+      gap: 36px !important;
+      padding: 32px 30px !important;
+    }
+  }
+
+  .rfq-form .form-grid {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr !important;
+    gap: 14px !important;
+  }
+
+  .rfq-form .form-group input,
+  .rfq-form .form-group select,
+  .rfq-form .form-group textarea {
+    height: 44px !important;
+    font-size: 0.88rem !important;
+  }
+
+  .rfq-form .form-group textarea {
+    height: 90px !important;
+  }
+
+  /* ----------------------------------------------------------------------------
+   * 7. SPECIFICATION DRAWER (#specDrawer)
+   * ---------------------------------------------------------------------------- */
+  #specDrawer.spec-drawer {
+    width: min(620px, 85vw) !important;
+    max-width: 620px !important;
+    height: 100% !important;
+    border-radius: 0 !important;
+  }
+
+  #specDrawer .drawer-head {
+    padding: 20px 26px !important;
+  }
+
+  #specDrawer .drawer-body {
+    padding: 22px 26px 175px !important; /* Clears the 3-button sticky footer */
+    -webkit-overflow-scrolling: touch !important;
+  }
+
+  #specDrawer .drawer-footer {
+    padding: 16px 24px calc(16px + env(safe-area-inset-bottom, 10px)) !important;
+    gap: 10px !important;
+    background: rgba(18, 15, 12, 0.98) !important;
+    backdrop-filter: blur(12px) !important;
+    -webkit-backdrop-filter: blur(12px) !important;
+  }
+
+  #specDrawer .drawer-actions {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr !important;
+    gap: 10px !important;
+  }
+
+  #specDrawer .drawer-btn-rfq {
+    grid-column: 1 / -1 !important;
+    height: 44px !important;
+    min-height: 44px !important;
+  }
+
+  #specDrawer .drawer-btn-domestic,
+  #specDrawer .drawer-btn-sample,
+  #specDrawer .drawer-btn-pdf {
+    height: 44px !important;
+    min-height: 44px !important;
+  }
+
+  /* ----------------------------------------------------------------------------
+   * 8. CHECKOUT & SAMPLE MODALS (#sampleCheckoutModal & #domesticOrderModal)
+   * ---------------------------------------------------------------------------- */
+  #sampleCheckoutModal,
+  #domesticOrderModal {
+    padding: 24px !important;
+    align-items: center !important;
+    justify-content: center !important;
+  }
+
+  #sampleCheckoutModal .modal-box,
+  #domesticOrderModal .modal-box {
+    max-width: 660px !important;
+    width: 90vw !important;
+    max-height: 88vh !important;
+    border-radius: 12px !important;
+    padding: 28px 32px !important;
+    margin: auto !important;
+  }
+
+  .sample-form-row {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr !important;
+    gap: 12px !important;
+  }
+
+  .sample-segmented-tabs {
+    display: grid !important;
+    grid-template-columns: repeat(3, 1fr) !important;
+    gap: 6px !important;
+  }
+
+  /* ----------------------------------------------------------------------------
+   * 9. ENDORSED BRAND ARCHITECTURE & FARM-TO-PORT TRUST SECTION
+   * ---------------------------------------------------------------------------- */
+  .farm-to-port-trust {
+    margin: 28px 0 32px 0 !important;
+  }
+
+  .farm-macro-header {
+    padding: 8px 14px !important;
+  }
+
+  @media (max-width: 959.98px) {
+    .farm-to-port-grid {
+      grid-template-columns: 1fr !important;
+      gap: 14px !important;
+      border: none !important;
+      background: transparent !important;
+      box-shadow: none !important;
+    }
+    .farm-to-port-card {
+      background: rgba(18, 15, 12, 0.65) !important;
+      border: 1px solid rgba(217, 172, 82, 0.16) !important;
+      border-radius: 4px !important;
+    }
+    .farm-macro-header {
+      border-radius: 4px !important;
+      margin-bottom: 12px !important;
+      border-bottom: 1px solid rgba(217, 172, 82, 0.20) !important;
+    }
+  }
+
+  @media (min-width: 960px) and (max-width: 1024.98px) {
+    .farm-to-port-grid {
+      grid-template-columns: repeat(3, 1fr) !important;
+      gap: 0 !important;
+    }
+  }
+
+  .heritage-callout-card {
+    padding: 26px 24px !important;
+    margin-bottom: 32px !important;
+  }
+
+  .heritage-card__inner {
+    grid-template-columns: 1fr !important;
+    gap: 24px !important;
+  }
+}
+
